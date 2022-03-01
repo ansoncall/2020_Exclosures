@@ -817,6 +817,8 @@ files <- lapply(files, cbind, distanceWeight, site, field) %>%
 # make single df
 # add cols specific to each df by parsing 'id' col
 landcover <- bind_rows(files, .id = 'id') %>%
+  # must remove file path
+  mutate(id = str_remove(id, 'raw_data/2022-01-13_ee_outputs//')) %>%
   # must add 'n' in 'Xn' so all algo identifiers are equal length
   mutate(id = str_replace(id, 'X', 'Xn'),
          algo = str_sub(id, 1, 2),
@@ -916,7 +918,7 @@ vegPlots <- subplot_divdata %>%
   select(-id) %>% # drop simple (no season) id since this is no longer needed
   mutate(type = as_factor(type)) %>% # covert 'type' to factor
   # reorder all cols, fix capitalization
-  relocate(id = id_season, site, plotnum, type, season, lat, long, shan, simp)
+  relocate(id = id_season, field_id, site, plotnum, type, season, lat, long, shan, simp, rich)
 
 # rm helper vars
 rm(subplot_divdata, shan, simp, rich, locs)
@@ -988,6 +990,11 @@ aphdata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
          Pre_Density = Density.y,
          Season) %>%
   filter(Taxa %in% aphlist)
+
+# filter out 'Full' data ####
+# remove 'Full' treatments from all data
+data %<>% filter(Treatment != 'Full')
+data_long %<>% filter(Treatment != 'Full')
 
 # preview tidy data ####
 # print a summary of each final dataset

@@ -111,6 +111,16 @@ aphdata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
          Season) %>%
   filter(Taxa %in% aphlist)
 
+# make df of total abundance across treatments
+mean_density <- data_long %>%
+  unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>% 
+  group_by(id) %>% 
+  summarize(Mean_Density = mean(Density)) %>% 
+  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>% 
+  pivot_wider(names_from = Taxa, values_from = Mean_Density)
+         
+
+
 ```
 
 # Introduction
@@ -118,7 +128,7 @@ aphdata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
 Aphids are a serious alfalfa pest, and farmers spend lots of money on chemical pesticides to control them. 
 
 <center>
-![*Acyrthosiphon* aphids](aphid_image.jpg)
+![*Acyrthosiphon* aphids](graphics/aphid_image.jpg)
 </center>
 
 Because of the many problems associated with chemical pesticides, there is great interest in understanding and increasing the role that predatory insects play in controlling aphid populations. Known aphid predators that are commonly found in alfalfa include:
@@ -150,7 +160,7 @@ This project combines field measurements of predator and aphid densities, vegeta
 
 To meet our goals, we gathered data on insect densities, land cover, and vegetation types across a range of different alfalfa fields. Our intent is to model the effects of land cover on insect densities using SEM, according to the following conceptual model:
 
-![](PIG_conceptualModel.png)
+![](graphics/PIG_conceptualModel.png)
 
 ## Experimental design
 
@@ -160,7 +170,7 @@ Measurements were collected in 2020 and 2021 at four locations.
 
 Our study included four farms across northern Nevada.
 
-![](sites_overview.png)
+![](graphics/sites_overview.png)
 
 Each farm has three fields from which insects were collected. Here's a closer look at Fallon:
 
@@ -834,23 +844,23 @@ The following heatmap plots show each varaiable scored according to the proporti
 
 # spring data only
 
-aphlist <- c('Pre_Density_Acyrthosiphon', 
-             'Pre_Density_Non_Acy', 
-             'Pre_Density_AllAph')
+aphlist <- c('Acyrthosiphon', 
+             'Aphis', 
+             'Therioaphis')
 aphDFs <- list() # create empty lists 
 dredges <- list()
 
 for (i in 1:length(aphlist)) {
   
   aph_density <- as.name(aphlist[[i]])
-  mGlobal <- data %>% 
+  mGlobal <- mean_density %>% 
     filter(Season=='Spring') %$% 
-    lmer(log(eval(aph_density) + 1) ~ (log(Pre_Density_Arachnida + 1) + 
-                                       log(Pre_Density_Coccinellidae + 1) +
-                                       log(Pre_Density_Ichneumonidae + 1) +
-                                       log(Pre_Density_Nabis + 1) +
-                                       log(Pre_Density_Geocoris + 1) + 
-                                       log(Pre_Density_Anthocoridae + 1) +
+    lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) + 
+                                       log(Coccinellidae + 1) +
+                                       log(Ichneumonidae + 1) +
+                                       log(Nabis + 1) +
+                                       log(Geocoris + 1) + 
+                                       log(Anthocoridae + 1) +
                                          (1|Site) + 
                                          (1|Field)), 
        na.action = 'na.fail')
@@ -863,12 +873,12 @@ importance_tab <- lapply(dredges, function (x) {
   sw(x) %>% 
     tidy() %>% 
     mutate(ExpVars = fct_recode(names,
-                                Anth = 'log(Pre_Density_Anthocoridae + 1)',
-                                Arach = 'log(Pre_Density_Arachnida + 1)',
-                                Cocc = 'log(Pre_Density_Coccinellidae + 1)',
-                                Geoc = 'log(Pre_Density_Geocoris + 1)',
-                                Ich = 'log(Pre_Density_Ichneumonidae + 1)',
-                                Nab = 'log(Pre_Density_Nabis + 1)'),
+                                Anth = 'Anthocoridae',
+                                Arach = 'Arachnida',
+                                Cocc = 'Coccinellidae',
+                                Geoc = 'Geocoris',
+                                Ich = 'Ichneumonidae',
+                                Nab = 'Nabis'),
            VarWeights = x, 
            .keep = 'none') %>% 
     arrange(ExpVars)
@@ -894,23 +904,20 @@ ggplotly(p, tooltip = 'VarWeights')
 
 # fall data only
 
-aphlist <- c('Pre_Density_Acyrthosiphon', 
-             'Pre_Density_Non_Acy',
-             'Pre_Density_AllAph')
 aphDFs <- list() # create empty lists 
 dredges <- list()
 
 for (i in 1:length(aphlist)) {
   
   aph_density <- as.name(aphlist[[i]])
-  mGlobal <- data %>% 
+  mGlobal <- mean_density %>% 
     filter(Season=='Fall') %$% 
-    lmer(log(eval(aph_density) + 1) ~ (log(Pre_Density_Arachnida + 1) + 
-                                       log(Pre_Density_Coccinellidae + 1) +
-                                       log(Pre_Density_Ichneumonidae + 1) +
-                                       log(Pre_Density_Nabis + 1) +
-                                       log(Pre_Density_Geocoris + 1) + 
-                                       log(Pre_Density_Anthocoridae + 1) +
+    lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) + 
+                                       log(Coccinellidae + 1) +
+                                       log(Ichneumonidae + 1) +
+                                       log(Nabis + 1) +
+                                       log(Geocoris + 1) + 
+                                       log(Anthocoridae + 1) +
                                          (1|Site) + 
                                          (1|Field)), 
        na.action = 'na.fail')
@@ -923,12 +930,12 @@ importance_tab <- lapply(dredges, function (x) {
   sw(x) %>% 
     tidy() %>% 
     mutate(ExpVars = fct_recode(names,
-                                Anth = 'log(Pre_Density_Anthocoridae + 1)',
-                                Arach = 'log(Pre_Density_Arachnida + 1)',
-                                Cocc = 'log(Pre_Density_Coccinellidae + 1)',
-                                Geoc = 'log(Pre_Density_Geocoris + 1)',
-                                Ich = 'log(Pre_Density_Ichneumonidae + 1)',
-                                Nab = 'log(Pre_Density_Nabis + 1)'),
+                                Anth = 'Anthocoridae',
+                                Arach = 'Arachnida',
+                                Cocc = 'Coccinellidae',
+                                Geoc = 'Geocoris',
+                                Ich = 'Ichneumonidae',
+                                Nab = 'Nabis'),
            VarWeights = x, 
            .keep = 'none') %>% 
     arrange(ExpVars)
@@ -960,7 +967,7 @@ AIC tables for spring show that the correlations are all *positive*, with predat
 
 ```{r aph_spring_mod_table, results='asis'}
 # show/hide AICc tables
-springTabs$Pre_Density_Acyrthosiphon %>% kable(col.names = 
+springTabs$Acyrthosiphon %>% kable(col.names = 
                                                  c('Intercept',
                                                    'Anthocoridae',
                                                    'Arachnida',
@@ -974,7 +981,7 @@ springTabs$Pre_Density_Acyrthosiphon %>% kable(col.names =
                                                    'delta',
                                                    'weight'), 
                                              caption = 'Spring - Acyrthosiphon')
-springTabs$Pre_Density_Non_Acy %>% kable(col.names = 
+springTabs$Aphis %>% kable(col.names = 
                                                  c('Intercept',
                                                    'Anthocoridae',
                                                    'Arachnida',
@@ -987,13 +994,28 @@ springTabs$Pre_Density_Non_Acy %>% kable(col.names =
                                                    'AICc',
                                                    'delta',
                                                    'weight'), 
-                                             caption = 'Spring - non-Acyrthosiphon')
+                                             caption = 'Spring - Aphis')
+
+springTabs$Therioaphis %>% kable(col.names = 
+                                                 c('Intercept',
+                                                   'Anthocoridae',
+                                                   'Arachnida',
+                                                   'Coccinellidae',
+                                                   'Geocoris',
+                                                   'Ichneumonidae',
+                                                   'Nabis',
+                                                   'df',
+                                                   'logLik',
+                                                   'AICc',
+                                                   'delta',
+                                                   'weight'), 
+                                             caption = 'Spring - Therioaphis')
 ```
 
 In the fall, there is greater parity between *Acyrthosiphon* and non-*Acyrthosiphon* abundances. Ichneumonidae, Coccinellidae, and Geocoris are most strongly associated with aphids. Curiously, Ichneumonidae is associated only with *Acyrthosiphon* in the spring, and only with non-*Acyrthosiphon* in the fall.
 
 ```{r aph_fall_mod_table, results='asis'}
-fallTabs$Pre_Density_Acyrthosiphon %>% kable(col.names = 
+fallTabs$Acyrthosiphon %>% kable(col.names = 
                                                  c('Intercept',
                                                    'Anthocoridae',
                                                    'Arachnida',
@@ -1007,7 +1029,7 @@ fallTabs$Pre_Density_Acyrthosiphon %>% kable(col.names =
                                                    'delta',
                                                    'weight'), 
                                              caption = 'Fall - Acyrthosiphon')
-fallTabs$Pre_Density_Non_Acy %>% kable(col.names = 
+fallTabs$Aphis %>% kable(col.names = 
                                                  c('Intercept',
                                                    'Anthocoridae',
                                                    'Arachnida',
@@ -1020,7 +1042,22 @@ fallTabs$Pre_Density_Non_Acy %>% kable(col.names =
                                                    'AICc',
                                                    'delta',
                                                    'weight'), 
-                                             caption = 'Fall - non-Acyrthosiphon')
+                                             caption = 'Fall - Aphis')
+
+fallTabs$Therioaphis %>% kable(col.names = 
+                                                 c('Intercept',
+                                                   'Anthocoridae',
+                                                   'Arachnida',
+                                                   'Coccinellidae',
+                                                   'Geocoris',
+                                                   'Ichneumonidae',
+                                                   'Nabis',
+                                                   'df',
+                                                   'logLik',
+                                                   'AICc',
+                                                   'delta',
+                                                   'weight'), 
+                                             caption = 'Fall - Therioaphis')
 ```
 
 In the fall, not all correlations are positive. Geocoris is inversely correlated with *Acyrthosiphon*, and Coccinellidae is inversely correlated with non-*Acyrthosiphon* aphids.
@@ -1030,47 +1067,54 @@ In the fall, not all correlations are positive. Geocoris is inversely correlated
 Here, we take a closer look at the best models from each season and aphid species. These figures are from `sjPlot::plot_model` and may look a little unfinished. 
 
 ```{r aph_mod_vis}
-
-sp_acy_topMod <- data %>% 
+## all out of date
+sp_acy_topMod <- mean_density %>% 
   filter(Season == 'Spring') %$% 
-  lmer(log(Pre_Density_Acyrthosiphon + 1) ~
-         log(Pre_Density_Arachnida + 1) + 
-         log(Pre_Density_Coccinellidae + 1) + 
-         log(Pre_Density_Nabis + 1) + 
+  lmer(log(Acyrthosiphon + 1) ~
+         log(Coccinellidae + 1) + 
          (1|Site) + (1|Field))
 
-sp_nonacy_topMod <- data %>% 
+sp_aphis_topMod <- mean_density %>% 
   filter(Season == 'Spring') %$% 
-  lmer(log(Pre_Density_NonAcy + 1) ~
-         log(Pre_Density_Arachnida + 1) + 
-         log(Pre_Density_Ichneumonidae + 1) + 
-         log(Pre_Density_Nabis + 1) + 
+  lmer(log(Aphis + 1) ~
          (1|Site) + (1|Field))
 
-fall_acy_topMod <- data %>% 
+sp_therioaphis_topMod <- mean_density %>% 
   filter(Season == 'Fall') %$% 
-  lmer(log(Pre_Density_Acyrthosiphon + 1) ~
-         log(Pre_Density_Geocoris + 1) + 
-         log(Pre_Density_Ichneumonidae + 1) +
+  lmer(log(Therioaphis + 1) ~
+         log(Geocoris + 1) + 
          (1|Site) + (1|Field))
 
-fall_nonacy_topMod <- data %>% 
+fall_acy_topMod <- mean_density %>% 
   filter(Season == 'Fall') %$% 
-  lmer(log(Pre_Density_NonAcy + 1) ~
-         log(Pre_Density_Coccinellidae + 1) +
+  lmer(log(Acyrthosiphon + 1) ~
+         log(Ichneumonidae + 1) +
          (1|Site) + (1|Field))
 
-best_mod_list <- list(sp_acy_topMod, sp_nonacy_topMod,
-                      fall_acy_topMod, fall_nonacy_topMod)
-names(best_mod_list) <- c('sp_acy_topMod', 'sp_nonacy_topMod', 
-                     'fall_acy_topMod', 'fall_nonacy_topMod')
+fall_aphis_topMod <- mean_density %>% 
+  filter(Season == 'Fall') %$% 
+  lmer(log(Acyrthosiphon + 1) ~
+         log(Arachnida + 1) +
+         log(Ichneumonidae + 1) +
+         (1|Site) + (1|Field))
+
+fall_therioaphis_topMod <- mean_density %>% 
+  filter(Season == 'Fall') %$% 
+  lmer(log(Acyrthosiphon + 1) ~
+         log(Arachnida + 1) +
+         (1|Site) + (1|Field))
+
+best_mod_list <- list(sp_acy_topMod, sp_aphis_topMod, sp_therioaphis_topMod,
+                      fall_acy_topMod, fall_aphis_topMod, fall_therioaphis_topMod)
+names(best_mod_list) <- c('sp_acy_topMod', 'sp_aphis_topMod', 'sp_therioaphis_topMod',
+                      'fall_acy_topMod', 'fall_aphis_topMod', 'fall_therioaphis_topMod')
 
 predicts <- map(best_mod_list, function(mod){plot_model(mod, type = 'pred')})
-names(predicts) <- c('sp_acy_topMod', 'sp_nonacy_topMod', 
-                     'fall_acy_topMod', 'fall_nonacy_topMod')
+names(predicts) <- c('sp_acy_topMod', 'sp_aphis_topMod', 'sp_therioaphis_topMod',
+                      'fall_acy_topMod', 'fall_aphis_topMod', 'fall_therioaphis_topMod')
 effs <- map(best_mod_list, function(mod){plot_model(mod, type = 'est')})
-names(effs) <- c('sp_acy_topMod', 'sp_nonacy_topMod', 
-                 'fall_acy_topMod', 'fall_nonacy_topMod')
+names(effs) <- c('sp_acy_topMod', 'sp_aphis_topMod', 'sp_therioaphis_topMod',
+                      'fall_acy_topMod', 'fall_aphis_topMod', 'fall_therioaphis_topMod')
 
 shinyApp(
 
@@ -1078,9 +1122,11 @@ shinyApp(
 
       selectInput(inputId = 'model', 'Model',
                   choices = list('Spring Acy' = 'sp_acy_topMod', 
-                                 'Spring non-Acy' = 'sp_nonacy_topMod',
+                                 'Spring Aphis' = 'sp_aphis_topMod',
+                                 'Spring Therioaphis' = 'sp_therioaphis_topMod',
                                  'Fall Acy' = 'fall_acy_topMod', 
-                                 'Fall non-Acy' = 'fall_nonacy_topMod')),
+                                 'Fall Aphis' = 'fall_aphis_topMod',
+                                 'Fall Therioaphis' = 'fall_therioaphis_topMod')),
       verbatimTextOutput('mod_summary'),
       plotOutput('mod_plot')
 
@@ -1161,24 +1207,25 @@ varList <- as_tibble(cbind(varListPC1, varListPC2)) %>%
 
 # join field-level insect densities ####
 # comine field-level insect densities and cover class data
-fieldData <- data %>% 
+fieldData <- mean_density %>% 
+  ungroup() %>% 
   group_by(Site, Field, Season) %>% 
   dplyr::summarise(across(where(is.numeric), mean), .groups = 'keep') %>% 
-  mutate(idCol = paste(Site, Field, sep = ' 0')) %>%
+  mutate(idCol = paste(Site, Field, sep = ' 0'), .before = Acyrthosiphon) %>%
+  ungroup() %>% 
   # log-transform density!
-  mutate(across(starts_with('Pre_Density'), ~ log(.x + 1))) %>% 
+  mutate(across(5:18, ~ log(.x + 1))) %>% 
   left_join(modData, by = c('idCol' = 'location'))
 
 # drop Anthocoridae from predlist
-trimmed_predlist <- predlist[1:5]
+trimmed_predlist <- c("Arachnida","Coccinellidae","Ichneumonidae","Geocoris" )
 
 # build models ####
 # make list of candidate mods for each predator
 cand_mods_spring <- map(trimmed_predlist, function (pred) {
   map2(varListPC1, varListPC2, function(x, y) {
     
-    mod <- lmer(eval(as.name(paste0('Pre_Density_', 
-                                    pred))) ~ 
+    mod <- lmer(eval(as.name(pred)) ~ 
                   eval(as.name(x)) + eval(as.name(y)) + (1 | Site), 
                 data = fieldData %>% filter(Season == 'Spring'))
   })
@@ -1187,8 +1234,7 @@ cand_mods_spring <- map(trimmed_predlist, function (pred) {
 cand_mods_fall <- map(trimmed_predlist, function (pred) {
   map2(varListPC1, varListPC2, function(x, y) {
     
-    mod <- lmer(eval(as.name(paste0('Pre_Density_', 
-                                    pred))) ~ 
+    mod <- lmer(eval(as.name(pred)) ~ 
                   eval(as.name(x)) + eval(as.name(y)) + (1 | Site), 
                 data = fieldData %>% filter(Season == 'Fall'))
   })

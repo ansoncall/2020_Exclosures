@@ -26,6 +26,7 @@ options(width = 120)
 # load packages ####
 library(broom.mixed) # for augment() and tidy() to easily build tibbles
 library(car) # for Anova() on lmer model objects
+library(dotwhisker)
 library(emmeans) # for computing SEM marginal means
 library(gridExtra) # create multi-panel plots
 library(ggridges) # for ggridges plots
@@ -1394,6 +1395,32 @@ Given what we have learned from model selection, it's time to attempt a full SEM
 2. Predator density is used to model aphid density
 3. Only predictors from the top models in each model selection exercise are used. 
 4. *Acyrthosiphon*/non-*Acyrthosiphon* and spring/fall are modeled separately.
+
+# Sham effects 
+
+```{r sham_effect}
+
+predlist <- c('Density_Arachnida', 'Density_Coccinellidae',
+              'Density_Geocoris', 'Density_Ichneumonidae',
+              'Density_Nabis', 'Density_Anthocoridae')
+
+sham_mods <- list()
+sham_effs <- list()
+
+for (i in 1:length(predlist)) {
+  
+    predator <- as.name(predlist[[i]])
+  sham_mods[[i]] <- lmer(eval(predator) ~ Treatment * Season + (1|Site), data = data)
+  
+  vars <- c('Intercept', 'Trt', 'Ssn', 'Trt*Ssn')
+  confints <- confint(sham_mods[[i]])[3:6,]
+  ests <- as_tibble(summary(sham_mods[[i]])$coefficients)
+  sham_effs[[i]] <- as_tibble(cbind(vars, confints, ests))
+  
+}
+
+dwplot(sham_mods[[1]])
+```
 
 ```{r allaph_sem}
 

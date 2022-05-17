@@ -57,35 +57,6 @@ landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffddddddddc')
 vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
-# define convenience identifiers ####
-# define lists of predator and aphid taxa
-predlist <- c('Arachnida','Coccinellidae','Ichneumonidae',
-              'Nabis', 'Geocoris', 'Anthocoridae')
-aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis', 'AllAph', 'NonAcy')
-
-# define predator- and aphid-only tibbles
-# filter data to include only predators
-preddata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
-                       data_long %>% filter(Treatment == 'Pre-'),
-                       by = c('Site','Field','Plot','Taxa','Season')) %>%
-  select(Site:Plot,
-         Treatment = Treatment.x,
-         Taxa,
-         Density = Density.x,
-         Pre_Density = Density.y,
-         Season) %>%
-  filter(Taxa %in% predlist)
-
-aphdata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
-                      data_long %>% filter(Treatment == 'Pre-'),
-                      by = c('Site','Field','Plot','Taxa','Season')) %>%
-  select(Site:Plot,
-         Treatment = Treatment.x,
-         Taxa,
-         Density = Density.x,
-         Pre_Density = Density.y,
-         Season) %>%
-  filter(Taxa %in% aphlist)
 
 # make df of total abundance across treatments
 mean_density <- data_long %>%
@@ -97,15 +68,15 @@ mean_density <- data_long %>%
   separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
   pivot_wider(names_from = Taxa, values_from = Mean_Density)
 
-
-# Aphid histogram ####
+# Arthropod data summary ####
+## Aphid histograms ####
 aph_data <- data_long %>%
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
   filter(Taxa %in% aphlist) %>%
   mutate(LogDensity = log(Density+1))
 
-# build density plot app
+# build density plot
 ggplot(data = aph_data, aes(y = Taxa, x = LogDensity, fill = Taxa)) +
   geom_density_ridges(alpha = 0.6) +
   labs(title = 'Aphids, Log+1 Transformation',
@@ -128,7 +99,7 @@ ggplot(data = aph_data %>%
   labs(y = 'Aphid genus', x = 'log(Density)')+
   coord_flip() +
   theme(text = element_text(size = 20))
-ggsave('spring_aphid_density.jpg', width = 7, height = 5)
+# ggsave('spring_aphid_density.jpg', width = 7, height = 5)
 # fall
 ggplot(data = aph_data %>%
          filter(Season == 'Fall',
@@ -141,7 +112,7 @@ ggplot(data = aph_data %>%
   labs(y = 'Aphid genus', x = 'log(Density)') +
   coord_flip() +
   theme(text = element_text(size = 20))
-ggsave('fall_aphid_density.jpg', width = 7, height = 5)
+# ggsave('fall_aphid_density.jpg', width = 7, height = 5)
 
 # total
 ggplot(data = aph_data %>%
@@ -156,28 +127,24 @@ ggplot(data = aph_data %>%
   theme(text = element_text(size = 20),
         axis.text.x=element_text(angle=30,hjust=0.9)) +
   labs(x = element_blank(), y = element_blank())
-ggsave('total_aphid_density.jpg', width = 1.5, height = 4.5)
+# ggsave('total_aphid_density.jpg', width = 1.5, height = 4.5)
 
-## Notes ####
-## Just make this a boxplot - they are more familiar. Also consider
-## putting season data side by side and faceting on taxon. Also need consistent
-## colors.
-
-# Predator histogram ####
+## Predator histogram ####
 pred_data <- data_long %>%
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
   filter(Taxa %in% predlist) %>%
   mutate(LogDensity = log(Density+1), Taxa = fct_relevel(Taxa, sort))
 
-# build density plot app
+# build density plot
 ggplot(data = pred_data, aes(y = Taxa, x = LogDensity, fill = Taxa)) +
   geom_density_ridges(alpha = 0.6) +
   labs(title = 'Predators, Log+1 Transformation') +
   theme(legend.position = 'none') +
   facet_wrap(~ Season, nrow = 2) +
   xlim(-1, 6)
-# barchart for slideshow
+
+# barchart (density*season) for slideshow
 ggplot(data = pred_data,
        aes(x = LogDensity, y = Taxa, fill = Season)) +
   geom_boxplot() +
@@ -187,18 +154,9 @@ ggplot(data = pred_data,
   scale_fill_manual(values = c('#008000','#993300')) +
   theme(text = element_text(size = 20),
         axis.text.x=element_text(angle=30,hjust=0.9))
-ggsave('spring_pred_density.jpg', width = 10, height = 5)
-ggplot(data = pred_data %>%
-         filter(Season == 'Fall'),
-       aes(x = LogDensity, y = Taxa, fill = Taxa)) +
-  geom_boxplot() +
-  coord_flip() +
-  xlim(c(0, 6)) +
-  guides(fill = 'none') +
-  labs(y = 'Predator taxon', x = 'log(Density)')
-ggsave('fall_pred_density.jpg', width = 12, height = 5)
+# ggsave('spring_pred_density.jpg', width = 10, height = 5)
 
-## demo figure for field effect on density
+# demo figure for field effect on density
 ggplot(data = pred_data %>%
          filter(Taxa == 'Coccinellidae',
                 Site == 'Minden',
@@ -209,11 +167,7 @@ ggplot(data = pred_data %>%
   guides(fill = 'none') +
   labs(y = 'Field', x = 'log(Density)', title = 'Ladybug density') +
   theme(text = element_text(size = 20))
-ggsave('example_field_effect.jpg', width = 4, height = 5)
-## Notes ####
-## Just make this a boxplot - they are more familiar. Also consider
-## putting season data side by side and faceting on taxon. Also need consistent
-## colors.
+# ggsave('example_field_effect.jpg', width = 4, height = 5)
 
 # Landcover data summary ####
 # lengthen
@@ -478,47 +432,52 @@ field_data <- left_join(field_data, field_margins)
 # // 7. Wet_ditches
 
 # new key
-# alfalfa: 0
-# disturbed: 1
-# bare: 234
-# natural: 5
-# wet: 67
+# alfalfa: [0]
+# disturbed: [1]
+# bare: [2, 3, 4]
+# natural: [5]
+# wet: [6, 7]
 
 field_data_grouped <- field_data %>%
-  mutate(alfalfa0 = `0_classification_const`,
-         alfalfa1 = `0_classification_sig1`,
-         alfalfa2 = `0_classification_sig2`,
-         alfalfa3 = `0_classification_sig3`,
-         alfalfa4 = `0_classification_sig4`,
-         alfalfa5 = `0_classification_sig5`,
-         disturbed0 = `1_classification_const`,
-         disturbed1 = `1_classification_sig1`,
-         disturbed2 = `1_classification_sig2`,
-         disturbed3 = `1_classification_sig3`,
-         disturbed4 = `1_classification_sig4`,
-         disturbed5 = `1_classification_sig5`,
-         bare0 = `2_classification_const` + `3_classification_const` + `4_classification_const`,
-         bare1 = `2_classification_sig1` + `3_classification_sig1` + `4_classification_sig1`,
-         bare2 = `2_classification_sig2` + `3_classification_sig2` + `4_classification_sig2`,
-         bare3 = `2_classification_sig3` + `3_classification_sig3` + `4_classification_sig3`,
-         bare4 = `2_classification_sig4` + `3_classification_sig4` + `4_classification_sig4`,
-         bare5 = `2_classification_sig5` + `3_classification_sig5` + `4_classification_sig5`,
-         natural0 = `5_classification_const`,
-         natural1 = `5_classification_sig1`,
-         natural2 = `5_classification_sig2`,
-         natural3 = `5_classification_sig3`,
-         natural4 = `5_classification_sig4`,
-         natural5 = `5_classification_sig5`,
-         wet0 = `6_classification_const` + `7_classification_const`,
-         wet1 = `6_classification_sig1` + `7_classification_sig1`,
-         wet2 = `6_classification_sig2` + `7_classification_sig2`,
-         wet3 = `6_classification_sig3` + `7_classification_sig3`,
-         wet4 = `6_classification_sig4` + `7_classification_sig4`,
-         wet5 = `6_classification_sig5` + `7_classification_sig5`,)
+  mutate(alfalfa0 = `0_classification_no`,
+         alfalfa1 = `0_classification_const`,
+         alfalfa2 = `0_classification_sig1`,
+         alfalfa3 = `0_classification_sig2`,
+         alfalfa4 = `0_classification_sig3`,
+         alfalfa5 = `0_classification_sig4`,
+         alfalfa6 = `0_classification_sig5`,
+         disturbed0 = `1_classification_no`,
+         disturbed1 = `1_classification_const`,
+         disturbed2 = `1_classification_sig1`,
+         disturbed3 = `1_classification_sig2`,
+         disturbed4 = `1_classification_sig3`,
+         disturbed5 = `1_classification_sig4`,
+         disturbed6 = `1_classification_sig5`,
+         bare0 = `2_classification_no` + `3_classification_no` + `4_classification_no`,
+         bare1 = `2_classification_const` + `3_classification_const` + `4_classification_const`,
+         bare2 = `2_classification_sig1` + `3_classification_sig1` + `4_classification_sig1`,
+         bare3 = `2_classification_sig2` + `3_classification_sig2` + `4_classification_sig2`,
+         bare4 = `2_classification_sig3` + `3_classification_sig3` + `4_classification_sig3`,
+         bare5 = `2_classification_sig4` + `3_classification_sig4` + `4_classification_sig4`,
+         bare6 = `2_classification_sig5` + `3_classification_sig5` + `4_classification_sig5`,
+         natural0 = `5_classification_no`,
+         natural1 = `5_classification_const`,
+         natural2 = `5_classification_sig1`,
+         natural3 = `5_classification_sig2`,
+         natural4 = `5_classification_sig3`,
+         natural5 = `5_classification_sig4`,
+         natural6 = `5_classification_sig5`,
+         wet0 = `6_classification_no` + `7_classification_no`,
+         wet1 = `6_classification_const` + `7_classification_const`,
+         wet2 = `6_classification_sig1` + `7_classification_sig1`,
+         wet3 = `6_classification_sig2` + `7_classification_sig2`,
+         wet4 = `6_classification_sig3` + `7_classification_sig3`,
+         wet5 = `6_classification_sig4` + `7_classification_sig4`,
+         wet6 = `6_classification_sig5` + `7_classification_sig5`,)
 
 
 
-### Build models
+### Build models ####
 
 # make list of ee data types for making modlists
 # classes <- c('0_classification',
@@ -546,7 +505,7 @@ options(max.print = 9999999)
 # Subset data for modeling with landcover classes.
 fD_spring <- field_data_grouped %>%
   filter(Season == 'Spring') %>%
-  mutate_at(72:101, scale) # All landcover scores are scaled here.
+  mutate_at(80:114, scale) # All landcover scores are scaled here.
 
 # Subset data for modeling with landcover classes and margin data.
 fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
@@ -556,34 +515,46 @@ fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 mod0 <- lmer(log(Arachnida + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Arachnida + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Arachnida + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Arachnida + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Arachnida + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Arachnida + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
+mod6 <- lmer(log(Arachnida + 1) ~
+               alfalfa6 + bare6 + disturbed6 + natural6 + wet6 + (1|Site),
+             data = fD_spring,
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
                   mod2,
                   mod3,
                   mod4,
-                  mod5)
+                  mod5,
+                  mod6)
 # Dredge all models in the list.
 dredges <- lapply(cand_mods, dredge)
 # Rbind the elements of the list together. This forces recalculation of AICc
@@ -592,7 +563,8 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[3]],
                    dredges[[4]],
                    dredges[[5]],
-                   dredges[[6]])
+                   dredges[[6]],
+                   dredges[[7]])
 # Print the table.
 mod_table
 
@@ -609,12 +581,13 @@ importance_tab <- sw(mod_table) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
-                                       `0` = 'constant',
-                                       `1` = 'aggressive',
-                                       `2` = 'moderately aggressive',
-                                       `3` = 'moderate',
-                                       `4` = 'slight',
-                                       `5` = 'minimal')))
+                                       `0` = 'no decay',
+                                       `1` = 'constant',
+                                       `2` = 'aggressive',
+                                       `3` = 'moderately aggressive',
+                                       `4` = 'moderate',
+                                       `5` = 'slight',
+                                       `6` = 'minimal')))
 
 p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
   geom_tile() +
@@ -642,7 +615,7 @@ p <- ggplot(data = group_importance,
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'weight')
 
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
@@ -653,8 +626,8 @@ ggplotly(p, tooltip = 'x')
 #                  data = fD_spring_sub) # This doesn't work.
 
 # List variables to include in global model.
-vars.all <- c('shan', 'rich', 'total_cover', 'alfalfa5',
-              'bare5', 'disturbed5', 'natural5', 'wet5')
+vars.all <- c('shan', 'rich', 'total_cover', 'alfalfa6',
+              'bare6', 'disturbed6', 'natural6', 'wet6')
 # Write formula for full global model.
 form <- formula(paste0('log(Arachnida + 1) ~',
                        paste0(vars.all, collapse='+'),
@@ -666,7 +639,8 @@ form.red <- formula(paste0('log(Arachnida + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_spring_sub, REML = 'FALSE')
+fmod.red <- lmer(form.red, data = fD_spring_sub, REML = 'FALSE',
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.

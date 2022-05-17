@@ -710,13 +710,19 @@ mod5 <- lmer(log(Coccinellidae + 1) ~
              data = fD_spring,
              REML = FALSE,
              na.action = 'na.fail')
+mod6 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa6 + bare6 + disturbed6 + natural6 + wet6 + (1|Site),
+             data = fD_spring,
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
                   mod2,
                   mod3,
                   mod4,
-                  mod5)
+                  mod5,
+                  mod6)
 # Dredge all models in the list.
 dredges <- lapply(cand_mods, dredge)
 # Rbind the elements of the list together. This forces recalculation of AICc
@@ -725,36 +731,43 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[3]],
                    dredges[[4]],
                    dredges[[5]],
-                   dredges[[6]])
+                   dredges[[6]],
+                   dredges[[7]])
 # Print the table.
 mod_table
 
 # Extract and examine the best model.
 best.mod <- get.models(mod_table, subset = 1)[[1]]
 summary(best.mod)
-png('spring_cocc_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(allEffects(best.mod, residuals = TRUE),
+# Try old best mod from entsoc (natural4, now natural5)
+old.best.mod <- get.models(mod_table, subset = 5)[[1]]
+summary(old.best.mod)
+
+# png('spring_cocc_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
+plot(allEffects(best.mod, residuals = TRUE))#,
+plot(allEffects(old.best.mod, residuals = TRUE),
      main = '', #Coccinellidae - best landcover model
      partial.residual = list(lwd = 0),
-     axes = list(x = list(natural4 =
+     axes = list(x = list(natural5 =
                             list(lab =
                                    list(label =
                                           'Weighted proportion of \"natural\" landcover',
                                         cex = 1.5))),
                  y = list(lab = list(label = 'log(Coccinellidae density)', cex = 1.5))))
-dev.off()
+# dev.off()
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
   tidy() %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
-                                       `0` = 'constant',
-                                       `1` = 'aggressive',
-                                       `2` = 'moderately aggressive',
-                                       `3` = 'moderate',
-                                       `4` = 'slight',
-                                       `5` = 'minimal')))
+                                       `0` = 'no decay',
+                                       `1` = 'constant',
+                                       `2` = 'aggressive',
+                                       `3` = 'moderately aggressive',
+                                       `4` = 'moderate',
+                                       `5` = 'slight',
+                                       `6` = 'minimal')))
 
 p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
   geom_tile() +
@@ -784,7 +797,7 @@ p <- ggplot(data = group_importance %>% filter(distWeight != 'constant'),
 
 ggplotly(p, tooltip = 'weight')
 p
-ggsave('spring_cocc_groupvarweights.jpg', width = 7, height = 5)
+# ggsave('spring_cocc_groupvarweights.jpg', width = 7, height = 5)
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
 
@@ -794,8 +807,8 @@ ggsave('spring_cocc_groupvarweights.jpg', width = 7, height = 5)
 #                  data = fD_spring_sub) # This doesn't work.
 
 # List variables to include in global model.
-vars.all <- c('shan', 'rich', 'total_cover', 'alfalfa4',
-              'bare4', 'disturbed4', 'natural4', 'wet4')
+vars.all <- c('shan', 'rich', 'total_cover', 'alfalfa2',
+              'bare2', 'disturbed2', 'natural2', 'wet2')
 # Write formula for full global model.
 form <- formula(paste0('log(Coccinellidae + 1) ~',
                        paste0(vars.all, collapse='+'),
@@ -817,7 +830,7 @@ formula(fmod.red) # Looks good.
 # Run dredge() with m.max parameter to avoid convergence failures.
 ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 5), eval))
 summary(ms1)
-
+ms1
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
   tidy() %>%
@@ -834,27 +847,24 @@ ggplotly(p, tooltip = 'x')
 
 # Build final model based on variable selection exercise.
 # Best model is null. 2nd best is this one.
-fin.mod <- lmer(log(Coccinellidae + 1) ~ natural4 + total_cover + (1|Site),
-                                   data = fD_spring_sub, REML = FALSE)
-summary(fin.mod)
-png('spring_cocc_natEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(effect('natural4', fin.mod, residuals = TRUE),
-     main = 'Coccinellidae - best landcover + margin vegetation model',
-     xlab = 'Weighted proportion of \"natural\" landcover',
-     ylab = 'log(Coccinellidae density)')
-dev.off()
+best.mod <- get.models(ms1, subset = 2)[[1]]
+summary(best.mod)
 
-png('spring_cocc_coverEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(effect('total_cover', fin.mod, residuals = TRUE),
-     main = '', #Coccinellidae - best landcover model
-     partial.residual = list(lwd = 0),
-     axes = list(x = list(total_cover =
-                            list(lab =
-                                   list(label =
-                                          'Mean % plant cover in field margins',
-                                        cex = 1.5))),
-                 y = list(lab = list(label = 'log(Coccinellidae density)', cex = 1.5))))
-dev.off()
+fin.mod <- lmer(log(Coccinellidae + 1) ~ bare2 + wet2 + (1|Site),
+                                   data = fD_spring, REML = FALSE)
+summary(fin.mod)
+# png('spring_cocc_bareEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
+plot(effect('bare2', fin.mod, residuals = TRUE),
+     main = 'Coccinellidae - best landcover + margin vegetation model',
+     xlab = 'Weighted proportion of \"bare\" landcover',
+     ylab = 'log(Coccinellidae density)')
+# dev.off()
+# png('spring_cocc_wetEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
+plot(effect('wet2', fin.mod, residuals = TRUE),
+     main = 'Coccinellidae - best landcover + margin vegetation model',
+     xlab = 'Weighted proportion of riparian landcover',
+     ylab = 'log(Coccinellidae density)')
+# dev.off()
 
 # Clean environment before moving on to next taxon.
 rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,

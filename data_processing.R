@@ -47,7 +47,8 @@ vegdata <- read_csv('raw_data/VegSurvey.csv',
 new_ids <- read_csv('raw_data/updated_plant_ids.csv') %>%
   select(orig_code, new_code)
 
-## field location data, incl. closest field info for survey points in vegdata ####
+## field location data ####
+## incl. closest field info for survey points in vegdata
 rawlocs <- read_csv('raw_data/vegSurvey_fieldJoin.csv',
                     col_types = 'fffTdfddfcc')
 
@@ -60,15 +61,10 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
                              col_types = 'fffffffffffffffffffffffffcc')
 
 ## landcover data ####
-# read in multiple csvs and put them in a list
+# now only 1 csv (supervised classification, 8 classes)
 # import csv files
-filenames <- list.files(path = 'raw_data/2022-01-13_ee_outputs/',
-                   pattern = "*.csv",
-                   full.names = TRUE)
-files <- lapply(filenames, read_csv)
-names(files) <- filenames
-# clean up env
-rm(filenames)
+landcover <- read_csv('raw_data/supervisedClassification_fieldSums.csv',
+                       col_types = 'fddddddddc')
 
 # check data ####
 ## check spring and fall data ####
@@ -811,81 +807,62 @@ field <- rep(c('01',
                '03'), 6)
 
 # add general cols
-files <- lapply(files, cbind, distanceWeight, site, field) %>%
-  lapply(group_by, distanceWeight, site, field)
-
-# make single df
-# add cols specific to each df by parsing 'id' col
-landcover <- bind_rows(files, .id = 'id') %>%
-  # must remove file path
-  mutate(id = str_remove(id, 'raw_data/2022-01-13_ee_outputs//')) %>%
-  # must add 'n' in 'Xn' so all algo identifiers are equal length
-  mutate(id = str_replace(id, 'X', 'Xn'),
-         algo = str_sub(id, 1, 2),
-         imagery = str_sub(id, 3, -14)) %>%
-  relocate(id, imagery, algo, distanceWeight, site, field) # reorder cols
+landcover <- cbind(landcover, distanceWeight, site, field) %>%
+  group_by(distanceWeight, site, field) %>%
+  relocate(id = `system:index`, distanceWeight, site, field)
 
 # completeness/accuracy check: check areaScore * class (should be equal within
 # image sets and decay functions)
 
-# empty list
-sumTables <- list()
+# get sum of area scores for all classes
+df <- landcover %>%
+  mutate(sumScore = sum(across(where(is.double)))) %>%
+  summarize(totalSum = sum(sumScore), .groups = 'keep')
+# filter to a specific decay function
+const <- df %>%
+  filter(distanceWeight == 'const') %>%
+  arrange(desc(totalSum))
+# divide largest area by smallest area
+constRatio <- head(const$totalSum, n = 1)/tail(const$totalSum, n = 1)
 
-# loop over files
-for (i in 1:length(files)) {
-  # get sum of area scores for all classes
-  df <- files[[i]] %>%
-    mutate(sumScore = sum(across(where(is.double)))) %>%
-    summarize(totalSum = sum(sumScore), .groups = 'keep')
-  # filter to a specific decay function
-  const <- df %>%
-    filter(distanceWeight == 'const') %>%
-    arrange(desc(totalSum))
-  # divide largest area by smallest area
-  constRatio <- head(const$totalSum, n = 1)/tail(const$totalSum, n = 1)
+sig1 <- df %>%
+  filter(distanceWeight == 'sig1') %>%
+  arrange(desc(totalSum))
 
-  sig1 <- df %>%
-    filter(distanceWeight == 'sig1') %>%
-    arrange(desc(totalSum))
+sig1Ratio <- head(sig1$totalSum, n = 1)/tail(sig1$totalSum, n = 1)
 
-  sig1Ratio <- head(sig1$totalSum, n = 1)/tail(sig1$totalSum, n = 1)
+sig2 <- df %>%
+  filter(distanceWeight == 'sig2') %>%
+  arrange(desc(totalSum))
 
-  sig2 <- df %>%
-    filter(distanceWeight == 'sig2') %>%
-    arrange(desc(totalSum))
+sig2Ratio <- head(sig2$totalSum, n = 1)/tail(sig2$totalSum, n = 1)
 
-  sig2Ratio <- head(sig2$totalSum, n = 1)/tail(sig2$totalSum, n = 1)
+sig3 <- df %>%
+  filter(distanceWeight == 'sig3') %>%
+  arrange(desc(totalSum))
 
-  sig3 <- df %>%
-    filter(distanceWeight == 'sig3') %>%
-    arrange(desc(totalSum))
+sig3Ratio <- head(sig3$totalSum, n = 1)/tail(sig3$totalSum, n = 1)
 
-  sig3Ratio <- head(sig3$totalSum, n = 1)/tail(sig3$totalSum, n = 1)
+sig4 <- df %>%
+  filter(distanceWeight == 'sig4') %>%
+  arrange(desc(totalSum))
 
-  sig4 <- df %>%
-    filter(distanceWeight == 'sig4') %>%
-    arrange(desc(totalSum))
+sig4Ratio <- head(sig4$totalSum, n = 1)/tail(sig4$totalSum, n = 1)
 
-  sig4Ratio <- head(sig4$totalSum, n = 1)/tail(sig4$totalSum, n = 1)
+sig5 <- df %>%
+  filter(distanceWeight == 'sig5') %>%
+  arrange(desc(totalSum))
 
-  sig5 <- df %>%
-    filter(distanceWeight == 'sig5') %>%
-    arrange(desc(totalSum))
+sig5Ratio <- head(sig5$totalSum, n = 1)/tail(sig5$totalSum, n = 1)
 
-  sig5Ratio <- head(sig5$totalSum, n = 1)/tail(sig5$totalSum, n = 1)
+out <- c(constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio)
 
-  out <- c(constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio)
+out # perfection!!!
 
-  sumTables[[i]] <- out
-
-}
-
-sumTables # perfection!!!
-
-# remove 'files' and misc error-checking vars from env
-rm(files, sumTables, df, const, sig1, sig2, sig3, sig4, sig5,
+# remove misc error-checking vars from env
+rm(df, const, sig1, sig2, sig3, sig4, sig5,
    constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio,
-   distanceWeight, i, out, field, site)
+   distanceWeight, out, field, site)
 
 ## calculate vegdata diversity metrics ####
 # these metrics are all based on cover, since this is the more complete data

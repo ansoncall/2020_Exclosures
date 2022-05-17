@@ -64,7 +64,7 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
 # now only 1 csv (supervised classification, 8 classes)
 # import csv files
 landcover <- read_csv('raw_data/supervisedClassification_areaScore.csv',
-                      col_types = 'dddddddd')
+                      col_types = 'cdddddddd')
 
 # check data ####
 ## check spring and fall data ####
@@ -872,8 +872,8 @@ out <- c(noRatio, constRatio, sig1Ratio, sig2Ratio,
 out # perfection!!!
 
 # remove misc error-checking vars from env
-rm(df, const, sig1, sig2, sig3, sig4, sig5,
-   constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio,
+rm(df, no, const, sig1, sig2, sig3, sig4, sig5,
+   noRatio, constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio,
    distanceWeight, out, field, site)
 
 ## calculate vegdata diversity metrics ####

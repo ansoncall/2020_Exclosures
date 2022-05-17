@@ -63,8 +63,8 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
 ## landcover data ####
 # now only 1 csv (supervised classification, 8 classes)
 # import csv files
-landcover <- read_csv('raw_data/supervisedClassification_fieldSums.csv',
-                       col_types = 'fddddddddc')
+landcover <- read_csv('raw_data/supervisedClassification_areaScore.csv',
+                      col_types = 'dddddddd')
 
 # check data ####
 ## check spring and fall data ####
@@ -775,7 +775,8 @@ vegdata %<>% filter(!is.na(lat))
 
 ## landcover data ####
 # build cols of distanceWeight, Site, and Field
-distanceWeight <- c(rep('const', 12),
+distanceWeight <- c(rep('no', 12),
+                    rep('const', 12),
                     rep('sig1', 12),
                     rep('sig2', 12),
                     rep('sig3', 12),
@@ -792,7 +793,7 @@ site <- rep(c('Minden',
               'Fallon',
               'Yerington',
               'Yerington',
-              'Yerington'), 6)
+              'Yerington'), 7)
 field <- rep(c('01',
                '02',
                '03',
@@ -804,7 +805,7 @@ field <- rep(c('01',
                '03',
                '01',
                '02',
-               '03'), 6)
+               '03'), 7)
 
 # add general cols
 landcover <- cbind(landcover, distanceWeight, site, field) %>%
@@ -819,10 +820,20 @@ df <- landcover %>%
   mutate(sumScore = sum(across(where(is.double)))) %>%
   summarize(totalSum = sum(sumScore), .groups = 'keep')
 # filter to a specific decay function
+no <- df %>%
+  filter(distanceWeight == 'no') %>%
+  arrange(desc(totalSum))
+# divide largest area by smallest area
+noRatio <- head(no$totalSum, n = 1)/tail(no$totalSum, n = 1)
+
+df <- landcover %>%
+  mutate(sumScore = sum(across(where(is.double)))) %>%
+  summarize(totalSum = sum(sumScore), .groups = 'keep')
+
 const <- df %>%
   filter(distanceWeight == 'const') %>%
   arrange(desc(totalSum))
-# divide largest area by smallest area
+
 constRatio <- head(const$totalSum, n = 1)/tail(const$totalSum, n = 1)
 
 sig1 <- df %>%
@@ -855,7 +866,8 @@ sig5 <- df %>%
 
 sig5Ratio <- head(sig5$totalSum, n = 1)/tail(sig5$totalSum, n = 1)
 
-out <- c(constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio)
+out <- c(noRatio, constRatio, sig1Ratio, sig2Ratio,
+         sig3Ratio, sig4Ratio, sig5Ratio)
 
 out # perfection!!!
 

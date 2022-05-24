@@ -897,13 +897,18 @@ mod5 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_spring,
              REML = FALSE)
+mod6 <- lmer(log(Ichneumonidae + 1) ~
+               alfalfa6 + bare6 + disturbed6 + natural6 + wet6 + (1|Site),
+             data = fD_spring,
+             REML = FALSE)
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
                   mod2,
                   mod3,
                   mod4,
-                  mod5)
+                  mod5,
+                  mod6)
 # Dredge all models in the list.
 dredges <- lapply(cand_mods, dredge)
 # Rbind the elements of the list together. This forces recalculation of AICc
@@ -912,7 +917,8 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[3]],
                    dredges[[4]],
                    dredges[[5]],
-                   dredges[[6]])
+                   dredges[[6]],
+                   dredges[[7]])
 # Print the table.
 mod_table
 

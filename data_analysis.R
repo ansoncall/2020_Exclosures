@@ -1,5 +1,4 @@
 # Load packages ####
-library(broom.mixed) # for augment() and tidy() to easily build tibbles
 library(car) # for Anova() on lmer model objects
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
@@ -67,6 +66,12 @@ mean_density <- data_long %>%
   summarize(Mean_Density = mean(Density)) %>%
   separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
   pivot_wider(names_from = Taxa, values_from = Mean_Density)
+
+# define convenience identifiers ####
+# define lists of predator and aphid taxa
+predlist <- c('Arachnida','Coccinellidae','Ichneumonidae',
+              'Nabis', 'Geocoris', 'Anthocoridae')
+aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis', 'AllAph', 'NonAcy')
 
 # Arthropod data summary ####
 ## Aphid histograms ####
@@ -213,17 +218,19 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 
 # Model selection ####
 ## Aphids ~ predators ####
-# spring data only
+### spring data only ####
 
-aphlist <- c('Acyrthosiphon',
+# define list of aphid taxa
+short_aphlist <- c('Acyrthosiphon',
              'Aphis',
              'Therioaphis')
-aphDFs <- list() # create empty lists
+
+# create empty lists
 dredges <- list()
 
-for (i in 1:length(aphlist)) {
+for (i in 1:length(short_aphlist)) {
 
-  aph_density <- as.name(aphlist[[i]])
+  aph_density <- as.name(short_aphlist[[i]])
   mGlobal <- mean_density %>%
     filter(Season=='Spring') %$%
     lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
@@ -239,11 +246,12 @@ for (i in 1:length(aphlist)) {
   dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
 
 }
-names(dredges) <- aphlist
+names(dredges) <- short_aphlist
 
 importance_tab <- lapply(dredges, function (x) {
   sw(x) %>%
-    tidy() %>%
+    tibble(names = names(.),
+           .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
     mutate(ExpVars = fct_recode(names,
                                 Anthocoridae = 'log(Anthocoridae + 1)',
                                 Arachnida = 'log(Arachnida + 1)',
@@ -251,43 +259,75 @@ importance_tab <- lapply(dredges, function (x) {
                                 Geocoris = 'log(Geocoris + 1)',
                                 Ichneumonoidea = 'log(Ichneumonidae + 1)',
                                 Nabis = 'log(Nabis + 1)'),
-           VarWeights = x,
+           VarWeights = sw,
            .keep = 'none') %>%
     arrange(ExpVars)
 })
 
-names(importance_tab) <- aphlist
-# make kable
+names(importance_tab) <- short_aphlist
+# make tables of model selection results
 springTabs <- lapply(dredges, slice_head, n = 5)
-names(springTabs) <- aphlist
+names(springTabs) <- short_aphlist
+# show tables
+springTabs
 
-# Extract and examine the top Acyrthosiphon model.
+# extract and examine the top Acyrthosiphon model.
 best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
-# Must remake to plot effects.
+# must remake to plot effects.
 best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
                                                      (1|Site) +
                                                      (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'))
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('spring_acy_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
 plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Spring')
-png('spring_acy_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Spring')
-dev.off()
+# dev.off()
 
-# Extract and examine the top Therioaphis model.
+# extract and examine the top Aphis model.
+best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
+summary(best.aphis.mod)
+# Must remake to plot effects.
+best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Ichneumonidae + 1) +
+                         (1|Site) +
+                         (1|Field),
+                       data = mean_density %>% filter(Season == 'Spring'),
+                       REML = FALSE)
+# make plot
+# png('spring_aphis_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.aphis.mod, residuals = TRUE),
+     main = 'Aphis, Spring')
+# dev.off()
+
+# extract and examine the top Therioaphis model.
 best.therio.mod <- get.models(springTabs[[3]], subset = 1)[[1]]
 summary(best.therio.mod)
 # Must remake to plot effects.
 best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Geocoris + 1) +
-                       (1|Site) +
-                       (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'))
-plot(allEffects(best.therio.mod, residuals = TRUE), main = 'Therioaphis, Spring')
-png('spring_therio_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(allEffects(best.therio.mod, residuals = TRUE), main = 'Therioaphis, Spring')
-dev.off()
+                          (1|Site) +
+                          (1|Field),
+                        data = mean_density %>% filter(Season == 'Spring'),
+                        REML = FALSE)
+# make plot
+# png('spring_therio_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.therio.mod, residuals = TRUE),
+     main = 'Therioaphis, Spring')
+# dev.off()
 
-
+# make variable importance heatmap
 p <- bind_rows(importance_tab, .id = 'Taxon') %>%
   mutate(VarWeights = as.numeric(VarWeights),
          ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
@@ -301,19 +341,17 @@ p <- bind_rows(importance_tab, .id = 'Taxon') %>%
   labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Spring') +
   theme(text = element_text(size = 15),
         axis.text.x=element_text(angle=30,hjust=0.9))
-
 p
+# ggsave('spring_aphid_varweights.jpg', width = 6, height = 4)
 
-ggsave('spring_aphid_varweights.jpg', width = 6, height = 4)
+### fall data only ####
 
-# fall data only
-
-aphDFs <- list() # create empty lists
+# create empty lists
 dredges <- list()
 
-for (i in 1:length(aphlist)) {
+for (i in 1:length(short_aphlist)) {
 
-  aph_density <- as.name(aphlist[[i]])
+  aph_density <- as.name(short_aphlist[[i]])
   mGlobal <- mean_density %>%
     filter(Season=='Fall') %$%
     lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
@@ -329,11 +367,12 @@ for (i in 1:length(aphlist)) {
   dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
 
 }
-names(dredges) <- aphlist
+names(dredges) <- short_aphlist
 
 importance_tab <- lapply(dredges, function (x) {
   sw(x) %>%
-    tidy() %>%
+    tibble(names = names(.),
+           .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
     mutate(ExpVars = fct_recode(names,
                                 Anthocoridae = 'log(Anthocoridae + 1)',
                                 Arachnida = 'log(Arachnida + 1)',
@@ -341,15 +380,16 @@ importance_tab <- lapply(dredges, function (x) {
                                 Geocoris = 'log(Geocoris + 1)',
                                 Ichneumonoidea = 'log(Ichneumonidae + 1)',
                                 Nabis = 'log(Nabis + 1)'),
-           VarWeights = x,
+           VarWeights = sw,
            .keep = 'none') %>%
     arrange(ExpVars)
 })
-names(importance_tab) <- aphlist
-# make kable
+names(importance_tab) <- short_aphlist
+# make tables of model selection results
 fallTabs <- lapply(dredges, slice_head, n = 5)
-names(fallTabs) <- aphlist
-
+names(fallTabs) <- short_aphlist
+# show tables
+# fallTabs
 
 # Extract and examine the top Acyrthosiphon model.
 best.acy.mod <- get.models(fallTabs[[1]], subset = 1)[[1]]
@@ -359,12 +399,45 @@ best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Anthocoridae + 1) +
                        log(Ichneumonidae + 1) +
                        (1|Site) +
                        (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'))
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('fall_acy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
 plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Fall')
-png('fall_acy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Fall')
-dev.off()
+# dev.off()
 
+# Extract and examine the top Aphis model.
+best.aphis.mod <- get.models(fallTabs[[2]], subset = 1)[[1]]
+summary(best.aphis.mod)
+# Must remake to plot effects.
+best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Arachnida + 1) +
+                       log(Ichneumonidae + 1) +
+                       (1|Site) +
+                       (1|Field),
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('fall_aphis_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
+plot(allEffects(best.aphis.mod, residuals = TRUE), main = 'Aphis, Fall')
+# dev.off()
+
+# Extract and examine the top Therioaphis model.
+best.therio.mod <- get.models(fallTabs[[3]], subset = 1)[[1]]
+summary(best.therio.mod)
+# Must remake to plot effects.
+best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Arachnida + 1) +
+                       (1|Site) +
+                       (1|Field),
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('fall_therio_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
+plot(allEffects(best.therio.mod,
+                residuals = TRUE),
+     main = 'Therioaphis, Fall')
+# dev.off()
+
+# make plot
 p <- bind_rows(importance_tab, .id = 'Taxon') %>%
   mutate(VarWeights = as.numeric(VarWeights),
          ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
@@ -380,8 +453,11 @@ p <- bind_rows(importance_tab, .id = 'Taxon') %>%
         axis.text.x=element_text(angle=30,hjust=0.9))
 
 p
+# ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
 
-ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
+# clean environment
+rm(best.acy.mod, best.aphis.mod, best.therio.mod, dredges, fallTabs,
+   importance_tab, mGlobal, springTabs, aph_density, i)
 
 ## Predators ~ ####
 ### Prepare data ####
@@ -476,31 +552,10 @@ field_data_grouped <- field_data %>%
          wet6 = `6_classification_sig5` + `7_classification_sig5`,)
 
 
+# clean environment
+rm(field_margins, field_data)
 
-### Build models ####
-
-# make list of ee data types for making modlists
-# classes <- c('0_classification',
-#              '1_classification',
-#              '2_classification',
-#              '3_classification',
-#              '4_classification',
-#              '5_classification',
-#              '6_classification',
-#              '7_classification')
-#
-# weightings <- c('_const',
-#                 '_sig1',
-#                 '_sig2',
-#                 '_sig3',
-#                 '_sig4',
-#                 '_sig5')
-#
-# vars <- outer(weightings, classes, rpaste0) %>%
-#   as_tibble(.name_repair = 'universal') %>%
-#   unite(modvars, everything(), sep = ' + ')
-options(max.print = 9999999)
-### Spring ####
+### spring data only ####
 
 # Subset data for modeling with landcover classes.
 fD_spring <- field_data_grouped %>%
@@ -547,7 +602,7 @@ mod6 <- lmer(log(Arachnida + 1) ~
              data = fD_spring,
              REML = FALSE,
              na.action = 'na.fail')
-# List global models.
+# list global models
 cand_mods <- list(mod0,
                   mod1,
                   mod2,
@@ -555,7 +610,7 @@ cand_mods <- list(mod0,
                   mod4,
                   mod5,
                   mod6)
-# Dredge all models in the list.
+# dredge all models in the list
 dredges <- lapply(cand_mods, dredge)
 # Rbind the elements of the list together. This forces recalculation of AICc
 mod_table <- rbind(dredges[[1]],
@@ -565,19 +620,19 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[5]],
                    dredges[[6]],
                    dredges[[7]])
-# Print the table.
-mod_table
+# show large table
+# View(mod_table)
 
-# Extract and examine the best model.
+# extract and examine the best model
 best.mod <- get.models(mod_table, subset = 1)[[1]]
 summary(best.mod)
 dev.off()
 plot(allEffects(best.mod, residuals = TRUE),
      main = 'Arachnida, best landcover model')
 
-# Plot the variable importance.
+# plot the variable importance
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -589,7 +644,7 @@ importance_tab <- sw(mod_table) %>%
                                        `5` = 'slight',
                                        `6` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -598,12 +653,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -652,9 +707,9 @@ summary(ms1)
 ms1
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -662,7 +717,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Arachnida + 1) ~ natural5 + (1|Site),
@@ -674,9 +729,6 @@ plot(allEffects(fin.mod, residuals = TRUE), main = 'Arachnida, final model')
 rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
    importance_tab, p, group_importance, vars.all, form, vars.red, form.red,
    fmod.red, ms1, fin.mod)
-
-
-
 
 #### Coccinellidae ####
 # Build global models, keeping distanceWeights separate.
@@ -734,7 +786,7 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[6]],
                    dredges[[7]])
 # Print the table.
-mod_table
+# View(mod_table)
 
 # Extract and examine the best model.
 best.mod <- get.models(mod_table, subset = 1)[[1]]
@@ -744,20 +796,25 @@ old.best.mod <- get.models(mod_table, subset = 5)[[1]]
 summary(old.best.mod)
 
 # png('spring_cocc_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(allEffects(best.mod, residuals = TRUE))#,
+plot(allEffects(best.mod, residuals = TRUE))
+# Old model (pre-optimization of random forest) did not show the same results.
+# Examine this more closely.
 plot(allEffects(old.best.mod, residuals = TRUE),
      main = '', #Coccinellidae - best landcover model
      partial.residual = list(lwd = 0),
      axes = list(x = list(natural5 =
                             list(lab =
                                    list(label =
-                                          'Weighted proportion of \"natural\" landcover',
+                                          'Weighted proportion of \"natural\"
+                                        landcover',
                                         cex = 1.5))),
-                 y = list(lab = list(label = 'log(Coccinellidae density)', cex = 1.5))))
+                 y = list(lab = list(label = 'log(Coccinellidae density)',
+                                     cex = 1.5))))
 # dev.off()
-# Plot the variable importance.
+
+# plot the variable importance
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -769,7 +826,7 @@ importance_tab <- sw(mod_table) %>%
                                        `5` = 'slight',
                                        `6` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -778,12 +835,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
-# Plot the variable importance, summarized by distanceWeight.
+# plot the variable importance, summarized by distanceWeight
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance %>% filter(distWeight != 'constant'),
             aes(x = '', y = distWeight, fill = weight)) +
@@ -796,8 +853,11 @@ p <- ggplot(data = group_importance %>% filter(distWeight != 'constant'),
        fill = 'Variable importance')
 
 ggplotly(p, tooltip = 'weight')
-p
+
+# save plot
+# p
 # ggsave('spring_cocc_groupvarweights.jpg', width = 7, height = 5)
+
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
 
@@ -833,9 +893,9 @@ summary(ms1)
 ms1
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -843,7 +903,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 # Best model is null. 2nd best is this one.
@@ -876,31 +936,38 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
 mod0 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod6 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa6 + bare6 + disturbed6 + natural6 + wet6 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -920,7 +987,7 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[6]],
                    dredges[[7]])
 # Print the table.
-mod_table
+# View(mod_table)
 
 # Extract and examine the best model.
 best.mod <- get.models(mod_table, subset = 1)[[1]]
@@ -931,7 +998,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -942,7 +1009,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -951,12 +1018,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -968,7 +1035,7 @@ p <- ggplot(data = group_importance,
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
@@ -992,7 +1059,8 @@ form.red <- formula(paste0('log(Ichneumonidae + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE)
+fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1004,9 +1072,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1014,7 +1082,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Ichneumonidae + 1) ~
@@ -1029,32 +1097,37 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
    fmod.red, ms1, fin.mod)
 
 #### Geocoris ####
-options(na.action = 'na.fail')
 # Build global models, keeping distanceWeights separate.
 mod0 <- lmer(log(Geocoris + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Geocoris + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Geocoris + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Geocoris + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Geocoris + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Geocoris + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -1072,10 +1145,11 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[5]],
                    dredges[[6]])
 # Print the table.
-mod_table
+# View(mod_table)
 
 # Extract and examine the best model.
-best.mod <- get.models(mod_table, subset = 1)[[1]]
+# Top 6 mods are null. 7th best is shown below.
+best.mod <- get.models(mod_table, subset = 7)[[1]]
 summary(best.mod)
 plot(allEffects(best.mod, residuals = TRUE),
      main = 'Geocoris, best landcover model')
@@ -1095,7 +1169,7 @@ dev.off()
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -1106,7 +1180,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -1115,12 +1189,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance %>% filter(distWeight != 'constant'),
             aes(x = '', y = distWeight, fill = weight)) +
@@ -1158,7 +1232,8 @@ form.red <- formula(paste0('log(Geocoris + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE)
+fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1170,9 +1245,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1180,8 +1255,8 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
-options(na.action = 'na.omit')
+ggplotly(p, tooltip = 'sw')
+
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Geocoris + 1) ~ natural2 + total_cover +
                   (1|Site),
@@ -1189,13 +1264,13 @@ fin.mod <- lmer(log(Geocoris + 1) ~ natural2 + total_cover +
 summary(fin.mod)
 plot(allEffects(fin.mod, residuals = TRUE), main = 'Geocoris, final model')
 
-png('spring_geo_natEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
+# png('spring_geo_natEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
 plot(effect('natural2', fin.mod, residuals = TRUE),
      main = NULL,
      xlab = 'Weighted proportion of \"natural\" landcover',
      ylab = 'log(Geocoris density)')
-dev.off()
-png('spring_geo_coverEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
+# dev.off()
+# png('spring_geo_coverEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
 plot(effect('total_cover', fin.mod, residuals = TRUE),
      main = '', #Coccinellidae - best landcover model
      partial.residual = list(lwd = 0),
@@ -1205,13 +1280,13 @@ plot(effect('total_cover', fin.mod, residuals = TRUE),
                                           'Mean % cover in field margins',
                                         cex = 1.5))),
                  y = list(lab = list(label = 'log(Geocoris density)', cex = 1.5))))
-dev.off()
+# dev.off()
 # Clean environment before moving on to next taxon.
 rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
    importance_tab, p, group_importance, vars.all, form, vars.red, form.red,
    fmod.red, ms1, fin.mod)
 
-### Fall ####
+### fall data only ####
 
 # Subset data for modeling with landcover classes.
 fD_fall <- field_data_grouped %>%
@@ -1226,27 +1301,33 @@ fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
 mod0 <- lmer(log(Arachnida + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Arachnida + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Arachnida + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Arachnida + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Arachnida + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Arachnida + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -1275,7 +1356,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -1286,7 +1367,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -1295,12 +1376,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -1312,7 +1393,7 @@ p <- ggplot(data = group_importance,
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
@@ -1336,7 +1417,8 @@ form.red <- formula(paste0('log(Arachnida + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE)
+fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1349,9 +1431,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1359,7 +1441,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Arachnida + 1) ~
@@ -1381,27 +1463,33 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
 mod0 <- lmer(log(Coccinellidae + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Coccinellidae + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Coccinellidae + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Coccinellidae + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Coccinellidae + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Coccinellidae + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -1430,7 +1518,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -1441,7 +1529,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -1450,12 +1538,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance %>% filter(distWeight != 'constant'),
             aes(x = '', y = distWeight, fill = weight)) +
@@ -1493,7 +1581,8 @@ form.red <- formula(paste0('log(Coccinellidae + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE)
+fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1506,9 +1595,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1516,7 +1605,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Coccinellidae + 1) ~
@@ -1536,27 +1625,33 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
 mod0 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Ichneumonidae + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -1584,7 +1679,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -1595,7 +1690,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -1604,12 +1699,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -1621,7 +1716,7 @@ p <- ggplot(data = group_importance,
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
@@ -1645,7 +1740,8 @@ form.red <- formula(paste0('log(Ichneumonidae + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE)
+fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1657,9 +1753,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1667,7 +1763,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Ichneumonidae + 1) ~
@@ -1686,22 +1782,34 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
 # Build global models, keeping distanceWeights separate.
 mod0 <- lmer(log(Geocoris + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
-             data = fD_fall,               REML = FALSE)
+             data = fD_fall,
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Geocoris + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
-             data = fD_fall,               REML = FALSE)
+             data = fD_fall,
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Geocoris + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
-             data = fD_fall,               REML = FALSE)
+             data = fD_fall,
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Geocoris + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
-             data = fD_fall,               REML = FALSE)
+             data = fD_fall,
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Geocoris + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
-             data = fD_fall,               REML = FALSE)
+             data = fD_fall,
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Geocoris + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
-             data = fD_fall,               REML = FALSE)
+             data = fD_fall,
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -1729,7 +1837,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -1740,7 +1848,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -1749,12 +1857,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -1766,7 +1874,7 @@ p <- ggplot(data = group_importance,
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Create global model that includes margin data.
 # Global model is rank-deficient. We will have to 'trick' dredge.
@@ -1790,7 +1898,8 @@ form.red <- formula(paste0('log(Geocoris + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE)
+fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1802,9 +1911,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1812,7 +1921,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Geocoris + 1) ~
@@ -1834,27 +1943,33 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
 mod0 <- lmer(log(Acyrthosiphon + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(Acyrthosiphon + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(Acyrthosiphon + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(Acyrthosiphon + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(Acyrthosiphon + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(Acyrthosiphon + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_spring,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -1886,7 +2001,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -1897,7 +2012,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -1906,12 +2021,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -1948,7 +2063,8 @@ form.red <- formula(paste0('log(Acyrthosiphon + 1) ~',
                            '+(1|Site)'))
 # Fit reduced model.
 fmod.red <- lmer(form.red, data = fD_spring_sub,
-                 REML = FALSE)
+                 REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -1960,9 +2076,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -1970,7 +2086,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(Acyrthosiphon + 1) ~ rich + natural0 + (1|Site),
@@ -1990,27 +2106,33 @@ rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
 mod0 <- lmer(log(NonAcy + 1) ~
                alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod1 <- lmer(log(NonAcy + 1) ~
                alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod2 <- lmer(log(NonAcy + 1) ~
                alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod3 <- lmer(log(NonAcy + 1) ~
                alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod4 <- lmer(log(NonAcy + 1) ~
                alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 mod5 <- lmer(log(NonAcy + 1) ~
                alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
              data = fD_fall,
-             REML = FALSE)
+             REML = FALSE,
+             na.action = 'na.fail')
 # List global models.
 cand_mods <- list(mod0,
                   mod1,
@@ -2039,7 +2161,7 @@ summary(best.mod)
 
 # Plot the variable importance.
 importance_tab <- sw(mod_table) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   separate(names, c('class', 'distWeight'), sep = -1) %>%
   mutate(distWeight = as_factor(recode(distWeight,
@@ -2050,7 +2172,7 @@ importance_tab <- sw(mod_table) %>%
                                        `4` = 'slight',
                                        `5` = 'minimal')))
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
@@ -2059,12 +2181,12 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = x)) +
        y = 'Distance weighting algorithm',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Plot the variable importance, summarized by distanceWeight.
 group_importance <- importance_tab %>%
   group_by(distWeight) %>%
-  summarize(weight = sum(x))
+  summarize(weight = sum(sw))
 
 p <- ggplot(data = group_importance,
             aes(x = '', y = distWeight, fill = weight)) +
@@ -2100,7 +2222,10 @@ form.red <- formula(paste0('log(NonAcy + 1) ~',
                            paste0(vars.red,collapse='+'),
                            '+(1|Site)'))
 # Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE)
+fmod.red <- lmer(form.red,
+                 data = fD_fall_sub,
+                 REML = FALSE,
+                 na.action = 'na.fail')
 # Replace reduced model formula with full global model formula.
 attr(fmod.red@frame, "formula") <- form
 # Check formula attribute of reduced model.
@@ -2112,9 +2237,9 @@ summary(ms1)
 
 # Plot the variable importance.
 importance_tab <- sw(ms1) %>%
-  tidy() %>%
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = x)
+  rename(varWeight = sw)
 
 p <- ggplot(data = importance_tab,
             aes(x = reorder(names,-varWeight), y = varWeight)) +
@@ -2122,7 +2247,7 @@ p <- ggplot(data = importance_tab,
   theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
   labs(x = 'Variable', y = 'Importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
 # Build final model based on variable selection exercise.
 fin.mod <- lmer(log(NonAcy + 1) ~
@@ -2167,24 +2292,24 @@ delta_dredge <- dredge(delta.mod, m.max = 3)
 
 # Plot the variable importance.
 importance_tab <- sw(delta_dredge) %>%
-  tidy()
+    tibble(names = names(.),
+           .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+    arrange(sw)
 
-p <- ggplot(data = importance_tab, aes(x = reorder(names, -x), y = '', fill = x)) +
+p <- ggplot(data = importance_tab, aes(x = reorder(names, -sw), y = '', fill = sw)) +
   geom_tile() +
   theme(axis.text.x=element_text(angle = 45, hjust = 0),
         axis.text.y = element_text(angle = 45)) +
   scale_fill_gradient(low="blue", high="red") +
-  labs(x = 'Landcover class',
-       y = 'Distance weighting algorithm',
+  labs(x = 'Predator',
+       y = '',
        fill = 'Variable importance')
 
-ggplotly(p, tooltip = 'x')
+ggplotly(p, tooltip = 'sw')
 
-best.delta.mod = lmer(AllAph ~
-                         Ichneumonidae + (1|Site),
-                      data = delta_density,
-                      na.action = 'na.fail',
-                      REML = FALSE)
-
+# Extract and examine the best model.
+# Best mod is null. 2nd best below.
+best.delta.mod <- get.models(delta_dredge, subset = 2)[[1]]
 plot(allEffects(best.delta.mod, residuals = TRUE))
+# no good!! note that AICc delta is 6.69 from best (null) mod.
 summary(best.delta.mod)

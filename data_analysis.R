@@ -796,7 +796,8 @@ old.best.mod <- get.models(mod_table, subset = 5)[[1]]
 summary(old.best.mod)
 
 # png('spring_cocc_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
-plot(allEffects(best.mod, residuals = TRUE))
+plot(allEffects(best.mod, residuals = TRUE),
+     id = list(n = 11))
 # Old model (pre-optimization of random forest) did not show the same results.
 # Examine this more closely.
 plot(allEffects(old.best.mod, residuals = TRUE),

@@ -798,161 +798,7 @@ summary(old.best.mod)
 # png('spring_cocc_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
 plot(allEffects(best.mod, residuals = TRUE),
      id = list(n = 11))
-# Old model (pre-optimization of random forest) did not show the same results.
-# Examine this more closely.
-plot(allEffects(old.best.mod, residuals = TRUE),
-     main = '', #Coccinellidae - best landcover model
-     partial.residual = list(lwd = 0),
-     axes = list(x = list(natural5 =
-                            list(lab =
-                                   list(label =
-                                          'Weighted proportion of \"natural\"
-                                        landcover',
-                                        cex = 1.5))),
-                 y = list(lab = list(label = 'log(Coccinellidae density)',
-                                     cex = 1.5))),
-     id = list(n = 12, labels = fD_spring$id))
 # dev.off()
-# remake old plot ####
-landcover_old <- read_csv('tidy_data_OLD/landcover.csv', col_types = 'ffffddddddddc')
-
-# Reshape landcover data
-landcover_old_wide <- landcover_old %>%
-  pivot_wider(id_cols = c(site, field),
-              names_from = distanceWeight,
-              values_from = `0_classification`:`7_classification`) %>%
-  mutate(id = paste0(site, field), .before = site)
-# join landcover data
-field_data_old <- left_join(mean_density_field, landcover_old_wide)
-
-# create margin data
-field_margins <- vegPlots %>% filter(type == 'Margin') %>%
-  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
-  group_by(field_id, season) %>%
-  summarize(shan = mean(shan),
-            rich = mean(rich),
-            total_cover = mean(total_cover),
-            .groups = 'keep') %>%
-  # make join key
-  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
-  ungroup() %>%
-  select(-field_id, -season)
-
-# join margin data
-field_data_old <- left_join(field_data_old, field_margins)
-
-
-field_data_grouped_old <- field_data_old %>%
-  mutate(alfalfa0 = `0_classification_const`,
-         alfalfa1 = `0_classification_sig1`,
-         alfalfa2 = `0_classification_sig2`,
-         alfalfa3 = `0_classification_sig3`,
-         alfalfa4 = `0_classification_sig4`,
-         alfalfa5 = `0_classification_sig5`,
-
-         disturbed0 = `1_classification_const`,
-         disturbed1 = `1_classification_sig1`,
-         disturbed2 = `1_classification_sig2`,
-         disturbed3 = `1_classification_sig3`,
-         disturbed4 = `1_classification_sig4`,
-         disturbed5 = `1_classification_sig5`,
-
-         bare0 = `2_classification_const` + `3_classification_const` + `4_classification_const`,
-         bare1 = `2_classification_sig1` + `3_classification_sig1` + `4_classification_sig1`,
-         bare2 = `2_classification_sig2` + `3_classification_sig2` + `4_classification_sig2`,
-         bare3 = `2_classification_sig3` + `3_classification_sig3` + `4_classification_sig3`,
-         bare4 = `2_classification_sig4` + `3_classification_sig4` + `4_classification_sig4`,
-         bare5 = `2_classification_sig5` + `3_classification_sig5` + `4_classification_sig5`,
-
-         natural0 = `5_classification_const`,
-         natural1 = `5_classification_sig1`,
-         natural2 = `5_classification_sig2`,
-         natural3 = `5_classification_sig3`,
-         natural4 = `5_classification_sig4`,
-         natural5 = `5_classification_sig5`,
-
-         wet0 = `6_classification_const` + `7_classification_const`,
-         wet1 = `6_classification_sig1` + `7_classification_sig1`,
-         wet2 = `6_classification_sig2` + `7_classification_sig2`,
-         wet3 = `6_classification_sig3` + `7_classification_sig3`,
-         wet4 = `6_classification_sig4` + `7_classification_sig4`,
-         wet5 = `6_classification_sig5` + `7_classification_sig5`)
-
-### spring data only ####
-
-# Subset data for modeling with landcover classes.
-fD_spring_old <- field_data_grouped_old %>%
-  filter(Season == 'Spring') %>%
-  mutate_at(72:101, scale) # All landcover scores are scaled here.
-
-# Build global models, keeping distanceWeights separate.
-mod0 <- lmer(log(Coccinellidae + 1) ~
-               alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
-             data = fD_spring_old,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod1 <- lmer(log(Coccinellidae + 1) ~
-               alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
-             data = fD_spring_old,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod2 <- lmer(log(Coccinellidae + 1) ~
-               alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
-             data = fD_spring_old,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod3 <- lmer(log(Coccinellidae + 1) ~
-               alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
-             data = fD_spring_old,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod4 <- lmer(log(Coccinellidae + 1) ~
-               alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
-             data = fD_spring_old,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod5 <- lmer(log(Coccinellidae + 1) ~
-               alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
-             data = fD_spring_old,
-             REML = FALSE,
-             na.action = 'na.fail')
-
-# List global models.
-cand_mods <- list(mod0,
-                  mod1,
-                  mod2,
-                  mod3,
-                  mod4,
-                  mod5)
-# Dredge all models in the list.
-dredges <- lapply(cand_mods, dredge)
-# Rbind the elements of the list together. This forces recalculation of AICc
-mod_table <- rbind(dredges[[1]],
-                   dredges[[2]],
-                   dredges[[3]],
-                   dredges[[4]],
-                   dredges[[5]],
-                   dredges[[6]])
-# Print the table.
-# View(mod_table)
-
-# Extract and examine the best model.
-best.mod <- get.models(mod_table, subset = 1)[[1]]
-summary(best.mod)
-
-plot(allEffects(best.mod, residuals = TRUE),
-     main = '', #Coccinellidae - best landcover model
-     partial.residual = list(lwd = 0),
-     axes = list(x = list(natural5 =
-                            list(lab =
-                                   list(label =
-                                          'Weighted proportion of \"natural\"
-                                        landcover',
-                                        cex = 1.5))),
-                 y = list(lab = list(label = 'log(Coccinellidae density)',
-                                     cex = 1.5))),
-     id = list(n = 12, labels = fD_spring$id))
-
 
 # plot the variable importance
 importance_tab <- sw(mod_table) %>%
@@ -1019,8 +865,8 @@ form <- formula(paste0('log(Coccinellidae + 1) ~',
 # Prepare formula with reduced number of terms.
 vars.red <- c('shan', 'rich', 'total_cover')
 form.red <- formula(paste0('log(Coccinellidae + 1) ~',
-                         paste0(vars.red,collapse='+'),
-                         '+(1|Site)'))
+                           paste0(vars.red,collapse='+'),
+                           '+(1|Site)'))
 # Fit reduced model.
 fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE,
                  na.action = 'na.fail')
@@ -1053,7 +899,7 @@ best.mod <- get.models(ms1, subset = 2)[[1]]
 summary(best.mod)
 
 fin.mod <- lmer(log(Coccinellidae + 1) ~ bare2 + wet2 + (1|Site),
-                                   data = fD_spring, REML = FALSE)
+                data = fD_spring, REML = FALSE)
 summary(fin.mod)
 # png('spring_cocc_bareEffect.jpg', width = 7, height = 5, units = 'in', res = 300)
 plot(effect('bare2', fin.mod, residuals = TRUE),
@@ -1066,6 +912,159 @@ plot(effect('wet2', fin.mod, residuals = TRUE),
      main = 'Coccinellidae - best landcover + margin vegetation model',
      xlab = 'Weighted proportion of riparian landcover',
      ylab = 'log(Coccinellidae density)')
+# dev.off()
+
+##### Compare old and new ####
+###### old best model, new data ####
+# Old model (pre-optimization of random forest) did not show the same results.
+# Examine this more closely.
+# png('oldmod_newdata.jpg', width = 7, height = 5, units = 'in', res = 300)
+plot(allEffects(old.best.mod, residuals = TRUE),
+     main = 'Coccinellidae - old best model, new data',
+     partial.residual = list(lwd = 0),
+     axes = list(x = list(natural5 =
+                            list(lab =
+                                   list(label =
+                                          'Weighted proportion of \"natural\"
+                                        landcover',
+                                        cex = 1.5))),
+                 y = list(lab = list(label = 'log(Coccinellidae density)',
+                                     cex = 1.5))),
+     id = list(n = 12, labels = fD_spring$id))
+# dev.off()
+
+###### old best model, old data ####
+# remake old data
+landcover_old <- read_csv('tidy_data_OLD/landcover.csv',
+                          col_types = 'ffffddddddddc')
+# reshape old landcover data
+landcover_old_wide <- landcover_old %>%
+  pivot_wider(id_cols = c(site, field),
+              names_from = distanceWeight,
+              values_from = `0_classification`:`7_classification`) %>%
+  mutate(id = paste0(site, field), .before = site)
+# join landcover data to insect densities
+field_data_old <- left_join(mean_density_field, landcover_old_wide)
+# recreate margin data
+field_margins <- vegPlots %>% filter(type == 'Margin') %>%
+  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
+  group_by(field_id, season) %>%
+  summarize(shan = mean(shan),
+            rich = mean(rich),
+            total_cover = mean(total_cover),
+            .groups = 'keep') %>%
+  # make join key
+  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
+  ungroup() %>%
+  select(-field_id, -season)
+# join margin data to old field data
+field_data_old <- left_join(field_data_old, field_margins)
+# group
+field_data_grouped_old <- field_data_old %>%
+  mutate(alfalfa0 = `0_classification_const`,
+         alfalfa1 = `0_classification_sig1`,
+         alfalfa2 = `0_classification_sig2`,
+         alfalfa3 = `0_classification_sig3`,
+         alfalfa4 = `0_classification_sig4`,
+         alfalfa5 = `0_classification_sig5`,
+
+         disturbed0 = `1_classification_const`,
+         disturbed1 = `1_classification_sig1`,
+         disturbed2 = `1_classification_sig2`,
+         disturbed3 = `1_classification_sig3`,
+         disturbed4 = `1_classification_sig4`,
+         disturbed5 = `1_classification_sig5`,
+
+         bare0 = `2_classification_const` + `3_classification_const` + `4_classification_const`,
+         bare1 = `2_classification_sig1` + `3_classification_sig1` + `4_classification_sig1`,
+         bare2 = `2_classification_sig2` + `3_classification_sig2` + `4_classification_sig2`,
+         bare3 = `2_classification_sig3` + `3_classification_sig3` + `4_classification_sig3`,
+         bare4 = `2_classification_sig4` + `3_classification_sig4` + `4_classification_sig4`,
+         bare5 = `2_classification_sig5` + `3_classification_sig5` + `4_classification_sig5`,
+
+         natural0 = `5_classification_const`,
+         natural1 = `5_classification_sig1`,
+         natural2 = `5_classification_sig2`,
+         natural3 = `5_classification_sig3`,
+         natural4 = `5_classification_sig4`,
+         natural5 = `5_classification_sig5`,
+
+         wet0 = `6_classification_const` + `7_classification_const`,
+         wet1 = `6_classification_sig1` + `7_classification_sig1`,
+         wet2 = `6_classification_sig2` + `7_classification_sig2`,
+         wet3 = `6_classification_sig3` + `7_classification_sig3`,
+         wet4 = `6_classification_sig4` + `7_classification_sig4`,
+         wet5 = `6_classification_sig5` + `7_classification_sig5`)
+# Subset old data for modeling with landcover classes.
+fD_spring_old <- field_data_grouped_old %>%
+  filter(Season == 'Spring') %>%
+  mutate_at(72:101, scale) # All landcover scores are scaled here.
+# Build old global models, keeping distanceWeights separate.
+mod0 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
+             data = fD_spring_old,
+             REML = FALSE,
+             na.action = 'na.fail')
+mod1 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
+             data = fD_spring_old,
+             REML = FALSE,
+             na.action = 'na.fail')
+mod2 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
+             data = fD_spring_old,
+             REML = FALSE,
+             na.action = 'na.fail')
+mod3 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
+             data = fD_spring_old,
+             REML = FALSE,
+             na.action = 'na.fail')
+mod4 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
+             data = fD_spring_old,
+             REML = FALSE,
+             na.action = 'na.fail')
+mod5 <- lmer(log(Coccinellidae + 1) ~
+               alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
+             data = fD_spring_old,
+             REML = FALSE,
+             na.action = 'na.fail')
+# List old global models.
+cand_mods <- list(mod0,
+                  mod1,
+                  mod2,
+                  mod3,
+                  mod4,
+                  mod5)
+# Dredge all old models in the list.
+dredges <- lapply(cand_mods, dredge)
+# Rbind the elements of the list together. This forces recalculation of AICc
+mod_table <- rbind(dredges[[1]],
+                   dredges[[2]],
+                   dredges[[3]],
+                   dredges[[4]],
+                   dredges[[5]],
+                   dredges[[6]])
+# Print the table.
+# View(mod_table)
+
+# Extract and examine the best model.
+best.mod <- get.models(mod_table, subset = 1)[[1]]
+summary(best.mod)
+# png('oldmod_olddata.jpg', width = 7, height = 5, units = 'in', res = 300)
+plot(allEffects(best.mod, residuals = TRUE),
+     main = 'Coccinellidae - old best model, old data',
+     partial.residual = list(lwd = 0),
+     axes = list(x = list(natural5 =
+                            list(lab =
+                                   list(label =
+                                          'Weighted proportion of \"natural\"
+                                        landcover',
+                                        cex = 1.5))),
+                 y = list(lab = list(label = 'log(Coccinellidae density)',
+                                     cex = 1.5))),
+     id = list(n = 12, labels = fD_spring$id))
 # dev.off()
 
 # Clean environment before moving on to next taxon.

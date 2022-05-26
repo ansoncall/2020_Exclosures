@@ -230,7 +230,7 @@ dredges <- list()
 
 for (i in 1:length(short_aphlist)) {
 
-  aph_density <- as.name(short_aphlist[[i]])
+  aph_density <- as.name(short_aphlist[[1]])
   mGlobal <- mean_density %>%
     filter(Season=='Spring') %$%
     lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
@@ -241,9 +241,12 @@ for (i in 1:length(short_aphlist)) {
                                          log(Anthocoridae + 1) +
                                          (1|Site) +
                                          (1|Field)),
-         na.action = 'na.fail',
+         na.action = 'na.fail', # !!!WATCH OUT ####
+         # UNEXPECTED BEHAVIOR - models for acyrthosiphon fit to subset of data
+         # where all other values are also NA. Effectively throwing away
+         # good data!!
          REML = FALSE)
-  dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
+  dredges[[1]] <- dredge(mGlobal) # dredge and store output in list
 
 }
 names(dredges) <- short_aphlist
@@ -279,7 +282,11 @@ best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
                                                      (1|Site) +
                                                      (1|Field),
                      data = mean_density %>% filter(Season == 'Spring'),
-                     REML = FALSE)
+                     REML = FALSE, na.action = 'na.fail')
+summary(best.acy.mod)
+# Note: these two mods are not equal, thanks to 'na.fail' option in for loop.
+# See !!!WATCH OUT note above (line 244)
+
 # make plot
 # png('spring_acy_effect.jpg',
 #     width = 7,
@@ -791,9 +798,6 @@ mod_table <- rbind(dredges[[1]],
 # Extract and examine the best model.
 best.mod <- get.models(mod_table, subset = 1)[[1]]
 summary(best.mod)
-# Try old best mod from entsoc (natural4, now natural5)
-old.best.mod <- get.models(mod_table, subset = 5)[[1]]
-summary(old.best.mod)
 
 # png('spring_cocc_effect.jpg', width = 7, height = 5, units = 'in', res = 300)
 plot(allEffects(best.mod, residuals = TRUE),
@@ -918,6 +922,9 @@ plot(effect('wet2', fin.mod, residuals = TRUE),
 ###### old best model, new data ####
 # Old model (pre-optimization of random forest) did not show the same results.
 # Examine this more closely.
+# Try old best mod from entsoc (natural4, now natural5)
+old.best.mod <- get.models(mod_table, subset = 5)[[1]]
+summary(old.best.mod)
 # png('oldmod_newdata.jpg', width = 7, height = 5, units = 'in', res = 300)
 plot(allEffects(old.best.mod, residuals = TRUE),
      main = 'Coccinellidae - old best model, new data',
@@ -2131,10 +2138,11 @@ mod_table <- rbind(dredges[[1]],
                    dredges[[5]],
                    dredges[[6]])
 # Print the table.
-mod_table
+View(mod_table)
 
 # Extract and examine the best model.
-best.mod <- get.models(mod_table, subset = 1)[[1]]
+# Best mods are all null. 7th best shown below.
+best.mod <- get.models(mod_table, subset = 7)[[1]]
 summary(best.mod)
 
 # plot(allEffects(best.mod, residuals = TRUE),
@@ -2454,3 +2462,39 @@ best.delta.mod <- get.models(delta_dredge, subset = 2)[[1]]
 plot(allEffects(best.delta.mod, residuals = TRUE))
 # no good!! note that AICc delta is 6.69 from best (null) mod.
 summary(best.delta.mod)
+
+# SEM ####
+## Spring ####
+### Acyrthosiphon ####
+# format data
+# need: plot-level insect densities, no margin data
+landcover_sem <- landcover_wide %>%
+  mutate(field = substr(field, 2, 2),
+         fieldID = paste(site, field))
+
+sem_data <- data_long %>%
+  mutate(Density = log(Density + 1)) %>%
+  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
+                             Treatment !='Pre-' ~ Density)) %>%
+  unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>%
+  mutate(fieldID = paste(Site, Field)) %>%
+  left_join(landcover_sem, by = 'fieldID') %>%
+  filter(Season == 'Spring',
+         Treatment != 'Pre-') %>%
+  select(-`id.x`) %>%
+  mutate(measurementID = paste(Site, Field, Plot)) %>%
+  pivot_wider(              names_from = c(Taxa),
+              values_from = Density) %>%
+  cbind(., to.dummy(.$Treatment, 'Trt')) %>%
+  select(2:6, 11:84) %>%
+  rename(bare2 = )
+
+names(sem_data)
+
+spring_acy_sem <- psem(
+  lm(Coccinellidae ~ `2_classification_sig1` +
+       `6_classification_sig1` + `Trt.Sham`,
+     data = sem_data),
+  lm(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`,
+     data = sem_data)
+  )

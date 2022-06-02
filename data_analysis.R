@@ -513,7 +513,7 @@ field_data <- left_join(field_data, field_margins)
 # // 5. Natural_riparian
 # // 6. Natural_arid
 # // 7. Wet_ditches
-
+#!!!bug - check def of natural - should be arid not wet ####
 # new key
 # alfalfa: [0]
 # disturbed: [1]

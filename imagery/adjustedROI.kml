@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000000</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-119.75552606461605,38.977528305395175 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000001</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-119.70917749283872,38.975052655977784 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000002</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-119.72170138629615,38.995344214871196 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000003</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-118.44735555605529,40.140536998999785 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000004</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-118.4244093955711,40.12959874703455 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000005</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-118.42834723999455,40.14322294656404 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000006</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-118.7492590920898,39.478371018956246 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000007</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-118.74336034489843,39.47154143672164 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000008</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-118.76079520761104,39.49857061479423 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>00000000000000000009</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-119.23620145115082,39.10767285022356 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>0000000000000000000a</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-119.22832712432994,39.09565984789725 </coordinates>
+  </Point>
+</Placemark><Placemark>
+  <ExtendedData>
+    <Data name='system:index'>
+      <value>0000000000000000000b</value>
+    </Data>
+  </ExtendedData>
+  <Point>
+    <coordinates>-119.23605188629283,39.09870731295893 </coordinates>
+  </Point>
+</Placemark>
+</Document>
+</kml>

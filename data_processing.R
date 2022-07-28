@@ -63,8 +63,7 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
 ## landcover data ####
 # now only 1 csv (supervised classification, 8 classes)
 # import csv files
-landcover <- read_csv('raw_data/supervisedClassification_areaScore.csv',
-                      col_types = 'cdddddddd')
+landcover <- read_csv('raw_data/superDove_areaScores.csv')
 
 # check data ####
 ## check spring and fall data ####
@@ -774,6 +773,73 @@ vegdata %<>%
 vegdata %<>% filter(!is.na(lat))
 
 ## landcover data ####
+# build list of col names
+klasses <- map(seq(0, 11), toString)
+distanceWeight <- c('no',
+                    'const',
+                    'sig1',
+                    'sig2',
+                    'sig3',
+                    'sig4',
+                    'sig5')
+testnames <- matrix(NA, 12, 7)
+for (i in 1:length(distanceWeight)) {
+  for (j in 1:length(klasses))
+  testnames[[j, i]] <- paste0(klasses[[j]], distanceWeight[[i]])
+}
+testnames
+site <- c('Minden',
+              'Minden',
+              'Minden',
+              'Lovelock',
+              'Lovelock',
+              'Lovelock',
+              'Fallon',
+              'Fallon',
+              'Fallon',
+              'Yerington',
+              'Yerington',
+              'Yerington')
+field <- c('01',
+               '02',
+               '03',
+               '03',
+               '01',
+               '02',
+               '01',
+               '02',
+               '03',
+               '01',
+               '02',
+               '03')
+sitename = c()
+for (i in 1:length(field)) {
+  sitename[[i]] = paste0(site[[i]], field[[i]])
+}
+sitename
+View(sitename)
+# split cols
+separated <- landcover %>%
+  separate(col = dataSeries,
+           into = testnames,
+           sep = ",") %>%
+  mutate(siteId = unlist(sitename), .before = everything()) %>%
+  pivot_longer(-siteId, 'var') %>%
+  separate(col = 'value',
+           into = c('class', 'value'),
+           sep = '=') %>%
+  rowwise %>%
+  mutate(class = paste0('class', str_extract(class, '[:digit:]+')),
+         distanceWeight = str_extract(var, '[:alpha:]+[:digit:]?'),
+         value = parse_number(map_chr(str_extract_all(value,
+                                                      '[:digit:]+|\\.|E'),
+                                      ~ str_c(.x, collapse = '')))) %>%
+  pivot_wider(c(sitenum, var), names_from = class)
+
+View(separated)
+summary(separated)
+View(read_csv('tidy_data/landcover.csv'))
+View(test)
 # build cols of distanceWeight, Site, and Field
 distanceWeight <- c(rep('no', 12),
                     rep('const', 12),
@@ -782,30 +848,7 @@ distanceWeight <- c(rep('no', 12),
                     rep('sig3', 12),
                     rep('sig4', 12),
                     rep('sig5', 12))
-site <- rep(c('Minden',
-              'Minden',
-              'Minden',
-              'Lovelock',
-              'Lovelock',
-              'Lovelock',
-              'Fallon',
-              'Fallon',
-              'Fallon',
-              'Yerington',
-              'Yerington',
-              'Yerington'), 7)
-field <- rep(c('01',
-               '02',
-               '03',
-               '03',
-               '01',
-               '02',
-               '01',
-               '02',
-               '03',
-               '01',
-               '02',
-               '03'), 7)
+
 
 # add general cols
 landcover <- cbind(landcover, distanceWeight, site, field) %>%

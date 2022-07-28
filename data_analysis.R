@@ -52,7 +52,7 @@ rpaste0 <- function (x,y) {
 # read in data ####
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
-landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffddddddddc')
+landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
 vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
@@ -177,10 +177,10 @@ ggplot(data = pred_data %>%
 # Landcover data summary ####
 # lengthen
 landcover_long <- landcover %>%
-  pivot_longer(`0_classification`:`7_classification`,
+  pivot_longer(`class0`:`class11`,
                names_to = 'class',
                values_to = 'areaScore') %>%
-  select(id, distanceWeight, site, field, class, areaScore)
+  select(siteId, distanceWeight, site, field, class, areaScore)
 
 ggplot(landcover_long, aes(x = class, y = areaScore, fill = class)) +
   geom_bar( stat = "identity") +

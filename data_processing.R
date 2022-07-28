@@ -836,7 +836,7 @@ tidyLandcover <- landcover %>%
   mutate(class = paste0('class', str_extract(class, '[:digit:]+')),
          distanceWeight = str_extract(var, '[:alpha:]+[:digit:]?'),
          value = parse_number(map_chr(str_extract_all(value,
-                                                      '[:digit:]+|\\.|E'),
+                                                      '[:digit:]+|\\.|-|E'),
                                       ~ str_c(.x, collapse = '')))) %>%
   # finish transpose
   pivot_wider(c(siteId, distanceWeight), names_from = class) %>%

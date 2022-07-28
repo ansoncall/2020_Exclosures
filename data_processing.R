@@ -788,6 +788,7 @@ for (i in 1:length(distanceWeight)) {
   testnames[[j, i]] <- paste0(klasses[[j]], distanceWeight[[i]])
 }
 testnames
+# build list of site names
 site <- c('Minden',
               'Minden',
               'Minden',
@@ -803,7 +804,7 @@ site <- c('Minden',
 field <- c('01',
                '02',
                '03',
-               '03',
+               '03', # note non-numeric order here. this is correct.
                '01',
                '02',
                '01',
@@ -817,14 +818,17 @@ for (i in 1:length(field)) {
   sitename[[i]] = paste0(site[[i]], field[[i]])
 }
 sitename
-View(sitename)
-# split cols
-separated <- landcover %>%
+# tidy
+tidyLandcover <- landcover %>%
+  # split cols
   separate(col = dataSeries,
            into = testnames,
            sep = ",") %>%
+  # add siteId
   mutate(siteId = unlist(sitename), .before = everything()) %>%
+  # begin to transpose
   pivot_longer(-siteId, 'var') %>%
+  # parse cells
   separate(col = 'value',
            into = c('class', 'value'),
            sep = '=') %>%
@@ -834,12 +838,15 @@ separated <- landcover %>%
          value = parse_number(map_chr(str_extract_all(value,
                                                       '[:digit:]+|\\.|E'),
                                       ~ str_c(.x, collapse = '')))) %>%
-  pivot_wider(c(sitenum, var), names_from = class)
-
-View(separated)
-summary(separated)
-View(read_csv('tidy_data/landcover.csv'))
-View(test)
+  # finish transpose
+  pivot_wider(c(siteId, var), names_from = class) %>%
+  # make site and field id
+  separate(col = siteId,
+           into = c('site', 'field'),
+           sep = -2,
+           remove = FALSE)
+View(tidyLandcover)
+summary(tidyLandcover)
 # build cols of distanceWeight, Site, and Field
 distanceWeight <- c(rep('no', 12),
                     rep('const', 12),

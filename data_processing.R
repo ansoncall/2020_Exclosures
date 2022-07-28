@@ -839,7 +839,7 @@ tidyLandcover <- landcover %>%
                                                       '[:digit:]+|\\.|E'),
                                       ~ str_c(.x, collapse = '')))) %>%
   # finish transpose
-  pivot_wider(c(siteId, var), names_from = class) %>%
+  pivot_wider(c(siteId, distanceWeight), names_from = class) %>%
   # make site and field id
   separate(col = siteId,
            into = c('site', 'field'),
@@ -847,27 +847,14 @@ tidyLandcover <- landcover %>%
            remove = FALSE)
 View(tidyLandcover)
 summary(tidyLandcover)
-# build cols of distanceWeight, Site, and Field
-distanceWeight <- c(rep('no', 12),
-                    rep('const', 12),
-                    rep('sig1', 12),
-                    rep('sig2', 12),
-                    rep('sig3', 12),
-                    rep('sig4', 12),
-                    rep('sig5', 12))
-
-
-# add general cols
-landcover <- cbind(landcover, distanceWeight, site, field) %>%
-  group_by(distanceWeight, site, field) %>%
-  relocate(id = `system:index`, distanceWeight, site, field)
 
 # completeness/accuracy check: check areaScore * class (should be equal within
 # image sets and decay functions)
 
 # get sum of area scores for all classes
-df <- landcover %>%
+df <- tidyLandcover %>%
   mutate(sumScore = sum(across(where(is.double)))) %>%
+  group_by(site, distanceWeight) %>%
   summarize(totalSum = sum(sumScore), .groups = 'keep')
 # filter to a specific decay function
 no <- df %>%
@@ -875,10 +862,6 @@ no <- df %>%
   arrange(desc(totalSum))
 # divide largest area by smallest area
 noRatio <- head(no$totalSum, n = 1)/tail(no$totalSum, n = 1)
-
-df <- landcover %>%
-  mutate(sumScore = sum(across(where(is.double)))) %>%
-  summarize(totalSum = sum(sumScore), .groups = 'keep')
 
 const <- df %>%
   filter(distanceWeight == 'const') %>%
@@ -1039,13 +1022,13 @@ data_long %<>% filter(Treatment != 'Full')
 # print a summary of each final dataset
 data # main table of insect count data
 data_long # insect data in long format
-landcover # landcover areaScores for each field
+tidyLandcover # landcover areaScores for each field
 vegPlots # final plot-level veg data from surveys
 vegSites # final site-level veg data from surveys
 
 # export tidy data ####
 # build list of data to export
-tidy_data <- list(data, data_long, landcover, vegPlots, vegSites)
+tidy_data <- list(data, data_long, tidyLandcover, vegPlots, vegSites)
 data_names <- list('data', 'data_long', 'landcover', 'vegPlots', 'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data/', .y, ".csv")))

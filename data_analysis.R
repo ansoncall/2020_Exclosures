@@ -186,8 +186,9 @@ landcover %<>%
          weedyWet = class5 + class8,
          water = class11
          ) %>%
-  select(-(class0:class11))
-
+  select(-(class0:class11)) %>%
+  mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
+levels(landcover$distanceWeight)
 # lengthen
 landcover_long <- landcover %>%
   pivot_longer(alfalfa:water,
@@ -195,9 +196,14 @@ landcover_long <- landcover %>%
                values_to = 'areaScore') %>%
   select(siteId, distanceWeight, site, field, class, areaScore)
 
-ggplot(landcover_long, aes(x = class, y = areaScore, fill = class)) +
+ggplot(landcover_long,
+       # aes - limit x axis to 4 characters
+       aes(x = sub(class, pattern = "(\\w{4}).*", replacement = "\\1."),
+           y = areaScore,
+           fill = class)) +
   geom_bar( stat = "identity") +
-  facet_wrap(~site*distanceWeight, scales = 'free')
+  facet_wrap(ncol = 7, ~site*distanceWeight, scales = 'free') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ## Notes #### Obviously this can't work. Need a way to succinctly show how
@@ -231,254 +237,264 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 ## etc.
 
 # Model selection ####
-# ## Aphids ~ predators ####
-# ### spring data only ####
-#
-# # define list of aphid taxa
-# short_aphlist <- c('Acyrthosiphon',
-#              'Aphis',
-#              'Therioaphis')
-#
-# # create empty lists
-# dredges <- list()
-#
-# for (i in 1:length(short_aphlist)) {
-#
-#   aph_density <- as.name(short_aphlist[[1]])
-#   mGlobal <- mean_density %>%
-#     filter(Season=='Spring') %$%
-#     lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
-#                                          log(Coccinellidae + 1) +
-#                                          log(Ichneumonidae + 1) +
-#                                          log(Nabis + 1) +
-#                                          log(Geocoris + 1) +
-#                                          log(Anthocoridae + 1) +
-#                                          (1|Site) +
-#                                          (1|Field)),
-#          na.action = 'na.fail', # !!!WATCH OUT ####
-#          # UNEXPECTED BEHAVIOR - models for acyrthosiphon fit to subset of data
-#          # where all other values are also NA. Effectively throwing away
-#          # good data!!
-#          REML = FALSE)
-#   dredges[[1]] <- dredge(mGlobal) # dredge and store output in list
-#
-# }
-# names(dredges) <- short_aphlist
-#
-# importance_tab <- lapply(dredges, function (x) {
-#   sw(x) %>%
-#     tibble(names = names(.),
-#            .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-#     mutate(ExpVars = fct_recode(names,
-#                                 Anthocoridae = 'log(Anthocoridae + 1)',
-#                                 Arachnida = 'log(Arachnida + 1)',
-#                                 Coccinellidae = 'log(Coccinellidae + 1)',
-#                                 Geocoris = 'log(Geocoris + 1)',
-#                                 Ichneumonoidea = 'log(Ichneumonidae + 1)',
-#                                 Nabis = 'log(Nabis + 1)'),
-#            VarWeights = sw,
-#            .keep = 'none') %>%
-#     arrange(ExpVars)
-# })
-#
-# names(importance_tab) <- short_aphlist
-# # make tables of model selection results
-# springTabs <- lapply(dredges, slice_head, n = 5)
-# names(springTabs) <- short_aphlist
-# # show tables
-# springTabs
-#
-# # extract and examine the top Acyrthosiphon model.
-# best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
-# summary(best.acy.mod)
-# # must remake to plot effects.
-# best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
-#                                                      (1|Site) +
-#                                                      (1|Field),
-#                      data = mean_density %>% filter(Season == 'Spring'),
-#                      REML = FALSE, na.action = 'na.fail')
-# summary(best.acy.mod)
-# # Note: these two mods are not equal, thanks to 'na.fail' option in for loop.
-# # See !!!WATCH OUT note above (line 244)
-#
-# # make plot
-# # png('spring_acy_effect.jpg',
-# #     width = 7,
-# #     height = 5,
-# #     units = 'in',
-# #     res = 300)
-# plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Spring')
-# # dev.off()
-#
-# # extract and examine the top Aphis model.
-# best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
-# summary(best.aphis.mod)
-# # Must remake to plot effects.
-# best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Ichneumonidae + 1) +
-#                          (1|Site) +
-#                          (1|Field),
-#                        data = mean_density %>% filter(Season == 'Spring'),
-#                        REML = FALSE)
-# # make plot
-# # png('spring_aphis_effect.jpg',
-# #     width = 7,
-# #     height = 5,
-# #     units = 'in',
-# #     res = 300)
-# plot(allEffects(best.aphis.mod, residuals = TRUE),
-#      main = 'Aphis, Spring')
-# # dev.off()
-#
-# # extract and examine the top Therioaphis model.
-# best.therio.mod <- get.models(springTabs[[3]], subset = 1)[[1]]
-# summary(best.therio.mod)
-# # Must remake to plot effects.
-# best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Geocoris + 1) +
-#                           (1|Site) +
-#                           (1|Field),
-#                         data = mean_density %>% filter(Season == 'Spring'),
-#                         REML = FALSE)
-# # make plot
-# # png('spring_therio_effect.jpg',
-# #     width = 7,
-# #     height = 5,
-# #     units = 'in',
-# #     res = 300)
-# plot(allEffects(best.therio.mod, residuals = TRUE),
-#      main = 'Therioaphis, Spring')
-# # dev.off()
-#
-# # make variable importance heatmap
-# p <- bind_rows(importance_tab, .id = 'Taxon') %>%
-#   mutate(VarWeights = as.numeric(VarWeights),
-#          ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
-#          Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
-#   filter(ExpVars %in% c("Coccinellidae", "Geocoris", "Ichneumonoidea")) %>%
-#   ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
-#   geom_tile() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 0),
-#         legend.title = element_text('Variable Importance')) +
-#   scale_fill_gradient(low="blue", high="red") +
-#   labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Spring') +
-#   theme(text = element_text(size = 15),
-#         axis.text.x=element_text(angle=30,hjust=0.9))
-# p
-# # ggsave('spring_aphid_varweights.jpg', width = 6, height = 4)
-#
-# ### fall data only ####
-#
-# # create empty lists
-# dredges <- list()
-#
-# for (i in 1:length(short_aphlist)) {
-#
-#   aph_density <- as.name(short_aphlist[[i]])
-#   mGlobal <- mean_density %>%
-#     filter(Season=='Fall') %$%
-#     lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
-#                                          log(Coccinellidae + 1) +
-#                                          log(Ichneumonidae + 1) +
-#                                          log(Nabis + 1) +
-#                                          log(Geocoris + 1) +
-#                                          log(Anthocoridae + 1) +
-#                                          (1|Site) +
-#                                          (1|Field)),
-#          na.action = 'na.fail',
-#          REML = FALSE)
-#   dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
-#
-# }
-# names(dredges) <- short_aphlist
-#
-# importance_tab <- lapply(dredges, function (x) {
-#   sw(x) %>%
-#     tibble(names = names(.),
-#            .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-#     mutate(ExpVars = fct_recode(names,
-#                                 Anthocoridae = 'log(Anthocoridae + 1)',
-#                                 Arachnida = 'log(Arachnida + 1)',
-#                                 Coccinellidae = 'log(Coccinellidae + 1)',
-#                                 Geocoris = 'log(Geocoris + 1)',
-#                                 Ichneumonoidea = 'log(Ichneumonidae + 1)',
-#                                 Nabis = 'log(Nabis + 1)'),
-#            VarWeights = sw,
-#            .keep = 'none') %>%
-#     arrange(ExpVars)
-# })
-# names(importance_tab) <- short_aphlist
-# # make tables of model selection results
-# fallTabs <- lapply(dredges, slice_head, n = 5)
-# names(fallTabs) <- short_aphlist
-# # show tables
-# # fallTabs
-#
-# # Extract and examine the top Acyrthosiphon model.
-# best.acy.mod <- get.models(fallTabs[[1]], subset = 1)[[1]]
-# summary(best.acy.mod)
-# # Must remake to plot effects.
-# best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Anthocoridae + 1) +
-#                        log(Ichneumonidae + 1) +
-#                        (1|Site) +
-#                        (1|Field),
-#                      data = mean_density %>% filter(Season == 'Spring'),
-#                      REML = FALSE)
-# # make plot
-# # png('fall_acy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-# plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Fall')
-# # dev.off()
-#
-# # Extract and examine the top Aphis model.
-# best.aphis.mod <- get.models(fallTabs[[2]], subset = 1)[[1]]
-# summary(best.aphis.mod)
-# # Must remake to plot effects.
-# best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Arachnida + 1) +
-#                        log(Ichneumonidae + 1) +
-#                        (1|Site) +
-#                        (1|Field),
-#                      data = mean_density %>% filter(Season == 'Spring'),
-#                      REML = FALSE)
-# # make plot
-# # png('fall_aphis_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-# plot(allEffects(best.aphis.mod, residuals = TRUE), main = 'Aphis, Fall')
-# # dev.off()
-#
-# # Extract and examine the top Therioaphis model.
-# best.therio.mod <- get.models(fallTabs[[3]], subset = 1)[[1]]
-# summary(best.therio.mod)
-# # Must remake to plot effects.
-# best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Arachnida + 1) +
-#                        (1|Site) +
-#                        (1|Field),
-#                      data = mean_density %>% filter(Season == 'Spring'),
-#                      REML = FALSE)
-# # make plot
-# # png('fall_therio_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-# plot(allEffects(best.therio.mod,
-#                 residuals = TRUE),
-#      main = 'Therioaphis, Fall')
-# # dev.off()
-#
-# # make plot
-# p <- bind_rows(importance_tab, .id = 'Taxon') %>%
-#   mutate(VarWeights = as.numeric(VarWeights),
-#          ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
-#          Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
-#   filter(ExpVars %in% c("Arachnida", "Geocoris", "Ichneumonoidea")) %>%
-#   ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
-#   geom_tile() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 0),
-#         legend.title = element_text('Variable Importance')) +
-#   scale_fill_gradient(low="blue", high="red") +
-#   labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Fall') +
-#   theme(text = element_text(size = 15),
-#         axis.text.x=element_text(angle=30,hjust=0.9))
-#
-# p
-# # ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
-#
-# # clean environment
-# rm(best.acy.mod, best.aphis.mod, best.therio.mod, dredges, fallTabs,
-#    importance_tab, mGlobal, springTabs, aph_density, i)
+## Aphids ~ predators ####
+### spring data only ####
+
+# define list of aphid taxa
+short_aphlist <- c('Acyrthosiphon',
+             'Aphis',
+             'Therioaphis')
+
+# create empty lists
+dredges <- list()
+
+for (i in 1:length(short_aphlist)) {
+
+  aph_density <- as.name(short_aphlist[[i]])
+  mGlobal <- mean_density %>%
+    filter(Season=='Spring') %$%
+    lmer(log(get(aph_density) + 1) ~ (log(Arachnida + 1) +
+                                         log(Coccinellidae + 1) +
+                                         log(Ichneumonidae + 1) +
+                                         log(Nabis + 1) +
+                                         log(Geocoris + 1) +
+                                         log(Anthocoridae + 1) +
+                                         (1|Site) +
+                                         (1|Field)),
+         na.action = 'na.fail', # can't replicate previous error?
+         REML = FALSE)
+  dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
+
+}
+names(dredges) <- short_aphlist
+
+# check data sources
+importance_tab <- lapply(dredges, function (x) {
+  sw(x) %>%
+    tibble(names = names(.),
+           .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+    mutate(ExpVars = fct_recode(names,
+                                Anthocoridae = 'log(Anthocoridae + 1)',
+                                Arachnida = 'log(Arachnida + 1)',
+                                Coccinellidae = 'log(Coccinellidae + 1)',
+                                Geocoris = 'log(Geocoris + 1)',
+                                Ichneumonoidea = 'log(Ichneumonidae + 1)',
+                                Nabis = 'log(Nabis + 1)'),
+           VarWeights = sw,
+           .keep = 'none') %>%
+    arrange(ExpVars)
+})
+
+names(importance_tab) <- short_aphlist
+# make tables of model selection results
+springTabs <- lapply(dredges, slice_head, n = 5)
+names(springTabs) <- short_aphlist
+# show tables
+View(springTabs)
+
+# extract and examine the top Acyrthosiphon model.
+best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
+summary(best.acy.mod)
+# must remake to plot effects.
+best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
+                                                     (1|Site) +
+                                                     (1|Field),
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE, na.action = 'na.omit')
+summary(best.acy.mod)
+# Note: no data seems to be missing here.
+
+# make plot
+# png('spring_acy_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.acy.mod, residuals = TRUE),
+     main = 'Acyrthosiphon, Spring',
+     id = list(n = 36, labels = mean_density %>%
+                 filter(Season == 'Spring') %>%
+                 unite('id', Site, Field, Plot, sep = '.') %>%
+                 pull(id)))
+# dev.off()
+
+# extract and examine the top Aphis model.
+best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
+summary(best.aphis.mod)
+# Must remake to plot effects.
+best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Ichneumonidae + 1) +
+                         (1|Site) +
+                         (1|Field),
+                       data = mean_density %>% filter(Season == 'Spring'),
+                       REML = FALSE)
+# make plot
+# png('spring_aphis_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.aphis.mod, residuals = TRUE),
+     main = 'Aphis, Spring',
+     id = list(n = 36, labels = mean_density %>%
+                 filter(Season == 'Spring') %>%
+                 unite('id', Site, Field, Plot, sep = '.') %>%
+                 pull(id)))
+# dev.off()
+
+# extract and examine the top Therioaphis model.
+best.therio.mod <- get.models(springTabs[[3]], subset = 1)[[1]]
+summary(best.therio.mod)
+# Must remake to plot effects.
+best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Geocoris + 1) +
+                          (1|Site) +
+                          (1|Field),
+                        data = mean_density %>% filter(Season == 'Spring'),
+                        REML = FALSE)
+# make plot
+# png('spring_therio_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.therio.mod, residuals = TRUE),
+     main = 'Therioaphis, Spring',
+     id = list(n = 36, labels = mean_density %>%
+                 filter(Season == 'Spring') %>%
+                 unite('id', Site, Field, Plot, sep = '.') %>%
+                 pull(id)))
+# dev.off()
+
+# make variable importance heatmap
+p <- bind_rows(importance_tab, .id = 'Taxon') %>%
+  mutate(VarWeights = as.numeric(VarWeights),
+         ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
+         Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
+  filter(ExpVars %in% c("Coccinellidae", "Geocoris", "Ichneumonoidea")) %>%
+  ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0),
+        legend.title = element_text('Variable Importance')) +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Spring') +
+  theme(text = element_text(size = 15),
+        axis.text.x=element_text(angle=30,hjust=0.9))
+p
+# ggsave('spring_aphid_varweights.jpg', width = 6, height = 4)
+
+### fall data only ####
+
+# create empty lists
+dredges <- list()
+
+for (i in 1:length(short_aphlist)) {
+
+  aph_density <- as.name(short_aphlist[[i]])
+  mGlobal <- mean_density %>%
+    filter(Season=='Fall') %$%
+    lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
+                                         log(Coccinellidae + 1) +
+                                         log(Ichneumonidae + 1) +
+                                         log(Nabis + 1) +
+                                         log(Geocoris + 1) +
+                                         log(Anthocoridae + 1) +
+                                         (1|Site) +
+                                         (1|Field)),
+         na.action = 'na.fail',
+         REML = FALSE)
+  dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
+
+}
+names(dredges) <- short_aphlist
+
+importance_tab <- lapply(dredges, function (x) {
+  sw(x) %>%
+    tibble(names = names(.),
+           .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+    mutate(ExpVars = fct_recode(names,
+                                Anthocoridae = 'log(Anthocoridae + 1)',
+                                Arachnida = 'log(Arachnida + 1)',
+                                Coccinellidae = 'log(Coccinellidae + 1)',
+                                Geocoris = 'log(Geocoris + 1)',
+                                Ichneumonoidea = 'log(Ichneumonidae + 1)',
+                                Nabis = 'log(Nabis + 1)'),
+           VarWeights = sw,
+           .keep = 'none') %>%
+    arrange(ExpVars)
+})
+names(importance_tab) <- short_aphlist
+# make tables of model selection results
+fallTabs <- lapply(dredges, slice_head, n = 5)
+names(fallTabs) <- short_aphlist
+# show tables
+# fallTabs
+
+# Extract and examine the top Acyrthosiphon model.
+best.acy.mod <- get.models(fallTabs[[1]], subset = 1)[[1]]
+summary(best.acy.mod)
+# Must remake to plot effects.
+best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Anthocoridae + 1) +
+                       log(Ichneumonidae + 1) +
+                       (1|Site) +
+                       (1|Field),
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('fall_acy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
+plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Fall')
+# dev.off()
+
+# Extract and examine the top Aphis model.
+best.aphis.mod <- get.models(fallTabs[[2]], subset = 1)[[1]]
+summary(best.aphis.mod)
+# Must remake to plot effects.
+best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Arachnida + 1) +
+                       log(Ichneumonidae + 1) +
+                       (1|Site) +
+                       (1|Field),
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('fall_aphis_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
+plot(allEffects(best.aphis.mod, residuals = TRUE), main = 'Aphis, Fall')
+# dev.off()
+
+# Extract and examine the top Therioaphis model.
+best.therio.mod <- get.models(fallTabs[[3]], subset = 1)[[1]]
+summary(best.therio.mod)
+# Must remake to plot effects.
+best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Arachnida + 1) +
+                       (1|Site) +
+                       (1|Field),
+                     data = mean_density %>% filter(Season == 'Spring'),
+                     REML = FALSE)
+# make plot
+# png('fall_therio_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
+plot(allEffects(best.therio.mod,
+                residuals = TRUE),
+     main = 'Therioaphis, Fall')
+# dev.off()
+
+# make plot
+p <- bind_rows(importance_tab, .id = 'Taxon') %>%
+  mutate(VarWeights = as.numeric(VarWeights),
+         ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
+         Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
+  filter(ExpVars %in% c("Arachnida", "Geocoris", "Ichneumonoidea")) %>%
+  ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0),
+        legend.title = element_text('Variable Importance')) +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Fall') +
+  theme(text = element_text(size = 15),
+        axis.text.x=element_text(angle=30,hjust=0.9))
+
+p
+# ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
+
+# clean environment
+rm(best.acy.mod, best.aphis.mod, best.therio.mod, dredges, fallTabs,
+   importance_tab, mGlobal, springTabs, aph_density, i)
 
 # Predators ~ ####
 ### Prepare data ####
@@ -534,86 +550,300 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
         yellow('Data:'),
         green(deparse(substitute(data))),
         '\n')
+    # mod0 (_no)
+    tryCatch(
+      {
+        mod0 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
+                 '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod0 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod0 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod0 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod0 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
+                 '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod0 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
-             '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
+    # mod1 (_const)
+    tryCatch(
+      {
+        mod1 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_const + naturalArid_const + dirt_const + ag_const',
+                 '+ impermeable_const + weedyWet_const + water_const + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod1 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod1 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod1 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod1 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_const + naturalArid_const + dirt_const + ag_const',
+                 '+ impermeable_const + weedyWet_const + water_const + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod1 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_const + naturalArid_const + dirt_const + ag_const',
-             '+ impermeable_const + weedyWet_const + water_const + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
+    # mod2 (_sig1)
+    tryCatch(
+      {
+        mod2 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1',
+                 '+ impermeable_sig1 + weedyWet_sig1 + water_sig1 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod2 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod2 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod2 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod2 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1',
+                 '+ impermeable_sig1 + weedyWet_sig1 + water_sig1 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod2 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1',
-             '+ impermeable_sig1 + weedyWet_sig1 + water_sig1 + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
+    # mod3 (_sig2)
+    tryCatch(
+      {
+        mod3 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2',
+                 '+ impermeable_sig2 + weedyWet_sig2 + water_sig2 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod3 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod3 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod3 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod3 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2',
+                 '+ impermeable_sig2 + weedyWet_sig2 + water_sig2 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod3 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2',
-             '+ impermeable_sig2 + weedyWet_sig2 + water_sig2 + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
+    # mod4 (_sig3)
+    tryCatch(
+      {
+        mod4 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3',
+                 '+ impermeable_sig3 + weedyWet_sig3 + water_sig3 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod4 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod4 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod4 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod4 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3',
+                 '+ impermeable_sig3 + weedyWet_sig3 + water_sig3 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod4 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2',
-             '+ impermeable_sig2 + weedyWet_sig2 + water_sig2 + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
+    # mod5 (_no)
+    tryCatch(
+      {
+        mod5 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4',
+                 '+ impermeable_sig4 + weedyWet_sig4 + water_sig4 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod5 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod5 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod5 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod5 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4',
+                 '+ impermeable_sig4 + weedyWet_sig4 + water_sig4 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod5 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3',
-             '+ impermeable_sig3 + weedyWet_sig3 + water_sig3 + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
+    # mod6 (_sig5)
+    tryCatch(
+      {
+        mod6 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5',
+                 '+ impermeable_sig5 + weedyWet_sig5 + water_sig5 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail')
+      },
+      error = function(cond){
+        message(red('mod6 failed to fit, fitting null model instead'))
+        message(cond)
+        # Choose a return value in case of error
+        return(mod6 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ') ~ (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      },
+      warning = function(cond) {
+        message(red('mod6 warnings:'))
+        message(cond)
+        # Choose a return value in case of warning
+        return(mod6 <- lmer(as.formula(
+          paste0('log(',
+                 taxon,
+                 ' + 1) ~ alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5',
+                 '+ impermeable_sig5 + weedyWet_sig5 + water_sig5 + (1|Site)'
+          )),
+          data = data,
+          REML = FALSE,
+          na.action = 'na.fail'))
+      }
+    )
 
-    mod6 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4',
-             '+ impermeable_sig4 + weedyWet_sig4 + water_sig4 + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
-
-    mod7 <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5',
-             '+ impermeable_sig5 + weedyWet_sig5 + water_sig5 + (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
     # list global models
     cand_mods <- list(mod0,
                       mod1,
@@ -621,8 +851,7 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
                       mod3,
                       mod4,
                       mod5,
-                      mod6,
-                      mod7)
+                      mod6)
     dfname <- as.name(deparse(substitute(data)))
     for (i in 1:length(cand_mods)) {
 
@@ -639,8 +868,7 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
                        dredges[[4]],
                        dredges[[5]],
                        dredges[[6]],
-                       dredges[[7]],
-                       dredges[[8]])
+                       dredges[[7]])
   }
 }
 
@@ -898,21 +1126,21 @@ fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
 
 #### Arachnida ####
 # Build global model selection table
-# arachnida_mod_table_fa <- buildLandcoverModTab('Arachnida', fD_fall)
+arachnida_mod_table_fa <- buildLandcoverModTab('Arachnida', fD_fall)
 # NOT FITTING at all
 # Plot best mod and call summary
-# buildBestLandcoverMod(mod_table = arachnida_mod_table_fa, rank = 1, 'Fall')
-# # Plot var importance charts
-# plotVarImportance(mod_table = arachnida_mod_table_fa)
-# # make global mod table (single distweight)
-# arachnida_global_fa <- makeGlobalLandcoverModTab(arachnida_mod_table_fa, 1)
-# # plot var importance for global mod table
-# plotGlobalVarImportance(arachnida_global_fa)
-# # build best model
-# arachnida_fin_mod_fa <- buildFinalLandcoverMod(arachnida_mod_table_fa, arachnida_global_fa, 1) # Error
-# summary(arachnida_fin_mod_fa)
-# plot(allEffects(arachnida_fin_mod_fa, residuals = TRUE), main = 'Arachnida, final spring model')
-#
+buildBestLandcoverMod(mod_table = arachnida_mod_table_fa, rank = 1, 'Fall')
+# Plot var importance charts
+plotVarImportance(mod_table = arachnida_mod_table_fa)
+# make global mod table (single distweight)
+arachnida_global_fa <- makeGlobalLandcoverModTab(arachnida_mod_table_fa, 1)
+# plot var importance for global mod table
+plotGlobalVarImportance(arachnida_global_fa)
+# build best model
+arachnida_fin_mod_fa <- buildFinalLandcoverMod(arachnida_mod_table_fa, arachnida_global_fa, 1) # Error
+summary(arachnida_fin_mod_fa)
+plot(allEffects(arachnida_fin_mod_fa, residuals = TRUE), main = 'Arachnida, final spring model')
+
 
 #### Coccinellidae ####
 # Build global model selection table
@@ -1014,6 +1242,8 @@ buildBestLandcoverMod(geocoris_global_fa, 2)
 acyrthosiphon_mod_table_sp <- buildLandcoverModTab('Acyrthosiphon', fD_spring)
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 1, 'Spring')
+# similar effect with sig1
+buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 2, 'Spring')
 # Plot var importance charts
 plotVarImportance(mod_table = acyrthosiphon_mod_table_sp)
 # make global mod table (single distweight)
@@ -1023,180 +1253,49 @@ plotGlobalVarImportance(acyrthosiphon_global_sp)
 # build best model
 acyrthosiphon_fin_mod_sp <- buildFinalLandcoverMod(acyrthosiphon_mod_table_sp, acyrthosiphon_global_sp, 2)
 summary(acyrthosiphon_fin_mod_sp)
-plot(allEffects(acyrthosiphon_fin_mod_sp, residuals = TRUE), main = 'acyrthosiphon, final spring model')
-
-# Build global models, keeping distanceWeights separate.
-mod0 <- lmer(log(Acyrthosiphon + 1) ~
-               alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
-             data = fD_spring,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod1 <- lmer(log(Acyrthosiphon + 1) ~
-               alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
-             data = fD_spring,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod2 <- lmer(log(Acyrthosiphon + 1) ~
-               alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
-             data = fD_spring,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod3 <- lmer(log(Acyrthosiphon + 1) ~
-               alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
-             data = fD_spring,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod4 <- lmer(log(Acyrthosiphon + 1) ~
-               alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
-             data = fD_spring,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod5 <- lmer(log(Acyrthosiphon + 1) ~
-               alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
-             data = fD_spring,
-             REML = FALSE,
-             na.action = 'na.fail')
-# List global models.
-cand_mods <- list(mod0,
-                  mod1,
-                  mod2,
-                  mod3,
-                  mod4,
-                  mod5)
-
-# Fix na.action
-options(na.action = 'na.fail')
-# Dredge all models in the list.
-dredges <- lapply(cand_mods, dredge)
-# Rbind the elements of the list together. This forces recalculation of AICc
-mod_table <- rbind(dredges[[1]],
-                   dredges[[2]],
-                   dredges[[3]],
-                   dredges[[4]],
-                   dredges[[5]],
-                   dredges[[6]])
-# Print the table.
-View(mod_table)
-
-# Extract and examine the best model.
-# Best mods are all null. 7th best shown below.
-best.mod <- get.models(mod_table, subset = 7)[[1]]
-summary(best.mod)
-
-# plot(allEffects(best.mod, residuals = TRUE),
-#      main = 'Acyrthosiphon, best landcover model')
-
-# Plot the variable importance.
-importance_tab <- sw(mod_table) %>%
-  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-  arrange(names) %>%
-  separate(names, c('class', 'distWeight'), sep = -1) %>%
-  mutate(distWeight = as_factor(recode(distWeight,
-                                       `0` = 'constant',
-                                       `1` = 'aggressive',
-                                       `2` = 'moderately aggressive',
-                                       `3` = 'moderate',
-                                       `4` = 'slight',
-                                       `5` = 'minimal')))
-
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
-  geom_tile() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 0),
-        axis.text.y = element_text(angle = 45)) +
-  scale_fill_gradient(low="blue", high="red") +
-  labs(x = 'Landcover class',
-       y = 'Distance weighting algorithm',
-       fill = 'Variable importance')
-
-ggplotly(p, tooltip = 'sw')
-
-# Plot the variable importance, summarized by distanceWeight.
-group_importance <- importance_tab %>%
-  group_by(distWeight) %>%
-  summarize(weight = sum(sw))
-
-p <- ggplot(data = group_importance,
-            aes(x = '', y = distWeight, fill = weight)) +
-  geom_tile() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 0),
-        axis.text.y = element_text(angle = 45)) +
-  scale_fill_gradient(low="blue", high="red") +
-  labs(x = 'Landcover class',
-       y = 'Distance weighting algorithm',
-       fill = 'Variable importance')
-
-ggplotly(p, tooltip = 'weight')
-
-# Create global model that includes margin data.
-# Global model is rank-deficient. We will have to 'trick' dredge.
-
-# mod <- lmer(log(Acyrthosiphon + 1) ~ shan + rich + total_cover +
-#                     alfalfa4 + bare4 + disturbed4 + natural4 + wet4 +
-#                     (1|Site),
-#                  data = fD_spring_sub) # This doesn't work.
-
-# List variables to include in global model.
-vars.all <- c('shan', 'rich', 'total_cover', 'alfalfa0',
-              'bare0', 'disturbed0', 'natural0', 'wet0')
-# Write formula for full global model.
-form <- formula(paste0('log(Acyrthosiphon + 1) ~',
-                       paste0(vars.all, collapse='+'),
-                       '+(1|Site)'))
-
-# Prepare formula with reduced number of terms.
-vars.red <- c('shan', 'rich', 'total_cover')
-form.red <- formula(paste0('log(Acyrthosiphon + 1) ~',
-                           paste0(vars.red,collapse='+'),
-                           '+(1|Site)'))
-# Fit reduced model.
-fmod.red <- lmer(form.red, data = fD_spring_sub,
-                 REML = FALSE,
-                 na.action = 'na.fail')
-# Replace reduced model formula with full global model formula.
-attr(fmod.red@frame, "formula") <- form
-# Check formula attribute of reduced model.
-formula(fmod.red) # Looks good.
-
-# Run dredge() with m.max parameter to avoid convergence failures.
-ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 5), eval))
-summary(ms1)
-
-# Plot the variable importance.
-importance_tab <- sw(ms1) %>%
-  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-  mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = sw)
-
-p <- ggplot(data = importance_tab,
-            aes(x = reorder(names,-varWeight), y = varWeight)) +
-  geom_col() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
-  labs(x = 'Variable', y = 'Importance')
-
-ggplotly(p, tooltip = 'sw')
-
-# Build final model based on variable selection exercise.
-fin.mod <- lmer(log(Acyrthosiphon + 1) ~ rich + natural0 + (1|Site),
-                data = fD_spring_sub,
-                REML = FALSE)
-summary(fin.mod)
-plot(allEffects(fin.mod, residuals = TRUE), main = 'Acyrthosiphon, final model')
-
-# Clean environment before moving on to next taxon.
-rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
-   importance_tab, p, group_importance, vars.all, form, vars.red, form.red,
-   fmod.red, ms1, fin.mod)
+plot(allEffects(acyrthosiphon_fin_mod_sp, residuals = TRUE),
+     main = 'acyrthosiphon, final spring model',
+     id = list(n = nrow(acyrthosiphon_fin_mod_sp@frame),
+               labels = acyrthosiphon_fin_mod_sp@frame %>%
+                 pull(Site)))
+View(acyrthosiphon_fin_mod_sp)
 
 #### Fall ####
 ##### Non-acyrthosiphon #####
+# Build global model selection table
+nonacy_mod_table_fl <- buildLandcoverModTab('NonAcy', fD_fall)
+# Plot best mod and call summary
+buildBestLandcoverMod(mod_table = nonacy_mod_table_fl, rank = 1, 'Spring')
+# similar effect with sig1
+buildBestLandcoverMod(mod_table = nonacy_mod_table_fl, rank = 2, 'Spring')
+# Plot var importance charts
+plotVarImportance(mod_table = nonacy_mod_table_fl)
+# make global mod table (single distweight)
+nonacy_global_fl <- makeGlobalLandcoverModTab(nonacy_mod_table_fl, 1)
+# plot var importance for global mod table
+plotGlobalVarImportance(nonacy_global_fl)
+# build best model
+nonacy_fin_mod_fl <- buildFinalLandcoverMod(nonacy_mod_table_fl, nonacy_global_fl, 2)
+summary(nonacy_fin_mod_fl)
+plot(allEffects(nonacy_fin_mod_fl, residuals = TRUE),
+     main = 'nonacy, final spring model',
+     id = list(n = nrow(nonacy_fin_mod_fl@frame),
+               labels = nonacy_fin_mod_fl@frame %>%
+                 pull(Site)))
+View(nonacy_fin_mod_fl)
+
+
 # Build global models, keeping distanceWeights separate.
-mod0 <- lmer(log(NonAcy + 1) ~
-               alfalfa0 + bare0 + disturbed0 + natural0 + wet0 + (1|Site),
-             data = fD_fall,
-             REML = FALSE,
-             na.action = 'na.fail')
+mod0 <- lmer(as.formula(
+  paste0('log(NonAcy + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
+         '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
+  )),
+  data = fD_fall,
+  REML = FALSE,
+  na.action = 'na.fail')
+plot(allEffects(mod0, residuals = T))
 mod1 <- lmer(log(NonAcy + 1) ~
-               alfalfa1 + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
+               alfalfa_const + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
              data = fD_fall,
              REML = FALSE,
              na.action = 'na.fail')

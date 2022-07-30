@@ -550,6 +550,7 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
         yellow('Data:'),
         green(deparse(substitute(data))),
         '\n')
+
     # mod0 (_no)
     tryCatch(
       {
@@ -563,32 +564,26 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
-      error = function(cond){
-        message(red('mod0 failed to fit, fitting null model instead'))
-        message(cond)
-        # Choose a return value in case of error
-        return(mod0 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
-      },
       warning = function(cond) {
-        message(red('mod0 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod0 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
-                 '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+        # print the warning
+        message(red('mod0 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
+      error = function(cond){
+        message(red('mod0 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
+        # Choose a return value in case of error
+        varlist =
+          mod0 <<- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
       }
     )
 
@@ -605,32 +600,26 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
-      error = function(cond){
-        message(red('mod1 failed to fit, fitting null model instead'))
-        message(cond)
-        # Choose a return value in case of error
-        return(mod1 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
-      },
       warning = function(cond) {
-        message(red('mod1 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod1 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_const + naturalArid_const + dirt_const + ag_const',
-                 '+ impermeable_const + weedyWet_const + water_const + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+        # print the warning
+        message(red('mod1 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
+      error = function(cond){
+        message(red('mod1 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
+        # Choose a return value in case of error
+        varlist =
+          mod1 <<- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
       }
     )
 
@@ -647,32 +636,26 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
+      warning = function(cond) {
+        # print the warning
+        message(red('mod2 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
       error = function(cond){
-        message(red('mod2 failed to fit, fitting null model instead'))
-        message(cond)
+        message(red('mod2 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
         # Choose a return value in case of error
-        return(mod2 <- lmer(as.formula(
+        varlist =
+        mod2 <<- lmer(as.formula(
           paste0('log(',
                  taxon,
                  ') ~ (1|Site)'
           )),
           data = data,
           REML = FALSE,
-          na.action = 'na.fail'))
-      },
-      warning = function(cond) {
-        message(red('mod2 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod2 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1',
-                 '+ impermeable_sig1 + weedyWet_sig1 + water_sig1 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+          na.action = 'na.fail')
       }
     )
 
@@ -689,32 +672,26 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
-      error = function(cond){
-        message(red('mod3 failed to fit, fitting null model instead'))
-        message(cond)
-        # Choose a return value in case of error
-        return(mod3 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
-      },
       warning = function(cond) {
-        message(red('mod3 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod3 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2',
-                 '+ impermeable_sig2 + weedyWet_sig2 + water_sig2 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+        # print the warning
+        message(red('mod3 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
+      error = function(cond){
+        message(red('mod3 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
+        # Choose a return value in case of error
+        varlist =
+          mod3 <<- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
       }
     )
 
@@ -731,36 +708,31 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
-      error = function(cond){
-        message(red('mod4 failed to fit, fitting null model instead'))
-        message(cond)
-        # Choose a return value in case of error
-        return(mod4 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
-      },
       warning = function(cond) {
-        message(red('mod4 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod4 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3',
-                 '+ impermeable_sig3 + weedyWet_sig3 + water_sig3 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+        # print the warning
+        message(red('mod4 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
+      error = function(cond){
+        message(red('mod4 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
+        # Choose a return value in case of error
+        varlist =
+          mod4 <<- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
       }
     )
 
-    # mod5 (_no)
+
+    # mod5 (_sig4)
     tryCatch(
       {
         mod5 <- lmer(as.formula(
@@ -773,32 +745,26 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
-      error = function(cond){
-        message(red('mod5 failed to fit, fitting null model instead'))
-        message(cond)
-        # Choose a return value in case of error
-        return(mod5 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
-      },
       warning = function(cond) {
-        message(red('mod5 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod5 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4',
-                 '+ impermeable_sig4 + weedyWet_sig4 + water_sig4 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+        # print the warning
+        message(red('mod5 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
+      error = function(cond){
+        message(red('mod5 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
+        # Choose a return value in case of error
+        varlist =
+          mod5 <<- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
       }
     )
 
@@ -815,32 +781,26 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           REML = FALSE,
           na.action = 'na.fail')
       },
-      error = function(cond){
-        message(red('mod6 failed to fit, fitting null model instead'))
-        message(cond)
-        # Choose a return value in case of error
-        return(mod6 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
-      },
       warning = function(cond) {
-        message(red('mod6 warnings:'))
-        message(cond)
-        # Choose a return value in case of warning
-        return(mod6 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5',
-                 '+ impermeable_sig5 + weedyWet_sig5 + water_sig5 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail'))
+        # print the warning
+        message(red('mod6 warning: \n'), cond)
+        # try again, supressing the warning
+        invokeRestart("muffleWarning")
+      },
+      error = function(cond){
+        message(red('mod6 failed to fit:'))
+        message(cond, '\n')
+        message(red('fitting null model instead'))
+        # Choose a return value in case of error
+        varlist =
+          mod6 <<- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
       }
     )
 
@@ -1503,6 +1463,9 @@ summary(best.delta.mod)
 # SEM ####
 ## Spring ####
 ### Acyrthosiphon ####
+# review models
+summary(acyrthosiphon_fin_mod_sp)
+
 # format data
 # need: plot-level insect densities, no margin data
 landcover_sem <- landcover_wide %>%

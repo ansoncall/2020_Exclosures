@@ -543,8 +543,8 @@ rm(field_margins)
 #### formulas ####
 # formula for calculating model selection table for predators
 buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
-# taxon='NonAcy'
-# data=fD_fall
+  # taxon='NonAcy'
+  # data=fD_fall
   varList <- c('alfalfa',
                'naturalArid',
                'dirt',
@@ -564,98 +564,63 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
   cand_mod_tabs <- list()
 
   if (taxon == 'empty' | !is_tibble(data)) {
-
     stop(red("Please specify taxon and data \n"), call. = FALSE)
+  }
 
-  } else {
+  # print inputs
+  cat(yellow('Taxon:'),
+      green(taxon),
+      yellow('Data:'),
+      green(deparse(substitute(data))),
+      '\n')
 
-    # print inputs
-    cat(yellow('Taxon:'),
-        green(taxon),
-        yellow('Data:'),
-        green(deparse(substitute(data))),
-        '\n')
+  # get dfname
+  dfname <- as.name(deparse(substitute(data)))
+  # Build models
+  for (i in 1:length(distList)) {
+    # i=2
 
-    # get dfname
-    dfname <- as.name(deparse(substitute(data)))
-    # Build models
-    for (i in 1:length(distList)) {
-      # i=2
-      tryCatch(
-        {
-          mod <- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ' + 1) ~ ',
-                   paste0(varList, distList[[i]], '+ ', collapse = ''),
-                   '(1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-          # dredge mod0
-          mod@call$data <- dfname
-          cand_mod_tabs[[i]] <- dredge(mod, trace = 2) # where to store ouputs?
+    # incase full model fails to fit, try 'tricking' dredge
+    message(blue('fitting', distList[[i]],'models'))
+    # fit reduced model
+    fmod.red <- lmer(as.formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ (1|Site)'
+      )),
+      data = data,
+      REML = FALSE,
+      na.action = 'na.fail')
+    # define full model formula
+    form <-formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ ',
+             paste0(varList, distList[[i]], '+ ', collapse = ''),
+             '(1|Site)'
+      ))
+    # Replace reduced model formula with full global model formula.
+    attr(fmod.red@frame, "formula") <- form
+    # Run dredge() with m.max parameter to avoid convergence failures.
+    fmod.red@call$data <- dfname
 
-        },
-        warning = function(cond) {
-          # print the warning
-          message(red(distList[[i]], 'mod warning: \n'), cond)
-          # try again, supressing the warning
-          invokeRestart("muffleWarning")
-        },
-        error = function(cond){
+    cand_mod_tabs[[i]] <-  # superassign?
+      model.sel(lapply(
+        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
+        eval))
 
-          # if full model fails to fit, try 'tricking' dredge
-          message(red(distList[[i]], 'mod failed to fit:'))
-          message(cond, '\n')
-          message(red('fitting reduced global model instead'))
-          # fit reduced model
-          fmod.red <- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ' + 1) ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-          # define full model formula
-          form <-formula(
-            paste0('log(',
-                   taxon,
-                   ' + 1) ~ ',
-                   paste0(varList, distList[[i]], '+ ', collapse = ''),
-                   '(1|Site)'
-            ))
-          # Replace reduced model formula with full global model formula.
-          attr(fmod.red@frame, "formula") <- form
-          # Run dredge() with m.max parameter to avoid convergence failures.
-          fmod.red@call$data <- dfname
-          cand_mod_tabs[[i]] <<-  model.sel(lapply(dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE), eval))
-
-          message(blue('cand_mod_tab', nrow(cand_mod_tabs[[i]])))
-
-
-
-        }
-      )
-    }
-
-
-    # check convergence of mods
-
-
-    # Rbind the elements of the list together. This forces recalculation of AICc
-    mod_table <- rbind(cand_mod_tabs[[1]],
-                       cand_mod_tabs[[2]],
-                       cand_mod_tabs[[3]],
-                       cand_mod_tabs[[4]],
-                       cand_mod_tabs[[5]],
-                       cand_mod_tabs[[6]],
-                       cand_mod_tabs[[7]])
-
+    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
 
   }
+  # Rbind the elements of the list together. This forces recalculation of AICc
+  mod_table <- rbind(cand_mod_tabs[[1]],
+                     cand_mod_tabs[[2]],
+                     cand_mod_tabs[[3]],
+                     cand_mod_tabs[[4]],
+                     cand_mod_tabs[[5]],
+                     cand_mod_tabs[[6]],
+                     cand_mod_tabs[[7]])
+
   return(mod_table)
 }
 

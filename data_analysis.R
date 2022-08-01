@@ -250,19 +250,18 @@ dredges <- list()
 
 for (i in 1:length(short_aphlist)) {
 
-  aph_density <- as.name(short_aphlist[[i]])
+  taxon <- short_aphlist[[i]]
+  formula <-  paste0('log(',
+                     taxon,
+                     ' + 1) ~ log(Arachnida + 1) + log(Coccinellidae + 1) + ',
+                     'log(Ichneumonidae + 1) + log(Nabis + 1) + log(Geocoris + 1) +',
+                     'log(Anthocoridae + 1) + (1|Site) + (1|Field)')
   mGlobal <- mean_density %>%
     filter(Season=='Spring') %$%
-    lmer(log(get(aph_density) + 1) ~ (log(Arachnida + 1) +
-                                         log(Coccinellidae + 1) +
-                                         log(Ichneumonidae + 1) +
-                                         log(Nabis + 1) +
-                                         log(Geocoris + 1) +
-                                         log(Anthocoridae + 1) +
-                                         (1|Site) +
-                                         (1|Field)),
+    lmer(formula(formula),
          na.action = 'na.fail', # can't replicate previous error?
          REML = FALSE)
+
   dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
 
 }
@@ -310,7 +309,7 @@ summary(best.acy.mod.sp)
 #     height = 5,
 #     units = 'in',
 #     res = 300)
-plot(allEffects(best.acy.mod, residuals = TRUE),
+plot(allEffects(best.acy.mod.sp, residuals = TRUE),
      main = 'Acyrthosiphon, Spring',
      id = list(n = 36, labels = mean_density %>%
                  filter(Season == 'Spring') %>%
@@ -697,6 +696,8 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
 
 # Add models with margin data to model selection table.
 makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
+  mod_table = arachnida_mod_table_sp
+  rank = 1
   mod <- get.models(mod_table, subset = rank)[[1]]
   # Global model is rank-deficient. We will have to 'trick' dredge.
 
@@ -705,7 +706,16 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
   #                     (1|Site),
   #                  data = fD_spring_sub) # This doesn't work.
   response <- names(mod@frame) %>% head(1)
-  predictors <- names(mod@frame) %>% head(-1) %>% tail(-1)
+  landCoverPredictors <- names(mod@frame) %>% head(-1) %>% tail(-1)
+  distWeight <- str_match(landCoverPredictors[[1]], '_[:alnum:]+')
+  predictors <- paste0(c('alfalfa',
+                         'naturalArid',
+                         'dirt',
+                         'ag',
+                         'impermeable',
+                         'weedyWet',
+                         'water'),
+                       distWeight)
   vars.all <- c(predictors,
                 'shan',
                 'rich',
@@ -716,10 +726,7 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
                          '+(1|Site)'))
 
   # Prepare formula with reduced number of terms.
-  vars.red <- c('shan', 'rich', 'total_cover')
-  form.red <- formula(paste0('log(Arachnida + 1) ~',
-                             paste0(vars.red,collapse='+'),
-                             '+(1|Site)'))
+  form.red <- formula('log(Arachnida + 1) ~ (1|Site)')
   # Fit reduced model.
   fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE,
                    na.action = 'na.fail')

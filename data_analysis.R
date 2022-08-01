@@ -300,12 +300,12 @@ names(springTabs) <- short_aphlist
 best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
 # must remake to plot effects.
-best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
+best.acy.mod.sp <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
                                                      (1|Site) +
                                                      (1|Field),
                      data = mean_density %>% filter(Season == 'Spring'),
                      REML = FALSE, na.action = 'na.omit')
-summary(best.acy.mod)
+summary(best.acy.mod.sp)
 # Note: no data seems to be missing here.
 
 # make plot
@@ -497,7 +497,7 @@ p
 # ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
 
 # clean environment
-rm(best.acy.mod, best.aphis.mod, best.therio.mod, dredges, fallTabs,
+rm(dredges, fallTabs,
    importance_tab, mGlobal, springTabs, aph_density, i)
 
 # Predators ~ ####
@@ -542,7 +542,7 @@ rm(field_margins)
 
 #### formulas ####
 # formula for calculating model selection table for predators
-buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
+buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
 # taxon='NonAcy'
 # data=fD_fall
   varList <- c('alfalfa',
@@ -614,7 +614,7 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           fmod.red <- lmer(as.formula(
             paste0('log(',
                    taxon,
-                   ') ~ (1|Site)'
+                   ' + 1) ~ (1|Site)'
             )),
             data = data,
             REML = FALSE,
@@ -631,7 +631,7 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
           attr(fmod.red@frame, "formula") <- form
           # Run dredge() with m.max parameter to avoid convergence failures.
           fmod.red@call$data <- dfname
-          cand_mod_tabs[[i]] <<-  model.sel(lapply(dredge(fmod.red, m.lim = c(NA, 5), trace = 2, evaluate = FALSE), eval))
+          cand_mod_tabs[[i]] <<-  model.sel(lapply(dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE), eval))
 
           message(blue('cand_mod_tab', nrow(cand_mod_tabs[[i]])))
 
@@ -686,7 +686,7 @@ buildBestLandcoverMod <- function(mod_table, rank, season = 'unknown') {
 
 # plot the variable importance
 plotVarImportance <- function (mod_table, season = 'unknown season'){
-  mod_table=arachnida_mod_table_fa
+
   getPred <- get.models(mod_table, subset = 1)[[1]]@call$formula[[2]]
   importance_tab <- sw(mod_table) %>% #tibble(names = names(.))
     tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
@@ -1078,169 +1078,6 @@ plot(allEffects(nonacy_fin_mod_fl, residuals = TRUE),
                  pull(Site)))
 # View(nonacy_fin_mod_fl)
 
-
-# Build global models, keeping distanceWeights separate.
-mod0 <- lmer(as.formula(
-  paste0('log(NonAcy + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
-         '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
-  )),
-  data = fD_fall,
-  REML = FALSE,
-  na.action = 'na.fail')
-plot(allEffects(mod0, residuals = T))
-mod1 <- lmer(log(NonAcy + 1) ~
-               alfalfa_const + bare1 + disturbed1 + natural1 + wet1 + (1|Site),
-             data = fD_fall,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod2 <- lmer(log(NonAcy + 1) ~
-               alfalfa2 + bare2 + disturbed2 + natural2 + wet2 + (1|Site),
-             data = fD_fall,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod3 <- lmer(log(NonAcy + 1) ~
-               alfalfa3 + bare3 + disturbed3 + natural3 + wet3 + (1|Site),
-             data = fD_fall,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod4 <- lmer(log(NonAcy + 1) ~
-               alfalfa4 + bare4 + disturbed4 + natural4 + wet4 + (1|Site),
-             data = fD_fall,
-             REML = FALSE,
-             na.action = 'na.fail')
-mod5 <- lmer(log(NonAcy + 1) ~
-               alfalfa5 + bare5 + disturbed5 + natural5 + wet5 + (1|Site),
-             data = fD_fall,
-             REML = FALSE,
-             na.action = 'na.fail')
-# List global models.
-cand_mods <- list(mod0,
-                  mod1,
-                  mod2,
-                  mod3,
-                  mod4,
-                  mod5)
-# Dredge all models in the list.
-dredges <- lapply(cand_mods, dredge)
-# Rbind the elements of the list together. This forces recalculation of AICc
-mod_table <- rbind(dredges[[1]],
-                   dredges[[2]],
-                   dredges[[3]],
-                   dredges[[4]],
-                   dredges[[5]],
-                   dredges[[6]])
-# Print the table.
-mod_table
-
-# Extract and examine the best model.
-best.mod <- get.models(mod_table, subset = 1)[[1]]
-summary(best.mod)
-# Best model is null.
-# plot(allEffects(best.mod, residuals = TRUE),
-#      main = 'NonAcy, best landcover model')
-
-# Plot the variable importance.
-importance_tab <- sw(mod_table) %>%
-  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-  arrange(names) %>%
-  separate(names, c('class', 'distWeight'), sep = -1) %>%
-  mutate(distWeight = as_factor(recode(distWeight,
-                                       `0` = 'constant',
-                                       `1` = 'aggressive',
-                                       `2` = 'moderately aggressive',
-                                       `3` = 'moderate',
-                                       `4` = 'slight',
-                                       `5` = 'minimal')))
-
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
-  geom_tile() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 0),
-        axis.text.y = element_text(angle = 45)) +
-  scale_fill_gradient(low="blue", high="red") +
-  labs(x = 'Landcover class',
-       y = 'Distance weighting algorithm',
-       fill = 'Variable importance')
-
-ggplotly(p, tooltip = 'sw')
-
-# Plot the variable importance, summarized by distanceWeight.
-group_importance <- importance_tab %>%
-  group_by(distWeight) %>%
-  summarize(weight = sum(sw))
-
-p <- ggplot(data = group_importance,
-            aes(x = '', y = distWeight, fill = weight)) +
-  geom_tile() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 0),
-        axis.text.y = element_text(angle = 45)) +
-  scale_fill_gradient(low="blue", high="red") +
-  labs(x = 'Landcover class',
-       y = 'Distance weighting algorithm',
-       fill = 'Variable importance')
-
-ggplotly(p, tooltip = 'weight')
-
-# Create global model that includes margin data.
-# Global model is rank-deficient. We will have to 'trick' dredge.
-
-# mod <- lmer(log(NonAcy + 1) ~ shan + rich + total_cover +
-#                     alfalfa4 + bare4 + disturbed4 + natural4 + wet4 +
-#                     (1|Site),
-#                  data = fD_fall_sub) # This doesn't work.
-
-# List variables to include in global model.
-vars.all <- c('shan', 'rich', 'total_cover', 'alfalfa5',
-              'bare5', 'disturbed5', 'natural5', 'wet5')
-# Write formula for full global model.
-form <- formula(paste0('log(NonAcy + 1) ~',
-                       paste0(vars.all, collapse='+'),
-                       '+(1|Site)'))
-
-# Prepare formula with reduced number of terms.
-vars.red <- c('shan', 'rich', 'total_cover')
-form.red <- formula(paste0('log(NonAcy + 1) ~',
-                           paste0(vars.red,collapse='+'),
-                           '+(1|Site)'))
-# Fit reduced model.
-fmod.red <- lmer(form.red,
-                 data = fD_fall_sub,
-                 REML = FALSE,
-                 na.action = 'na.fail')
-# Replace reduced model formula with full global model formula.
-attr(fmod.red@frame, "formula") <- form
-# Check formula attribute of reduced model.
-formula(fmod.red) # Looks good.
-
-# Run dredge() with m.max parameter to avoid convergence failures.
-ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 2), eval))
-summary(ms1)
-
-# Plot the variable importance.
-importance_tab <- sw(ms1) %>%
-  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-  mutate(names = str_replace(names, '[:digit:]', '')) %>%
-  rename(varWeight = sw)
-
-p <- ggplot(data = importance_tab,
-            aes(x = reorder(names,-varWeight), y = varWeight)) +
-  geom_col() +
-  theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
-  labs(x = 'Variable', y = 'Importance')
-
-ggplotly(p, tooltip = 'sw')
-
-# Build final model based on variable selection exercise.
-fin.mod <- lmer(log(NonAcy + 1) ~
-                  alfalfa5 + (1|Site),
-                data = fD_fall, REML = FALSE)
-summary(fin.mod)
-plot(allEffects(fin.mod, residuals = TRUE), main = 'NonAcy, final model')
-
-# Clean environment before moving on to next taxon.
-rm(mod0, mod1, mod2, mod3, mod4, mod5, cand_mods, dredges, mod_table, best.mod,
-   importance_tab, p, group_importance, vars.all, form, vars.red, form.red,
-   fmod.red, ms1, fin.mod)
-
 # Spring-Fall deltas ####
 
 # create delta columns
@@ -1291,6 +1128,7 @@ ggplotly(p, tooltip = 'sw')
 # Best mod is null. 2nd best below.
 best.delta.mod <- get.models(delta_dredge, subset = 2)[[1]]
 plot(allEffects(best.delta.mod, residuals = TRUE))
+
 # no good!! note that AICc delta is 6.69 from best (null) mod.
 summary(best.delta.mod)
 
@@ -1298,8 +1136,11 @@ summary(best.delta.mod)
 ## Spring ####
 ### Acyrthosiphon ####
 # review models
+summary(best.acy.mod.sp)
 summary(acyrthosiphon_fin_mod_sp)
-
+# need coccinellidae, richness?
+summary(coccinellidae_fin_mod_sp)
+# need weedyWet_sig4
 # format data
 # need: plot-level insect densities, no margin data
 landcover_sem <- landcover_wide %>%
@@ -1320,16 +1161,20 @@ sem_data <- data_long %>%
   pivot_wider(              names_from = c(Taxa),
               values_from = Density) %>%
   cbind(., to.dummy(.$Treatment, 'Trt')) %>%
-  select(2:6, 11:84) %>%
-  rename(bare2 = )
+  select(2:77)
+
 
 names(sem_data)
 
+
+detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
 spring_acy_sem <- psem(
-  lm(Coccinellidae ~ `2_classification_sig1` +
-       `6_classification_sig1` + `Trt.Sham`,
+  lmer(Coccinellidae ~ `weedyWet_sig4` + `Trt.Sham` + (1|site),
      data = sem_data),
-  lm(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`,
+  lmer(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`+ (1|site),
      data = sem_data)
   )
-p
+plot(spring_acy_sem)
+plot(spring_acy_sem, show = 'unstd') #what do standardized coefs mean?
+
+

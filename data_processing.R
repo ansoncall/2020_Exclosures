@@ -64,9 +64,9 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
 # now only 1 csv (supervised classification, 8 classes)
 # import csv files
 #
-landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv')
+# landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv')
 # if you want target fields according to classifier instead of fixed class:
-# landcover <- read_csv('raw_data/superDove_areaScores_.csv')
+landcover <- read_csv('raw_data/superDove_areaScores.csv')
 
 # check data ####
 ## check spring and fall data ####
@@ -1027,7 +1027,7 @@ data # main table of insect count data
 data_long # insect data in long format
 tidyLandcover # landcover areaScores for each field
 # for fixed class
-tidyLandcover_fixed <- tidyLandcover
+# tidyLandcover_fixed <- tidyLandcover
 vegPlots # final plot-level veg data from surveys
 vegSites # final site-level veg data from surveys
 

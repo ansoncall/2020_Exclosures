@@ -195,7 +195,7 @@ landcover %<>%
          ag = class0 + class3,
          impermeable = class4 + class9,
          weedy = class5,
-         wet = class8,
+         wet =  class8,
          water = class11
          ) %>%
   select(-(class0:class11)) %>%
@@ -701,7 +701,7 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
 
 # Add models with margin data to model selection table.
 makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
-  mod_table = arachnida_mod_table_sp
+  # mod_table = arachnida_mod_table_sp
   rank = 1
   mod <- get.models(mod_table, subset = rank)[[1]]
   # Global model is rank-deficient. We will have to 'trick' dredge.
@@ -763,6 +763,7 @@ buildFinalLandcoverMod <- function(no_margin_tab, global_tab, rank = 1){
 
   while (ncol(gMod@frame) <= 2) {
 
+
     cat(yellow('global mod rank', rank, 'model is null\n'))
 
     rank = rank + 1
@@ -781,7 +782,7 @@ buildFinalLandcoverMod <- function(no_margin_tab, global_tab, rank = 1){
 
     rank = rank + 1
     cat(green('trying rank', rank, '\n'))
-    gMod <- get.models(global_tab, subset = rank)[[1]]
+    nmMod <- get.models(no_margin_tab, subset = rank)[[1]]
 
   }
 
@@ -904,7 +905,7 @@ summary(geocoris_shan_mod_sp)
 # try with landcover vars
 geocoris_global_sp <- makeGlobalLandcoverModTab(geocoris_mod_table_sp, 9)
 buildBestLandcoverMod(geocoris_global_sp, 2)
-geocoris_fin_mod_sp <- buildFinalLandcoverMod(geocoris_mod_table_sp, geocoris_global_sp, 2)
+geocoris_fin_mod_sp <- buildFinalLandcoverMod(geocoris_mod_table_sp, geocoris_global_sp, 1)
 summary(geocoris_fin_mod_sp)
 plot(allEffects(geocoris_fin_mod_sp, residuals = TRUE), main = 'Geocoris, final spring model')
 # best mod seems to be shan only
@@ -1037,7 +1038,7 @@ acyrthosiphon_mod_table_sp <- buildLandcoverModTab('Acyrthosiphon', fD_spring)
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 1, 'Spring')
 # similar effect with sig1
-buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 2, 'Spring')
+buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 1, 'Spring')
 # Plot var importance charts
 plotVarImportance(mod_table = acyrthosiphon_mod_table_sp)
 # make global mod table (single distweight)
@@ -1168,9 +1169,9 @@ names(sem_data)
 
 detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
 spring_acy_sem <- psem(
-  lmer(Coccinellidae ~ `weedy_sig3` + `Trt.Sham` + (1|site),
+  lmer(Coccinellidae ~ `weedyWet_sig4` + `Trt.Sham` + (1|site),
      data = sem_data),
-  lmer(Acyrthosiphon ~ Coccinellidae + `water_sig5` + `Trt.Sham`+ (1|site),
+  lmer(Acyrthosiphon ~ Coccinellidae + `impermeable_sig3` + `Trt.Sham`+ (1|site),
      data = sem_data)
   )
 plot(spring_acy_sem)
@@ -1181,10 +1182,10 @@ plots.dir.path <- list.files(tempdir(), pattern="rs-graphics", full.names = TRUE
 plots.png.paths <- list.files(plots.dir.path, pattern=".png", full.names = TRUE)
 plots.png.detials <- file.info(plots.png.paths)
 plots.png.detials <- plots.png.detials[order(plots.png.detials$mtime),]
-sorted.png.names <- gsub(plots.dir.path, "8class-savedplots/", row.names(plots.png.detials), fixed=TRUE)
-numbered.png.names <- paste0("8class-savedplots/", 1:length(sorted.png.names), ".png")
+sorted.png.names <- gsub(plots.dir.path, "7class-fixed-savedplots/", row.names(plots.png.detials), fixed=TRUE)
+numbered.png.names <- paste0("7class-fixed-savedplots/", 1:length(sorted.png.names), ".png")
 
 # Rename all the .png files as: 1.png, 2.png, 3.png, and so on.
-file.copy(from=plots.png.paths, to="8class-savedplots")
+file.copy(from=plots.png.paths, to="7class-fixed-savedplots")
 file.rename(from=sorted.png.names, to=numbered.png.names)
 

@@ -20,10 +20,6 @@ library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
 library(vegan) # for diversity indices in vegdata
 
-
-library(parallel)
-library(snow)
-
 # Define functions ####
 # note: this is not the only place functions are defined
 
@@ -498,7 +494,7 @@ p
 
 # clean environment
 rm(dredges, fallTabs,
-   importance_tab, mGlobal, springTabs, aph_density, i)
+   importance_tab, mGlobal, springTabs, aph_density)
 
 # Predators ~ ####
 ### Prepare data ####

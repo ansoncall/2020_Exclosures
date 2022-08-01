@@ -20,6 +20,10 @@ library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
 library(vegan) # for diversity indices in vegdata
 
+
+library(parallel)
+library(snow)
+
 # Define functions ####
 # note: this is not the only place functions are defined
 
@@ -290,7 +294,7 @@ names(importance_tab) <- short_aphlist
 springTabs <- lapply(dredges, slice_head, n = 5)
 names(springTabs) <- short_aphlist
 # show tables
-View(springTabs)
+# View(springTabs)
 
 # extract and examine the top Acyrthosiphon model.
 best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
@@ -539,307 +543,137 @@ rm(field_margins)
 #### formulas ####
 # formula for calculating model selection table for predators
 buildLandcoverModTab <- function(taxon = 'empty', data = 'empty'){
+# taxon='NonAcy'
+# data=fD_fall
+  varList <- c('alfalfa',
+               'naturalArid',
+               'dirt',
+               'ag',
+               'impermeable',
+               'weedyWet',
+               'water')
+
+  distList <- c('_no ',
+                '_const ',
+                '_sig1 ',
+                '_sig2 ',
+                '_sig3 ',
+                '_sig4 ',
+                '_sig5 ')
+
+  cand_mod_tabs <- list()
 
   if (taxon == 'empty' | !is_tibble(data)) {
-    cat(red("Please specify taxon and data \n"))
-    stop()
+
+    stop(red("Please specify taxon and data \n"), call. = FALSE)
+
   } else {
 
+    # print inputs
     cat(yellow('Taxon:'),
         green(taxon),
         yellow('Data:'),
         green(deparse(substitute(data))),
         '\n')
 
-    # mod0 (_no)
-    tryCatch(
-      {
-        mod0 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_no + naturalArid_no + dirt_no + ag_no',
-                 '+ impermeable_no + weedyWet_no + water_no + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod0 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod0 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-          mod0 <<- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ') ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-      }
-    )
-
-    # mod1 (_const)
-    tryCatch(
-      {
-        mod1 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_const + naturalArid_const + dirt_const + ag_const',
-                 '+ impermeable_const + weedyWet_const + water_const + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod1 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod1 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-          mod1 <<- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ') ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-      }
-    )
-
-    # mod2 (_sig1)
-    tryCatch(
-      {
-        mod2 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1',
-                 '+ impermeable_sig1 + weedyWet_sig1 + water_sig1 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod2 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod2 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-        mod2 <<- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ') ~ (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      }
-    )
-
-    # mod3 (_sig2)
-    tryCatch(
-      {
-        mod3 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2',
-                 '+ impermeable_sig2 + weedyWet_sig2 + water_sig2 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod3 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod3 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-          mod3 <<- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ') ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-      }
-    )
-
-    # mod4 (_sig3)
-    tryCatch(
-      {
-        mod4 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3',
-                 '+ impermeable_sig3 + weedyWet_sig3 + water_sig3 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod4 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod4 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-          mod4 <<- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ') ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-      }
-    )
-
-
-    # mod5 (_sig4)
-    tryCatch(
-      {
-        mod5 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4',
-                 '+ impermeable_sig4 + weedyWet_sig4 + water_sig4 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod5 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod5 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-          mod5 <<- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ') ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-      }
-    )
-
-    # mod6 (_sig5)
-    tryCatch(
-      {
-        mod6 <- lmer(as.formula(
-          paste0('log(',
-                 taxon,
-                 ' + 1) ~ alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5',
-                 '+ impermeable_sig5 + weedyWet_sig5 + water_sig5 + (1|Site)'
-          )),
-          data = data,
-          REML = FALSE,
-          na.action = 'na.fail')
-      },
-      warning = function(cond) {
-        # print the warning
-        message(red('mod6 warning: \n'), cond)
-        # try again, supressing the warning
-        invokeRestart("muffleWarning")
-      },
-      error = function(cond){
-        message(red('mod6 failed to fit:'))
-        message(cond, '\n')
-        message(red('fitting null model instead'))
-        # Choose a return value in case of error
-        varlist =
-          mod6 <<- lmer(as.formula(
-            paste0('log(',
-                   taxon,
-                   ') ~ (1|Site)'
-            )),
-            data = data,
-            REML = FALSE,
-            na.action = 'na.fail')
-      }
-    )
-
-    # list global models
-    cand_mods <- list(mod0,
-                      mod1,
-                      mod2,
-                      mod3,
-                      mod4,
-                      mod5,
-                      mod6)
+    # get dfname
     dfname <- as.name(deparse(substitute(data)))
-    for (i in 1:length(cand_mods)) {
+    # Build models
+    for (i in 1:length(distList)) {
+      # i=2
+      tryCatch(
+        {
+          mod <- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ' + 1) ~ ',
+                   paste0(varList, distList[[i]], '+ ', collapse = ''),
+                   '(1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
+          # dredge mod0
+          mod@call$data <- dfname
+          cand_mod_tabs[[i]] <- dredge(mod, trace = 2) # where to store ouputs?
 
-      cand_mods[[i]]@call$data <- dfname
+        },
+        warning = function(cond) {
+          # print the warning
+          message(red(distList[[i]], 'mod warning: \n'), cond)
+          # try again, supressing the warning
+          invokeRestart("muffleWarning")
+        },
+        error = function(cond){
 
+          # if full model fails to fit, try 'tricking' dredge
+          message(red(distList[[i]], 'mod failed to fit:'))
+          message(cond, '\n')
+          message(red('fitting reduced global model instead'))
+          # fit reduced model
+          fmod.red <- lmer(as.formula(
+            paste0('log(',
+                   taxon,
+                   ') ~ (1|Site)'
+            )),
+            data = data,
+            REML = FALSE,
+            na.action = 'na.fail')
+          # define full model formula
+          form <-formula(
+            paste0('log(',
+                   taxon,
+                   ' + 1) ~ ',
+                   paste0(varList, distList[[i]], '+ ', collapse = ''),
+                   '(1|Site)'
+            ))
+          # Replace reduced model formula with full global model formula.
+          attr(fmod.red@frame, "formula") <- form
+          # Run dredge() with m.max parameter to avoid convergence failures.
+          fmod.red@call$data <- dfname
+          cand_mod_tabs[[i]] <<-  model.sel(lapply(dredge(fmod.red, m.lim = c(NA, 5), trace = 2, evaluate = FALSE), eval))
+
+          message(blue('cand_mod_tab', nrow(cand_mod_tabs[[i]])))
+
+
+
+        }
+      )
     }
-    # dredge all models in the list
 
-    dredges <- lapply(cand_mods, dredge, )
+
+    # check convergence of mods
+
+
     # Rbind the elements of the list together. This forces recalculation of AICc
-    mod_table <- rbind(dredges[[1]],
-                       dredges[[2]],
-                       dredges[[3]],
-                       dredges[[4]],
-                       dredges[[5]],
-                       dredges[[6]],
-                       dredges[[7]])
+    mod_table <- rbind(cand_mod_tabs[[1]],
+                       cand_mod_tabs[[2]],
+                       cand_mod_tabs[[3]],
+                       cand_mod_tabs[[4]],
+                       cand_mod_tabs[[5]],
+                       cand_mod_tabs[[6]],
+                       cand_mod_tabs[[7]])
+
+
   }
+  return(mod_table)
 }
-
-
 
 # extract and examine models by rank
 buildBestLandcoverMod <- function(mod_table, rank, season = 'unknown') {
+
   best.mod <- get.models(mod_table, subset = rank)[[1]]
+  cat(green('trying rank', rank, '\n'))
+  while (ncol(best.mod@frame) <= 2) {
+
+    cat(yellow('rank', rank, 'model is null\n'))
+
+    rank = rank + 1
+    cat(green('trying rank', rank, '\n'))
+    best.mod <- get.models(mod_table, subset = rank)[[1]]
+  }
   getPred <- best.mod@call$formula[[2]]
   cat(green('Summary for model',  'rank =', rank, '\n'))
-  cat(yellow('Warning: more than one plot may be printed \n'))
   plot(allEffects(best.mod, residuals = TRUE),
        main = paste(paste(getPred, collapse = ''),
                     'landcover model rank',
@@ -852,7 +686,7 @@ buildBestLandcoverMod <- function(mod_table, rank, season = 'unknown') {
 
 # plot the variable importance
 plotVarImportance <- function (mod_table, season = 'unknown season'){
-
+  mod_table=arachnida_mod_table_fa
   getPred <- get.models(mod_table, subset = 1)[[1]]@call$formula[[2]]
   importance_tab <- sw(mod_table) %>% #tibble(names = names(.))
     tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
@@ -1063,7 +897,7 @@ plotVarImportance(mod_table = geocoris_mod_table_sp)
 # make global mod table (single distweight)
 # try with null model
 geocoris_global_sp <- makeGlobalLandcoverModTab(geocoris_mod_table_sp, 1)
-View(geocoris_global_sp)# top mod is null
+# View(geocoris_global_sp)# top mod is null
 buildBestLandcoverMod(geocoris_global_sp, 2,'Spring')
 geocoris_shan_mod_sp <- buildFinalLandcoverMod(geocoris_global_sp, geocoris_global_sp, 2)
 summary(geocoris_shan_mod_sp)
@@ -1111,7 +945,7 @@ buildBestLandcoverMod(mod_table = coccinellidae_mod_table_fa, rank = 1,'Fall')
 plotVarImportance(mod_table = coccinellidae_mod_table_fa)
 # extremely bipolar distribution??
 # check mod table
-View(coccinellidae_mod_table_fa)
+# View(coccinellidae_mod_table_fa)
 # check sig2 top model
 buildBestLandcoverMod(mod_table = coccinellidae_mod_table_fa, rank = 2,'Fall')
 # this does not look as good. stick with nodist weighting.
@@ -1135,7 +969,7 @@ coccinellidae_global_fa <- makeGlobalLandcoverModTab(coccinellidae_mod_table_fa,
 # plot var importance for global mod table
 plotGlobalVarImportance(coccinellidae_global_fa)
 # view table
-View(coccinellidae_global_fa)
+# View(coccinellidae_global_fa)
 # reduced dataset leads to vastly different top models.
 # build "best" model
 coccinellidae_fin_mod_fa <- buildFinalLandcoverMod(coccinellidae_mod_table_fa, coccinellidae_global_fa, 6)
@@ -1180,7 +1014,7 @@ plotVarImportance(mod_table = geocoris_mod_table_fa)
 # make global mod table (single distweight)
 # try with null model
 geocoris_global_fa <- makeGlobalLandcoverModTab(geocoris_mod_table_fa, 1)
-View(geocoris_global_fa)# top mod is null
+# View(geocoris_global_fa)# top mod is null
 buildBestLandcoverMod(geocoris_global_fa, 2,'Fall')
 geocoris_shan_mod_fa <- buildFinalLandcoverMod(geocoris_global_fa, geocoris_global_fa, 2)
 summary(geocoris_shan_mod_fa)
@@ -1218,7 +1052,7 @@ plot(allEffects(acyrthosiphon_fin_mod_sp, residuals = TRUE),
      id = list(n = nrow(acyrthosiphon_fin_mod_sp@frame),
                labels = acyrthosiphon_fin_mod_sp@frame %>%
                  pull(Site)))
-View(acyrthosiphon_fin_mod_sp)
+# View(acyrthosiphon_fin_mod_sp)
 
 #### Fall ####
 ##### Non-acyrthosiphon #####
@@ -1227,7 +1061,7 @@ nonacy_mod_table_fl <- buildLandcoverModTab('NonAcy', fD_fall)
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = nonacy_mod_table_fl, rank = 1, 'Spring')
 # similar effect with sig1
-buildBestLandcoverMod(mod_table = nonacy_mod_table_fl, rank = 2, 'Spring')
+buildBestLandcoverMod(mod_table = nonacy_mod_table_fl, rank = 8, 'Spring')
 # Plot var importance charts
 plotVarImportance(mod_table = nonacy_mod_table_fl)
 # make global mod table (single distweight)
@@ -1242,7 +1076,7 @@ plot(allEffects(nonacy_fin_mod_fl, residuals = TRUE),
      id = list(n = nrow(nonacy_fin_mod_fl@frame),
                labels = nonacy_fin_mod_fl@frame %>%
                  pull(Site)))
-View(nonacy_fin_mod_fl)
+# View(nonacy_fin_mod_fl)
 
 
 # Build global models, keeping distanceWeights separate.
@@ -1498,3 +1332,4 @@ spring_acy_sem <- psem(
   lm(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`,
      data = sem_data)
   )
+p

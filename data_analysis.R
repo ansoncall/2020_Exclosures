@@ -759,23 +759,56 @@ plotGlobalVarImportance <- function(global_tab){
 buildFinalLandcoverMod <- function(no_margin_tab, global_tab, rank = 1){
 
   gMod <- get.models(global_tab, subset = rank)[[1]]
+
+
+  while (ncol(gMod@frame) <= 2) {
+
+    cat(yellow('global mod rank', rank, 'model is null\n'))
+
+    rank = rank + 1
+    cat(green('trying rank', rank, '\n'))
+    gMod <- get.models(global_tab, subset = rank)[[1]]
+  }
+
   globalPredictors <- names(gMod@frame) %>% head(-1) %>% tail(-1)
+
+  rank = 1
   nmMod <- get.models(no_margin_tab, subset = rank)[[1]]
+
+  while (ncol(nmMod@frame) <= 2) {
+
+    cat(yellow('no-margin mod rank', rank, 'model is null\n'))
+
+    rank = rank + 1
+    cat(green('trying rank', rank, '\n'))
+    gMod <- get.models(global_tab, subset = rank)[[1]]
+
+  }
+
+
   noMarginPredictors <- names(nmMod@frame) %>% head(-1) %>% tail(-1)
+
   response <- names(gMod@frame) %>% head(1)
-  if (length(noMarginPredictors) == 0 && length(globalPredictors) == 0){
-    cat(red('Top models are null, with or without margin data!'))
-  } else if (length(globalPredictors) == 0){
-    cat(red('Warning: Best global model is null\nFitting without field margin data for extra power \n'))
-    cat(yellow('Using full dataset'))
-    fin.mod <- lmer(as.formula(paste0(response, '~', noMarginPredictors,'+ (1|Site)')),
-                    data = fD_spring, REML = FALSE)
-  } else {
-    cat(yellow('Margin data included in model;
-               Dropping Yerington data'))
+
+  if (TRUE %in% (globalPredictors %in% c('rich', 'shan', 'total_cover'))){
+
+    cat(yellow('Margin data included in model;\nDropping Yerington data'))
     fin.mod <- lmer(as.formula(paste0(response, '~', globalPredictors,'+ (1|Site)')),
                     data = fD_spring_sub, REML = FALSE)
+  } else {
+    cat(yellow('No margin data necessary;\nusing all sites'))
+    fin.mod <- nmMod
   }
+  getPred <- fin.mod@call$formula[[2]]
+  cat(green('Summary for final model',  'rank =', '??', '\n'))
+  plot(allEffects(fin.mod, residuals = TRUE),
+       main = paste(paste(getPred, collapse = ''),
+                    'landcover model rank',
+                    as.character(rank),
+                    'Season:', '???'),
+       id = list(n = length(get(fin.mod@call$data)$id),
+                 labels = get(fin.mod@call$data)$id))
+  summary(fin.mod)
   fin.mod
 
 }
@@ -802,7 +835,7 @@ arachnida_global_sp <- makeGlobalLandcoverModTab(arachnida_mod_table_sp, 1)
 # plot var importance for global mod table
 plotGlobalVarImportance(arachnida_global_sp)
 # build best model
-arachnida_fin_mod_sp <- buildFinalLandcoverMod(arachnida_mod_table_sp, arachnida_global_sp, 2) # Error
+arachnida_fin_mod_sp <- buildFinalLandcoverMod(arachnida_mod_table_sp, arachnida_global_sp, 1) # Error
 summary(arachnida_fin_mod_sp)
 plot(allEffects(arachnida_fin_mod_sp, residuals = TRUE), main = 'Arachnida, final spring model')
 
@@ -1127,8 +1160,7 @@ sem_data <- data_long %>%
   mutate(measurementID = paste(Site, Field, Plot)) %>%
   pivot_wider(              names_from = c(Taxa),
               values_from = Density) %>%
-  cbind(., to.dummy(.$Treatment, 'Trt')) %>%
-  select(2:77)
+  cbind(., to.dummy(.$Treatment, 'Trt'))
 
 
 names(sem_data)
@@ -1136,12 +1168,23 @@ names(sem_data)
 
 detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
 spring_acy_sem <- psem(
-  lmer(Coccinellidae ~ `weedyWet_sig4` + `Trt.Sham` + (1|site),
+  lmer(Coccinellidae ~ `weedy_sig3` + `Trt.Sham` + (1|site),
      data = sem_data),
-  lmer(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`+ (1|site),
+  lmer(Acyrthosiphon ~ Coccinellidae + `water_sig5` + `Trt.Sham`+ (1|site),
      data = sem_data)
   )
 plot(spring_acy_sem)
 plot(spring_acy_sem, show = 'unstd') #what do standardized coefs mean?
 
+
+plots.dir.path <- list.files(tempdir(), pattern="rs-graphics", full.names = TRUE)
+plots.png.paths <- list.files(plots.dir.path, pattern=".png", full.names = TRUE)
+plots.png.detials <- file.info(plots.png.paths)
+plots.png.detials <- plots.png.detials[order(plots.png.detials$mtime),]
+sorted.png.names <- gsub(plots.dir.path, "8class-savedplots/", row.names(plots.png.detials), fixed=TRUE)
+numbered.png.names <- paste0("8class-savedplots/", 1:length(sorted.png.names), ".png")
+
+# Rename all the .png files as: 1.png, 2.png, 3.png, and so on.
+file.copy(from=plots.png.paths, to="8class-savedplots")
+file.rename(from=sorted.png.names, to=numbered.png.names)
 

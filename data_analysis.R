@@ -176,6 +176,17 @@ ggplot(data = pred_data %>%
 # ggsave('example_field_effect.jpg', width = 4, height = 5)
 
 # Landcover data summary ####
+
+# define varlist
+varList <- c('alfalfa',
+             'naturalArid',
+             'dirt',
+             'ag',
+             'impermeable',
+             'weedy',
+             'wet',
+             'water')
+
 # Collapse classes
 landcover %<>%
   mutate(alfalfa = class6,
@@ -183,7 +194,8 @@ landcover %<>%
          dirt = class2 + class2 + class7,
          ag = class0 + class3,
          impermeable = class4 + class9,
-         weedyWet = class5 + class8,
+         weedy = class5,
+         wet = class8,
          water = class11
          ) %>%
   select(-(class0:class11)) %>%
@@ -540,13 +552,6 @@ rm(field_margins)
 buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
   # taxon='NonAcy'
   # data=fD_fall
-  varList <- c('alfalfa',
-               'naturalArid',
-               'dirt',
-               'ag',
-               'impermeable',
-               'weedyWet',
-               'water')
 
   distList <- c('_no ',
                 '_const ',
@@ -708,13 +713,7 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
   response <- names(mod@frame) %>% head(1)
   landCoverPredictors <- names(mod@frame) %>% head(-1) %>% tail(-1)
   distWeight <- str_match(landCoverPredictors[[1]], '_[:alnum:]+')
-  predictors <- paste0(c('alfalfa',
-                         'naturalArid',
-                         'dirt',
-                         'ag',
-                         'impermeable',
-                         'weedyWet',
-                         'water'),
+  predictors <- paste0(varList,
                        distWeight)
   vars.all <- c(predictors,
                 'shan',
@@ -1101,7 +1100,7 @@ plot(allEffects(best.delta.mod, residuals = TRUE))
 summary(best.delta.mod)
 
 # SEM ####
-## Spring ####
+## Sopring ####
 ### Acyrthosiphon ####
 # review models
 summary(best.acy.mod.sp)

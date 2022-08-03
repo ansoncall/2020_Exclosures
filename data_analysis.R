@@ -825,6 +825,9 @@ fD_spring %>% ggplot(aes(x = reorder(id, Coccinellidae), y = weedy_sig4)) +
   labs(x = 'Field')
 ggsave(filename = 'weedy4.jpg', width = 7, height = 5, units = 'in')
 
+## check sentinel analysis?
+
+sentData <- read_csv('tidy_data_OLD/landcover.csv')
 
 # Plot var importance charts
 plotVarImportance(mod_table = coccinellidae_mod_table_sp, "Spring")

@@ -10,8 +10,6 @@ output:
 runtime: shiny
 ---
 
-<!-- This script has been abandoned in favor of the data_analysis.R script, which was imported from the now-deleted Entsoc repository. It is retained here because it contains code from the unsupervised classification, which will probably never be used but was too much work to throw away completely. You should be making all of your new updates in the data_analysis.R script. -->
-
 ```{r setup, include=FALSE}
 
 knitr::opts_chunk$set(echo = FALSE)

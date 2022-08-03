@@ -191,6 +191,14 @@ varList <- c('alfalfa',
 
 # Collapse classes
 landcover %<>%
+  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
+  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
+                                distanceWeight == 'sig2' ~ 'sig1',
+                                distanceWeight == 'no' ~ 'no',
+                                distanceWeight == 'const' ~ 'const',
+                                distanceWeight == 'sig3' ~ 'sig3',
+                                distanceWeight == 'sig4' ~ 'sig4',
+                                distanceWeight == 'sig5' ~ 'sig5')) %>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,
@@ -1022,7 +1030,7 @@ ggsave('fall_ladybug_logDens.jpg', width = 7, height = 5, units = 'in')
 # maybe could do some zero-inf binomial models, but for now:
 
 # make global mod table (single distweight)
-coccinellidae_global_fa_aic <- makeGlobalLandcoverModTabFall(coccinellidae_mod_table_fa, 1, 2)
+coccinellidae_global_fa <- makeGlobalLandcoverModTabFall(coccinellidae_mod_table_fa, 1, 2)
 
 # plot var importance for global mod table
 png('fall_cocc_global_varImp.png',

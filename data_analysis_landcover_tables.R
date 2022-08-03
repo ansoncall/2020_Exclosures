@@ -68,18 +68,28 @@ varList <- c('alfalfa', ##################################################
              'dirt',
              'ag',
              'impermeable',
-             'weedyWet',
+             'weedy',
+             'wet',
              'water')
 
 
 # Collapse classes ########################################################
 landcover %<>%
+  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
+  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
+                                    distanceWeight == 'sig2' ~ 'sig1',
+                                    distanceWeight == 'no' ~ 'no',
+                                    distanceWeight == 'const' ~ 'const',
+                                    distanceWeight == 'sig3' ~ 'sig3',
+                                    distanceWeight == 'sig4' ~ 'sig4',
+                                    distanceWeight == 'sig5' ~ 'sig5')) %>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,
          ag = class0 + class3,
          impermeable = class4 + class9,
-         weedyWet = class5 + class8,
+         weedy = class5,
+         wet = class8,
          water = class11
   ) %>%
   select(-(class0:class11)) %>%
@@ -87,12 +97,21 @@ landcover %<>%
 levels(landcover$distanceWeight)
 
 landcoverFixed %<>%
+  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
+  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
+                                    distanceWeight == 'sig2' ~ 'sig1',
+                                    distanceWeight == 'no' ~ 'no',
+                                    distanceWeight == 'const' ~ 'const',
+                                    distanceWeight == 'sig3' ~ 'sig3',
+                                    distanceWeight == 'sig4' ~ 'sig4',
+                                    distanceWeight == 'sig5' ~ 'sig5')) %>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,
          ag = class0 + class3,
          impermeable = class4 + class9,
-         weedyWet = class5 + class8,
+         weedy = class5,
+         wet = class8,
          water = class11
   ) %>%
   select(-(class0:class11)) %>%
@@ -172,7 +191,7 @@ fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
 fD_fall_subFixed <- fD_fallFixed %>% filter(Site != 'Yerington')
 
 # functions ####
-buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
+buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
   # taxon='NonAcy'
   # data=fD_fall
 
@@ -285,7 +304,7 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
   formula(fmod.red) # Looks good.
 
   # Run dredge() with m.max parameter to avoid convergence failures.
-  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 5), eval))
+  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 3), eval))
   ms1
 }
 
@@ -302,9 +321,9 @@ taxa <- c('Acyrthosiphon', 'NonAcy', 'AllAph', 'Arachnida', 'Coccinellidae',
 
 # spring List
 springNonFix <- list()
-springItemNames <- paste(taxa, 'spring_7class', sep = "_")
+springItemNames <- paste(taxa, 'spring_8class', sep = "_")
 springFix <- list()
-springFixItemNames <- paste(taxa, 'spring_7class_fixed', sep = "_")
+springFixItemNames <- paste(taxa, 'spring_8class_fixed', sep = "_")
 # build spring non fixed tabs
 for (i in 1:length(taxa)) {
 
@@ -322,9 +341,9 @@ for (i in 1:length(taxa)) {
 
 # fall List
 fallNonFix <- list()
-fallItemNames <- paste(taxa, 'fall_7class', sep = "_")
+fallItemNames <- paste(taxa, 'fall_8class', sep = "_")
 fallFix <- list()
-fallFixItemNames <- paste(taxa, 'fall_7class_fixed', sep = "_")
+fallFixItemNames <- paste(taxa, 'fall_8class_fixed', sep = "_")
 # build fall non fixed tabs
 for (i in 1:length(taxa)) {
 
@@ -348,6 +367,6 @@ namesList <- c(springItemNames, springFixItemNames, fallItemNames, fallFixItemNa
 
 for (i in 1:length(namesList)) {
 
-  saveRDS(tabsList[[i]], namesList[[i]])
+  saveRDS(tabsList[[i]], paste0('modTabs-distFixed/',namesList[[i]]))
 
 }

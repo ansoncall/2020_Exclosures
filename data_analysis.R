@@ -715,7 +715,9 @@ makeGlobalLandcoverModTabFall <- function(mod_table, rank = 1, m.max = m.max){
   formula(fmod.red) # Looks good.
 
   # Run dredge() with m.max parameter to avoid convergence failures.
-  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = m.max), eval))
+  ms1 <- model.sel(lapply(dredge(fmod.red,
+                                 evaluate = FALSE,
+                                 m.max = m.max), eval))
   ms1
 }
 
@@ -980,6 +982,7 @@ arachnida_mod_table_fa <- buildLandcoverModTab('Arachnida', fD_fall)
 # NOT FITTING at all
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = arachnida_mod_table_fa, rank = 1, 'Fall')
+
 # Plot var importance charts
 plotVarImportance(mod_table = arachnida_mod_table_fa)
 # make global mod table (single distweight)
@@ -1019,7 +1022,8 @@ ggsave('fall_ladybug_logDens.jpg', width = 7, height = 5, units = 'in')
 # maybe could do some zero-inf binomial models, but for now:
 
 # make global mod table (single distweight)
-coccinellidae_global_fa <- makeGlobalLandcoverModTabFall(coccinellidae_mod_table_fa, 1, 2)
+coccinellidae_global_fa_aic <- makeGlobalLandcoverModTabFall(coccinellidae_mod_table_fa, 1, 2)
+
 # plot var importance for global mod table
 png('fall_cocc_global_varImp.png',
     width = 7,
@@ -1029,10 +1033,12 @@ png('fall_cocc_global_varImp.png',
 plotGlobalVarImportance(coccinellidae_global_fa)
 dev.off()
 
-test <- get.models(coccinellidae_global_fa, 8)[[1]]
-# view table
-# View(coccinellidae_global_fa)
-# reduced dataset leads to vastly different top models.
+test <- get.models(coccinellidae_global_fa, 1)[[1]]
+test2 <- get.models(coccinellidae_global_fa, 2)[[1]]
+summary(test)
+summary(test2)
+anova(test, test2)
+
 # build "best" model
 coccinellidae_fin_mod_fa <- buildFinalLandcoverMod(coccinellidae_mod_table_fa, coccinellidae_global_fa, 1)
 summary(coccinellidae_fin_mod_fa)
@@ -1066,11 +1072,11 @@ fD_fall %>% ggplot(aes(x = reorder(id, Coccinellidae), y = log(Coccinellidae + 1
   labs(x = 'Field')
 ggsave(filename = 'coccFieldDensity.jpg', width = 7, height = 5, units = 'in')
 
-fD_fall %>% ggplot(aes(x = reorder(id, Coccinellidae), y = weedy_sig4)) +
+fD_fall %>% ggplot(aes(x = reorder(id, Coccinellidae), y = naturalArid_sig2)) +
   geom_col()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x = 'Field')
-ggsave(filename = 'weedy4.jpg', width = 7, height = 5, units = 'in')
+ggsave(filename = 'na4.jpg', width = 7, height = 5, units = 'in')
 
 plot2mod <- lmer(log(Coccinellidae + 1)~wet_sig2+(1|Site), data = fD_fall, REML = TRUE)
 

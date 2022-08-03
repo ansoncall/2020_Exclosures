@@ -627,9 +627,55 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
 }
 
 # Add models with margin data to model selection table.
-makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
+makeGlobalLandcoverModTabSpring <- function(mod_table, rank = 1, m.max = 5){
   # mod_table = arachnida_mod_table_sp
-  rank = 1
+
+ mod <- get.models(mod_table, subset = rank)[[1]]
+  # Global model is rank-deficient. We will have to 'trick' dredge.
+
+  # mod <- lmer(log(Arachnida + 1) ~ shan + rich + total_cover +
+  #                     alfalfa4 + bare4 + disturbed4 + natural4 + wet4 +
+  #                     (1|Site),
+  #                  data = fD_spring_sub) # This doesn't work.
+  response <- names(mod@frame) %>% head(1)
+  landCoverPredictors <- names(mod@frame) %>% head(-1) %>% tail(-1)
+  tryCatch({
+
+    distWeight <- str_match(landCoverPredictors[[1]], '_[:alnum:]+')
+
+  }, error = function(e){
+    print(e)
+    distWeight <<- '_no'
+  })
+  predictors <- paste0(varList,
+                       distWeight)
+  vars.all <- c(predictors,
+                'shan',
+                'rich',
+                'total_cover')
+  # Write formula for full global model.
+  form <- formula(paste0(response, '~',
+                         paste0(vars.all, collapse='+'),
+                         '+(1|Site)'))
+
+  # Prepare formula with reduced number of terms.
+  form.red <- formula(paste0(response, ' ~ (1|Site)')) #error was here
+  # Fit reduced model.
+  fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE,
+                   na.action = 'na.fail')
+  # Replace reduced model formula with full global model formula.
+  attr(fmod.red@frame, "formula") <- form
+  # Check formula attribute of reduced model.
+  formula(fmod.red) # Looks good.
+
+  # Run dredge() with m.max parameter to avoid convergence failures.
+  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 5), eval))
+  ms1
+}
+
+makeGlobalLandcoverModTabFall <- function(mod_table, rank = 1, m.max = m.max){
+  # mod_table = arachnida_mod_table_sp
+
   mod <- get.models(mod_table, subset = rank)[[1]]
   # Global model is rank-deficient. We will have to 'trick' dredge.
 
@@ -659,9 +705,9 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
                          '+(1|Site)'))
 
   # Prepare formula with reduced number of terms.
-  form.red <- formula('log(Arachnida + 1) ~ (1|Site)')
+  form.red <- formula(paste0(response, ' ~ (1|Site)')) #error was here
   # Fit reduced model.
-  fmod.red <- lmer(form.red, data = fD_spring_sub, REML = FALSE,
+  fmod.red <- lmer(form.red, data = fD_fall_sub, REML = FALSE,
                    na.action = 'na.fail')
   # Replace reduced model formula with full global model formula.
   attr(fmod.red@frame, "formula") <- form
@@ -669,9 +715,10 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
   formula(fmod.red) # Looks good.
 
   # Run dredge() with m.max parameter to avoid convergence failures.
-  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 5), eval))
+  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = m.max), eval))
   ms1
 }
+
 
 # Plot the variable importance.
 plotGlobalVarImportance <- function(global_tab){
@@ -938,7 +985,9 @@ plotVarImportance(mod_table = arachnida_mod_table_fa)
 # make global mod table (single distweight)
 arachnida_global_fa <- makeGlobalLandcoverModTab(arachnida_mod_table_fa, 1)
 # plot var importance for global mod table
+
 plotGlobalVarImportance(arachnida_global_fa)
+
 # build best model
 arachnida_fin_mod_fa <- buildFinalLandcoverMod(arachnida_mod_table_fa, arachnida_global_fa, 1) # Error
 summary(arachnida_fin_mod_fa)
@@ -970,9 +1019,17 @@ ggsave('fall_ladybug_logDens.jpg', width = 7, height = 5, units = 'in')
 # maybe could do some zero-inf binomial models, but for now:
 
 # make global mod table (single distweight)
-coccinellidae_global_fa <- makeGlobalLandcoverModTab(coccinellidae_mod_table_fa, 1)
+coccinellidae_global_fa <- makeGlobalLandcoverModTabFall(coccinellidae_mod_table_fa, 1, 2)
 # plot var importance for global mod table
+png('fall_cocc_global_varImp.png',
+    width = 7,
+    height = 5,
+    units = 'in',
+    res = 300)
 plotGlobalVarImportance(coccinellidae_global_fa)
+dev.off()
+
+test <- get.models(coccinellidae_global_fa, 8)[[1]]
 # view table
 # View(coccinellidae_global_fa)
 # reduced dataset leads to vastly different top models.
@@ -985,12 +1042,37 @@ plot(allEffects(coccinellidae_fin_mod_fa, residuals = TRUE),
                labels = get(coccinellidae_fin_mod_fa@call$data)$id))
 
 
-test <- lmer(log(Coccinellidae+1)~weedy_sig4+(1|Site), data = fD_fall, REML = F)
+test <- lmer(log(Coccinellidae+1)~naturalArid_sig2+(1|Site), data = fD_fall_sub, REML = F)
 summary(test)
+# singular
+test2 <- lmer(log(Coccinellidae+1)~wet_sig2+(1|Site), data = fD_fall_sub, REML = F)
+summary(test2)
+
+mods <- list(test, test2)
+
+testumod<-model.sel(mods)
+
+# also singular, lower p value
+dev.off()
 plot(allEffects(test, residuals = TRUE),
-     main = 'Coccinellidae, final spring model',
+     main = 'Coccinellidae, margin(no yerington) data model, fall',
      id = list(n = length(get(test@call$data)$id),
                labels = get(test@call$data)$id))
+
+
+fD_fall %>% ggplot(aes(x = reorder(id, Coccinellidae), y = log(Coccinellidae + 1))) +
+  geom_col()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = 'Field')
+ggsave(filename = 'coccFieldDensity.jpg', width = 7, height = 5, units = 'in')
+
+fD_fall %>% ggplot(aes(x = reorder(id, Coccinellidae), y = weedy_sig4)) +
+  geom_col()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = 'Field')
+ggsave(filename = 'weedy4.jpg', width = 7, height = 5, units = 'in')
+
+plot2mod <- lmer(log(Coccinellidae + 1)~wet_sig2+(1|Site), data = fD_fall, REML = TRUE)
 
 
 ## IDEA ####

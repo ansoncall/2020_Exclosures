@@ -53,6 +53,8 @@ rpaste0 <- function (x,y) {
 # read in data ####
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
+## CHECK #####
+## make sure you are using the correct landcover table!
 landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
 vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
@@ -216,7 +218,7 @@ ggplot(landcover_long,
   geom_bar( stat = "identity") +
   facet_wrap(ncol = 7, ~site*distanceWeight, scales = 'free') +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
+ggsave(filename = 'lc.jpg', width = 9, height = 7, units = 'in')
 
 ## Notes #### Obviously this can't work. Need a way to succinctly show how
 ## distance weighting affects the areaScores. Also, color, class names, etc.
@@ -548,81 +550,6 @@ field_data <- left_join(field_data, field_margins)
 rm(field_margins)
 
 #### formulas ####
-# formula for calculating model selection table for predators
-buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
-  # taxon='NonAcy'
-  # data=fD_fall
-
-  distList <- c('_no ',
-                '_const ',
-                '_sig1 ',
-                '_sig2 ',
-                '_sig3 ',
-                '_sig4 ',
-                '_sig5 ')
-
-  cand_mod_tabs <- list()
-
-  if (taxon == 'empty' | !is_tibble(data)) {
-    stop(red("Please specify taxon and data \n"), call. = FALSE)
-  }
-
-  # print inputs
-  cat(yellow('Taxon:'),
-      green(taxon),
-      yellow('Data:'),
-      green(deparse(substitute(data))),
-      '\n')
-
-  # get dfname
-  dfname <- as.name(deparse(substitute(data)))
-  # Build models
-  for (i in 1:length(distList)) {
-    # i=2
-
-    # incase full model fails to fit, try 'tricking' dredge
-    message(blue('fitting', distList[[i]],'models'))
-    # fit reduced model
-    fmod.red <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
-    # define full model formula
-    form <-formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ ',
-             paste0(varList, distList[[i]], '+ ', collapse = ''),
-             '(1|Site)'
-      ))
-    # Replace reduced model formula with full global model formula.
-    attr(fmod.red@frame, "formula") <- form
-    # Run dredge() with m.max parameter to avoid convergence failures.
-    fmod.red@call$data <- dfname
-
-    cand_mod_tabs[[i]] <-  # superassign?
-      model.sel(lapply(
-        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
-        eval))
-
-    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
-
-  }
-  # Rbind the elements of the list together. This forces recalculation of AICc
-  mod_table <- rbind(cand_mod_tabs[[1]],
-                     cand_mod_tabs[[2]],
-                     cand_mod_tabs[[3]],
-                     cand_mod_tabs[[4]],
-                     cand_mod_tabs[[5]],
-                     cand_mod_tabs[[6]],
-                     cand_mod_tabs[[7]])
-
-  return(mod_table)
-}
 
 # extract and examine models by rank
 buildBestLandcoverMod <- function(mod_table, rank, season = 'unknown') {
@@ -826,7 +753,7 @@ fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 
 #### Arachnida ####
 # Build global model selection table
-arachnida_mod_table_sp <- buildLandcoverModTab('Arachnida', fD_spring)
+arachnida_mod_table_sp <- readRDS('modTabs/Arachnida_spring_8class')
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = arachnida_mod_table_sp, rank = 1, 'Spring')
 # Plot var importance charts
@@ -843,11 +770,68 @@ plot(allEffects(arachnida_fin_mod_sp, residuals = TRUE), main = 'Arachnida, fina
 
 #### Coccinellidae ####
 # Build global model selection table
-coccinellidae_mod_table_sp <- buildLandcoverModTab('Coccinellidae', fD_spring)
+coccinellidae_mod_table_sp <- readRDS('modTabs/Coccinellidae_spring_8class')
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = coccinellidae_mod_table_sp, rank = 1,'Spring')
+
+# make nice plot
+plotMod <- get.models(coccinellidae_mod_table_sp, 1)[[1]]
+png('spring_acy_effect.jpg',
+    width = 7,
+    height = 5,
+    units = 'in',
+    res = 300)
+plot(allEffects(plotMod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Weighted proportion of weedy cover',
+     id = list(n = length(get(plotMod@call$data)$id),
+               labels = get(plotMod@call$data)$id))
+dev.off()
+
+# try naturalArid for comparison to sentinel
+subCoccTab <- coccinellidae_mod_table_sp %>% filter(
+  !is.na(naturalArid_const) |
+  !is.na(naturalArid_no) |
+  !is.na(naturalArid_sig1) |
+  !is.na(naturalArid_sig2) |
+  !is.na(naturalArid_sig3) |
+  !is.na(naturalArid_sig4) |
+  !is.na(naturalArid_sig5)
+
+) %>% head(1)
+
+plot2mod <- lmer(log(Coccinellidae + 1)~naturalArid_sig4+weedy_sig4+(1|Site), data = fD_spring, REML = TRUE)
+png('spring_cocc_natbyweedy_effect.jpg',
+    width = 7,
+    height = 3,
+    units = 'in',
+    res = 300)
+plot(effect('weedy_sig4', plot2mod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Weighted proportion of weedy cover, best possible model',
+     id = list(n = length(get(plotMod@call$data)$id),
+               labels = get(plotMod@call$data)$id))
+dev.off()
+
+fD_spring %>% ggplot(aes(x = reorder(id, Coccinellidae), y = log(Coccinellidae + 1))) +
+  geom_col()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = 'Field')
+ggsave(filename = 'coccFieldDensity.jpg', width = 7, height = 5, units = 'in')
+
+fD_spring %>% ggplot(aes(x = reorder(id, Coccinellidae), y = weedy_sig4)) +
+  geom_col()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = 'Field')
+ggsave(filename = 'weedy4.jpg', width = 7, height = 5, units = 'in')
+
+
 # Plot var importance charts
-plotVarImportance(mod_table = coccinellidae_mod_table_sp)
+plotVarImportance(mod_table = coccinellidae_mod_table_sp, "Spring")
+ggsave(filename = 'Cocc_var_importance.jpg', width = 7, height = 5, units = 'in')
+
+
+
 # make global mod table (single distweight)
 coccinellidae_global_sp <- makeGlobalLandcoverModTab(coccinellidae_mod_table_sp, 1)
 # plot var importance for global mod table
@@ -862,7 +846,7 @@ plot(allEffects(coccinellidae_fin_mod_sp, residuals = TRUE), main = 'Coccinellid
 
 #### Ichneumonidae ####
 # Build global model selection table
-ichneumonidae_mod_table_sp <- buildLandcoverModTab('Ichneumonidae', fD_spring)
+ichneumonidae_mod_table_sp <- readRDS('modTabs/Ichneumonidae_8class') # not built yet
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = ichneumonidae_mod_table_sp, rank = 1,'Spring')
 # Plot var importance charts

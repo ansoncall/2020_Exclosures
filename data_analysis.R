@@ -639,7 +639,14 @@ makeGlobalLandcoverModTab <- function(mod_table, rank = 1){
   #                  data = fD_spring_sub) # This doesn't work.
   response <- names(mod@frame) %>% head(1)
   landCoverPredictors <- names(mod@frame) %>% head(-1) %>% tail(-1)
-  distWeight <- str_match(landCoverPredictors[[1]], '_[:alnum:]+')
+  tryCatch({
+
+    distWeight <- str_match(landCoverPredictors[[1]], '_[:alnum:]+')
+
+  }, error = function(e){
+    print(e)
+    distWeight <<- '_no'
+  })
   predictors <- paste0(varList,
                        distWeight)
   vars.all <- c(predictors,
@@ -741,6 +748,9 @@ buildFinalLandcoverMod <- function(no_margin_tab, global_tab, rank = 1){
 
 }
 
+
+
+
 ### spring data only ####
 
 # Subset data for modeling with landcover classes.
@@ -773,6 +783,9 @@ plot(allEffects(arachnida_fin_mod_sp, residuals = TRUE), main = 'Arachnida, fina
 coccinellidae_mod_table_sp <- readRDS('modTabs/Coccinellidae_spring_8class')
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = coccinellidae_mod_table_sp, rank = 1,'Spring')
+test <- lmer(log(Coccinellidae+1)~total_cover+(1|Site), data = fD_spring_sub, REML = FALSE)
+summary(test)
+plot(allEffects(test, residuals=T))
 
 # make nice plot
 plotMod <- get.models(coccinellidae_mod_table_sp, 1)[[1]]
@@ -800,17 +813,17 @@ subCoccTab <- coccinellidae_mod_table_sp %>% filter(
 
 ) %>% head(1)
 
-plot2mod <- lmer(log(Coccinellidae + 1)~naturalArid_sig4+weedy_sig4+(1|Site), data = fD_spring, REML = TRUE)
-png('spring_cocc_natbyweedy_effect.jpg',
+plot2mod <- lmer(log(Coccinellidae + 1)~total_cover+(1|Site), data = fD_spring_sub, REML = TRUE)
+png('spring_cocc_totcOnly_effect.jpg',
     width = 7,
-    height = 3,
+    height = 5,
     units = 'in',
     res = 300)
-plot(effect('weedy_sig4', plot2mod, residuals = TRUE),
+plot(effect('total_cover', plot2mod, residuals = TRUE),
      main = NULL,
-     xlab = 'Weighted proportion of weedy cover, best possible model',
-     id = list(n = length(get(plotMod@call$data)$id),
-               labels = get(plotMod@call$data)$id))
+     xlab = 'total cover alone, spring',
+     id = list(n = length(get(plot2mod@call$data)$id),
+               labels = get(plot2mod@call$data)$id))
 dev.off()
 
 fD_spring %>% ggplot(aes(x = reorder(id, Coccinellidae), y = log(Coccinellidae + 1))) +
@@ -825,9 +838,7 @@ fD_spring %>% ggplot(aes(x = reorder(id, Coccinellidae), y = weedy_sig4)) +
   labs(x = 'Field')
 ggsave(filename = 'weedy4.jpg', width = 7, height = 5, units = 'in')
 
-## check sentinel analysis?
 
-sentData <- read_csv('tidy_data_OLD/landcover.csv')
 
 # Plot var importance charts
 plotVarImportance(mod_table = coccinellidae_mod_table_sp, "Spring")
@@ -876,9 +887,9 @@ summary(ich_from_tab_sp)
 
 #### Geocoris ####
 # Build global model selection table
-geocoris_mod_table_sp <- buildLandcoverModTab('Geocoris', fD_spring)
+geocoris_mod_table_sp <- readRDS('modTabs/Geocoris_spring_8class')
 # Plot best mod and call summary
-buildBestLandcoverMod(mod_table = geocoris_mod_table_sp, rank = 9, 'Spring')
+buildBestLandcoverMod(mod_table = geocoris_mod_table_sp, rank = 1, 'Spring')
 # Top 8 models are null. 9th doesn't look very good.
 # Plot var importance charts
 plotVarImportance(mod_table = geocoris_mod_table_sp)
@@ -886,13 +897,23 @@ plotVarImportance(mod_table = geocoris_mod_table_sp)
 # try with null model
 geocoris_global_sp <- makeGlobalLandcoverModTab(geocoris_mod_table_sp, 1)
 # View(geocoris_global_sp)# top mod is null
-buildBestLandcoverMod(geocoris_global_sp, 2,'Spring')
-geocoris_shan_mod_sp <- buildFinalLandcoverMod(geocoris_global_sp, geocoris_global_sp, 2)
+buildBestLandcoverMod(geocoris_global_sp, 1,'Spring')
+geocoris_shan_mod_sp <- buildFinalLandcoverMod(geocoris_mod_table_sp, geocoris_global_sp, 1)
 summary(geocoris_shan_mod_sp)
 # try with landcover vars
 geocoris_global_sp <- makeGlobalLandcoverModTab(geocoris_mod_table_sp, 9)
-buildBestLandcoverMod(geocoris_global_sp, 2)
+buildBestLandcoverMod(geocoris_global_sp, 1)
+
+png('spring_geo_cover_effect.jpg',
+    width = 7,
+    height = 5,
+    units = 'in',
+    res = 300)
+geocoris_fin_mod_sp <- buildFinalLandcoverMod(geocoris_mod_table_sp, geocoris_global_sp, 6)
+dev.off()
 geocoris_fin_mod_sp <- buildFinalLandcoverMod(geocoris_mod_table_sp, geocoris_global_sp, 1)
+
+
 summary(geocoris_fin_mod_sp)
 plot(allEffects(geocoris_fin_mod_sp, residuals = TRUE), main = 'Geocoris, final spring model')
 # best mod seems to be shan only
@@ -926,30 +947,26 @@ plot(allEffects(arachnida_fin_mod_fa, residuals = TRUE), main = 'Arachnida, fina
 
 #### Coccinellidae ####
 # Build global model selection table
-coccinellidae_mod_table_fa <- buildLandcoverModTab('Coccinellidae', fD_fall)
+coccinellidae_mod_table_fa <- readRDS('modTabs/Coccinellidae_fall_8class')
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = coccinellidae_mod_table_fa, rank = 1,'Fall')
 # Plot var importance charts
 plotVarImportance(mod_table = coccinellidae_mod_table_fa)
-# extremely bipolar distribution??
+# clear maximum at naturalArid_sig2
 # check mod table
 # View(coccinellidae_mod_table_fa)
 # check sig2 top model
 buildBestLandcoverMod(mod_table = coccinellidae_mod_table_fa, rank = 2,'Fall')
-# this does not look as good. stick with nodist weighting.
-# but how does sig5 look?
-buildBestLandcoverMod(mod_table = coccinellidae_mod_table_fa, rank = 10,'Fall')
-# completely different. Must be overfitting.
 # reminder - fall coccinellidae densities are mostly zero:
 pred_data %>%
-  filter(Season == 'Fall', Taxa == 'Coccinellidae') %>%
-  ggplot(aes(x = LogDensity, y = Site)) +
+  filter(Taxa == 'Coccinellidae') %>%
+  ggplot(aes(x = LogDensity, y = Site, fill = Season)) +
   geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Fall aphids, Log+1 Transformation') +
+  labs(title = 'Coccinellidae density, Log+1 Transformation') +
   theme(legend.position = 'none') +
   facet_wrap(~ Season, nrow = 2) +
   xlim(-1, 6)
-
+ggsave('fall_ladybug_logDens.jpg', width = 7, height = 5, units = 'in')
 # maybe could do some zero-inf binomial models, but for now:
 
 # make global mod table (single distweight)
@@ -960,9 +977,25 @@ plotGlobalVarImportance(coccinellidae_global_fa)
 # View(coccinellidae_global_fa)
 # reduced dataset leads to vastly different top models.
 # build "best" model
-coccinellidae_fin_mod_fa <- buildFinalLandcoverMod(coccinellidae_mod_table_fa, coccinellidae_global_fa, 6)
+coccinellidae_fin_mod_fa <- buildFinalLandcoverMod(coccinellidae_mod_table_fa, coccinellidae_global_fa, 1)
 summary(coccinellidae_fin_mod_fa)
-plot(allEffects(coccinellidae_fin_mod_fa, residuals = TRUE), main = 'Coccinellidae, final spring model')
+plot(allEffects(coccinellidae_fin_mod_fa, residuals = TRUE),
+     main = 'Coccinellidae, final spring model',
+     id = list(n = length(get(coccinellidae_fin_mod_fa@call$data)$id),
+               labels = get(coccinellidae_fin_mod_fa@call$data)$id))
+
+
+test <- lmer(log(Coccinellidae+1)~weedy_sig4+(1|Site), data = fD_fall, REML = F)
+summary(test)
+plot(allEffects(test, residuals = TRUE),
+     main = 'Coccinellidae, final spring model',
+     id = list(n = length(get(test@call$data)$id),
+               labels = get(test@call$data)$id))
+
+
+## IDEA ####
+# check greeness of different sD landcover classes at spring and fall dates, using sentinel imagery
+# would give rough idea of which areas are greenest at different times.
 
 #### Ichneumonidae ####
 # Build global model selection table
@@ -993,9 +1026,9 @@ summary(ich_from_tab_fa)
 
 #### Geocoris ####
 # Build global model selection table
-geocoris_mod_table_fa <- buildLandcoverModTab('Geocoris', fD_fall)
+geocoris_mod_table_fa <- readRDS('modTabs/Geocoris_fall_8class')
 # Plot best mod and call summary
-buildBestLandcoverMod(mod_table = geocoris_mod_table_fa, rank = 9, 'Fall')
+buildBestLandcoverMod(mod_table = geocoris_mod_table_fa, rank = 1, 'Fall')
 # Top 8 models are null. 9th doesn't look very good.
 # Plot var importance charts
 plotVarImportance(mod_table = geocoris_mod_table_fa)
@@ -1003,17 +1036,13 @@ plotVarImportance(mod_table = geocoris_mod_table_fa)
 # try with null model
 geocoris_global_fa <- makeGlobalLandcoverModTab(geocoris_mod_table_fa, 1)
 # View(geocoris_global_fa)# top mod is null
-buildBestLandcoverMod(geocoris_global_fa, 2,'Fall')
-geocoris_shan_mod_fa <- buildFinalLandcoverMod(geocoris_global_fa, geocoris_global_fa, 2)
-summary(geocoris_shan_mod_fa)
+buildBestLandcoverMod(geocoris_global_fa, 1,'Fall')
+geocoris_fin_mod_fa <- buildFinalLandcoverMod(geocoris_global_fa, geocoris_global_fa, 1)
+summary(geocoris_fin_mod_fa)
 # try with landcover vars
-geocoris_global_fa <- makeGlobalLandcoverModTab(geocoris_mod_table_fa, 9)
-buildBestLandcoverMod(geocoris_global_fa, 2)
-# geocoris_fin_mod_fa <- buildFinalLandcoverMod(geocoris_mod_table_fa, geocoris_global_fa, 2)
-# NOT FITTING
-# summary(geocoris_fin_mod_fa)
-# plot(allEffects(geocoris_fin_mod_fa, residuals = TRUE), main = 'Geocoris, final spring model')
-# best mod seems to be shan only
+geocoris_global_fa <- makeGlobalLandcoverModTab(geocoris_mod_table_fa, 1)
+buildBestLandcoverMod(geocoris_global_fa, 1)
+
 
 
 ### Aphids ~ landcover ####
@@ -1176,3 +1205,99 @@ numbered.png.names <- paste0("7class-fixed-savedplots/", 1:length(sorted.png.nam
 file.copy(from=plots.png.paths, to="7class-fixed-savedplots")
 file.rename(from=sorted.png.names, to=numbered.png.names)
 
+
+# functions ####
+buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 5){
+  # taxon='NonAcy'
+  # data=fD_fall
+
+  distList <- c('_no ',
+                '_const ',
+                '_sig1 ',
+                '_sig2 ',
+                '_sig3 ',
+                '_sig4 ',
+                '_sig5 ')
+
+  cand_mod_tabs <- list()
+
+  if (taxon == 'empty' | !is_tibble(data)) {
+    stop(red("Please specify taxon and data \n"), call. = FALSE)
+  }
+
+  # print inputs
+  cat(yellow('Taxon:'),
+      green(taxon),
+      yellow('Data:'),
+      green(deparse(substitute(data))),
+      '\n')
+
+  # get dfname
+  dfname <- as.name(deparse(substitute(data)))
+  # Build models
+  for (i in 1:length(distList)) {
+    # i=2
+
+    # incase full model fails to fit, try 'tricking' dredge
+    message(blue('fitting', distList[[i]],'models'))
+    # fit reduced model
+    fmod.red <- lmer(as.formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ (1|Site)'
+      )),
+      data = data,
+      REML = FALSE,
+      na.action = 'na.fail')
+    # define full model formula
+    form <-formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ ',
+             paste0(varList, distList[[i]], '+ ', collapse = ''),
+             '(1|Site)'
+      ))
+    # Replace reduced model formula with full global model formula.
+    attr(fmod.red@frame, "formula") <- form
+    # Run dredge() with m.max parameter to avoid convergence failures.
+    fmod.red@call$data <- dfname
+
+    cand_mod_tabs[[i]] <-  # superassign?
+      model.sel(lapply(
+        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
+        eval))
+
+    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
+
+  }
+  # Rbind the elements of the list together. This forces recalculation of AICc
+  mod_table <- rbind(cand_mod_tabs[[1]],
+                     cand_mod_tabs[[2]],
+                     cand_mod_tabs[[3]],
+                     cand_mod_tabs[[4]],
+                     cand_mod_tabs[[5]],
+                     cand_mod_tabs[[6]],
+                     cand_mod_tabs[[7]])
+
+  return(mod_table)
+}
+
+#### Anthocoridae spring ####
+# Build global model selection table
+Anthocoridae_mod_table_sp <- buildLandcoverModTab('Anthocoridae', fD_spring)
+# Plot best mod and call summary
+buildBestLandcoverMod(mod_table = Anthocoridae_mod_table_sp, rank = 1, 'Spring')
+
+# Plot var importance charts
+plotVarImportance(mod_table = Anthocoridae_mod_table_sp)
+# make global mod table (single distweight)
+Anthocoridae_global_sp <- makeGlobalLandcoverModTab(Anthocoridae_mod_table_sp, 1)
+# View(Anthocoridae_global_sp)# top mod is null
+buildBestLandcoverMod(Anthocoridae_global_sp, 1,'Spring')
+Anthocoridae_fin_mod_sp <- buildFinalLandcoverMod(Anthocoridae_global_sp, Anthocoridae_global_sp, 1)
+summary(Anthocoridae_fin_mod_sp)
+
+test <- lmer(log(Anthocoridae + 1)~total_cover+(1|Site), data = fD_spring, REML = FALSE)
+
+summary(test)
+plot(allEffects(test, residuals = TRUE))

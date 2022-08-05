@@ -846,8 +846,8 @@ plot(allEffects(test, residuals=T))
 
 # make nice plot
 plotMod <- get.models(coccinellidae_mod_table_sp, 1)[[1]]
-png('spring_acy_effect.jpg',
-    width = 7,
+png('spring_cocc_weedy_effect.jpg',
+    width = 6,
     height = 5,
     units = 'in',
     res = 300)
@@ -1092,6 +1092,43 @@ plot2mod <- lmer(log(Coccinellidae + 1)~wet_sig2+(1|Site), data = fD_fall, REML 
 ## IDEA ####
 # check greeness of different sD landcover classes at spring and fall dates, using sentinel imagery
 # would give rough idea of which areas are greenest at different times.
+ndviTable <- read_csv('raw_data/ndviStats.csv', col_types = 'ccc') %>%
+  separate(ndviMean, c('meanSpring', 'meanFall'), sep = ',') %>%
+  separate(ndviMedian, c('medianSpring', 'medianFall'), sep = ',') %>%
+  separate(ndviStdDev, c('sdSpring', 'sdFall'), sep = ',') %>%
+  mutate(across(.fns = ~
+                  str_extract(., '[:digit:]\\.[:digit:]+E?-?[:digit:]?'))) %>%
+  mutate(across(.fns = parse_number), .keep = 'none') %>%
+  cbind(., klass = c('rye',
+                     'bare',
+                     'dairy',
+                     'onion',
+                     'paved',
+                     'weedy',
+                     'alfalfa',
+                     'dirtRoad',
+                     'riparian',
+                     'structures',
+                     'naturalArid',
+                     'water')) %>%
+  mutate(klass = as_factor(klass))
+
+ggplot(ndviTable, aes(reorder(klass, desc(meanSpring)), meanSpring)) +
+  geom_col() +
+  ylim(c(0, 0.25)) +
+  labs(x = 'Landcover class',
+       y = 'Sentinel-2 NDVI, spring')
+ggsave('ndvi.jpg', height = 5, width = 7, units = 'in')
+
+ggplot(ndviTable, aes(reorder(klass, desc(meanSpring)), meanFall)) +
+  geom_col() +
+  ylim(c(0, 0.25))
+ggplot(ndviTable, aes(reorder(klass, desc(meanSpring)), sdSpring)) +
+  geom_col()
+ggplot(ndviTable, aes(reorder(klass, desc(meanSpring)), sdFall)) +
+  geom_col()
+
+# weedy class is the greenest class
 
 #### Ichneumonidae ####
 # Build global model selection table

@@ -593,14 +593,24 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
     arrange(names) %>%
     separate(names, c('class', 'distWeight'), sep = "_") %>%
     mutate(distWeight = as_factor(recode(distWeight,
-                                         `no` = 'no decay',
-                                         `const` = 'constant',
-                                         `sig1` = 'very aggressive',
-                                         `sig2` = 'aggressive',
-                                         `sig3` = 'moderately aggressive',
-                                         `sig4` = 'moderate',
-                                         `sig5` = 'slight',
-                                         `sig6` = 'minimal')))
+                                         `sig1` = 'Very aggressive',
+                                         `sig2` = 'Aggressive',
+                                         `sig3` = 'Moderately aggressive',
+                                         `sig4` = 'Moderate',
+                                         `sig5` = 'Slight',
+                                         `sig6` = 'Minimal',
+                                         `const` = 'Constant',
+                                         `no` = 'None'))) %>%
+    mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+           class = recode(class,
+                          ag = 'Agricultural',
+                          alfalfa = 'Alfalfa',
+                          dirt = 'Bare soil +\n dirt road',
+                          impermeable = 'Impermeable',
+                          naturalArid = 'Natural',
+                          water = 'Surface\nwater',
+                          weedy = 'Weedy',
+                          wet = 'Riparian'))
 
   p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
     geom_tile() +
@@ -609,9 +619,10 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
     scale_fill_gradient(low="blue", high="red") +
     labs(x = 'Landcover class',
          y = 'Distance weighting algorithm',
-         title = paste(paste(getPred, collapse = ''),
-                       'variable importance',
-                       season))
+         title = paste0('log(', getPred[2], ')',
+                       ' Variable importance, ',
+                       season)
+         )
 
   pp <- ggplotly(p, tooltip = 'sw')
 
@@ -631,6 +642,7 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
 
   qq <- ggplotly(q, tooltip = 'weight')
   subplot(pp, qq, widths = c(7/8, 1/8))
+
 
 }
 
@@ -677,7 +689,7 @@ makeGlobalLandcoverModTabSpring <- function(mod_table, rank = 1, m.max = 5){
   formula(fmod.red) # Looks good.
 
   # Run dredge() with m.max parameter to avoid convergence failures.
-  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = 5), eval))
+  ms1 <- model.sel(lapply(dredge(fmod.red, evaluate = FALSE, m.max = m.max), eval))
   ms1
 }
 
@@ -732,18 +744,35 @@ makeGlobalLandcoverModTabFall <- function(mod_table, rank = 1, m.max = m.max){
 
 # Plot the variable importance.
 plotGlobalVarImportance <- function(global_tab){
+  # global_tab <- araG1
   importance_tab <- sw(global_tab) %>%
     tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-    mutate(names = str_replace(names, '[:digit:]', '')) %>%
+    separate(names, c('names', 'weights'), sep = '_') %>%
+    mutate(names = fct_recode(names,
+                              'Agricultural'='ag',
+                              'Alfalfa'='alfalfa',
+                              'Bare soil +\n dirt road'='dirt',
+                              'Impermeable'='impermeable',
+                              'Natural'='naturalArid',
+                              'Surface\nwater'='water',
+                              'Weedy'='weedy',
+                              'Riparian'='wet',
+                              'Shannon D' = 'shan',
+                              'Total\ncover'='total',
+                              'Richness'='rich')) %>%
     rename(varWeight = sw)
+
+  # function(rx) str_view_all("bacad", rx)
+
 
   p <- ggplot(data = importance_tab,
               aes(x = reorder(names,-varWeight), y = varWeight)) +
     geom_col() +
-    theme(axis.text.x=element_text(angle = 45, hjust = 0)) +
+    theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
     labs(x = 'Variable', y = 'Importance')
 
   ggplotly(p, tooltip = 'sw')
+  p
 }
 
 # Build final model based on variable selection exercise.
@@ -818,11 +847,209 @@ fD_spring <- field_data %>%
 # Subset data for modeling with landcover classes and margin data.
 fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 
+
+#### General figs ####
+# define list of taxa of interest
+taxaList <- c('Arachnida',
+           'Coccinellidae',
+           'Geocoris',
+           'Ichneumonidae',
+           'Acyrthosiphon')
+
+# read in tabs
+tabList <- c()
+for (i in 1:length(taxaList)) {
+
+  tabList[[i]] <- readRDS(paste0('modTabs/', tList[[i]], '_spring_8class'))
+
+}
+# generate vi heatmaps
+viList <- c()
+for (i in 1:length(taxaList)) {
+
+  viList[[i]] <- plotVarImportance(tabList[[i]], 'Spring')
+
+}
+# view head of tabs
+heads <- c()
+for (i in 1:length(taxaList)) {
+
+  heads[[i]] <- head(tabList[[i]])
+
+}
+# plot top mod effects (one at a time, manually)
+
+k = 1
+  plotName <- paste0(taxaList[[k]], '_rank1_mod_effect.png')
+  plotMod <- get.models(tabList[[k]], 2)[[1]]
+  png(plotName,
+      width = 12.5,
+      height = 6,
+      units = 'in',
+      res = 300)
+  plot(effect('impermeable_sig3',plotMod, residuals = TRUE),
+       main = NULL,
+       xlab = 'Impermeable cover, moderately aggressive weighting',
+       id = list(n = length(get(plotMod@call$data)$id),
+                 labels = get(plotMod@call$data)$id))
+  dev.off()
+
+# make global modsel tabs
+# ara
+araG1 <- makeGlobalLandcoverModTabSpring(tabList[[1]], 1, 3)
+araG2 <- makeGlobalLandcoverModTabSpring(tabList[[1]], 2, 3)
+plotGlobalVarImportance(araG1)
+ggsave('araG1.png', width = 6.25, height = 6, units = 'in')
+plotGlobalVarImportance(araG2)
+ggsave('araG2.png', width = 6.25, height = 6, units = 'in')
+
+
+ggplot(field_data, aes(x = reorder(id, wet_sig5), y = wet_sig5)) +
+  geom_col() +
+  labs(y = 'Riparian, very aggressive weighting',
+       x = 'Field') +
+  theme(axis.text.x=element_text(angle = 45, hjust = 1))
+ggsave('riparian_sig1.png', width = 6, height = 4, units = 'in')
+# cocc
+coccG1 <- makeGlobalLandcoverModTabSpring(tabList[[2]], 1, 3)
+coccG2 <- makeGlobalLandcoverModTabSpring(tabList[[2]], 5, 3)
+plotGlobalVarImportance(coccG1)
+ggsave('coccG1.png', width = 6.25, height = 6, units = 'in')
+plotGlobalVarImportance(coccG2)
+ggsave('coccG2.png', width = 6.25, height = 6, units = 'in')
+
+# geoc
+geocG1 <- makeGlobalLandcoverModTabSpring(tabList[[3]], 8, 3)
+geocG2 <- makeGlobalLandcoverModTabSpring(tabList[[3]], 9, 3)
+plotGlobalVarImportance(geocG1)
+ggsave('geocG1.png', width = 6.25, height = 6, units = 'in')
+plotGlobalVarImportance(geocG2)
+ggsave('geocG2.png', width = 6.25, height = 6, units = 'in')
+
+#
+View(geocG1) # top mod is null, mod2 is landcover only
+View(geocG2) # top mod is null, mod2 is landcover only
+
+geocGM1 <- get.models(geocG1, 2)[[1]]
+png('geocGM1.png',
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(allEffects(geocGM1, residuals = TRUE),
+     main = NULL,
+     xlab = 'wet_sig1',
+     id = list(n = length(get(geocGM1@call$data)$id),
+               labels = get(geocGM1@call$data)$id))
+dev.off()
+
+geocGM2 <- get.models(geocG2, 4)[[1]]
+png('geocGM2_2.png',
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(allEffects(geocGM2, residuals = TRUE),
+     main = NULL,
+     xlab = 'Richness in field margins',
+     id = list(n = length(get(geocGM1@call$data)$id),
+               labels = get(geocGM1@call$data)$id))
+dev.off()
+
+
+# ich
+ichG1 <- makeGlobalLandcoverModTabSpring(tabList[[4]], 1, 5)
+plotGlobalVarImportance(ichG1)
+ggsave('ichG1.png', width = 12.5, height = 6, units = 'in')
+ichG2 <- makeGlobalLandcoverModTabSpring(tabList[[4]], 8, 5)
+plotGlobalVarImportance(ichG2)
+ggsave('ichG2.png', width = 12.5, height = 6, units = 'in')
+
+View(ichG1)
+ichGM1 <- get.models(ichG1, 3)[[1]]
+png('ichGM1_1.png',
+    width = 6.25,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('impermeable_sig1',ichGM1, residuals = TRUE),
+     main = NULL,
+     xlab = 'Impermeable cover, very aggressive weighting',
+     id = list(n = length(get(ichGM1@call$data)$id),
+               labels = get(ichGM1@call$data)$id))
+dev.off()
+png('ichGM1_2.png',
+    width = 6.25,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('total_cover',ichGM1, residuals = TRUE),
+     main = NULL,
+     xlab = 'Plant cover in field margins',
+     id = list(n = length(get(ichGM1@call$data)$id),
+               labels = get(ichGM1@call$data)$id))
+dev.off()
+
+View(ichG2)
+ichGM2 <- get.models(ichG2, 3)[[1]]
+png('ichGM2.png',
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('shan',ichGM2, residuals = TRUE),
+     main = NULL,
+     xlab = 'Shannon diversity in field margins',
+     id = list(n = length(get(ichGM1@call$data)$id),
+               labels = get(ichGM1@call$data)$id))
+dev.off()
+
+# acy
+acyG1 <- makeGlobalLandcoverModTabSpring(tabList[[5]], 1, 3)
+plotGlobalVarImportance(acyG1)
+ggsave('acyG1.png', width = 6.25, height = 6, units = 'in')
+acyG2 <- makeGlobalLandcoverModTabSpring(tabList[[5]], 3, 3)
+plotGlobalVarImportance(acyG2)
+ggsave('acyG2.png', width = 6.25, height = 6, units = 'in')
+
+View(acyG1) #1 weedy5, 2 null, 3 rich, 4 shan
+View(acyG2) #1 null, 2 rich, 3 impermeable3, 4 weedy3, 5 shan
+
+acyGM1 <- get.models(acyG1, 3)[[1]]
+acyGM2 <- get.models(acyG1, 4)[[1]]
+# acyGM3 <- get.models(acyG2, 2)[[1]] # same as acyGM1
+png('acyGM1.png',
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(allEffects(acyGM1, residuals = TRUE),
+     main = NULL,
+     xlab = 'Richness in field margins',
+     id = list(n = length(get(ichGM1@call$data)$id),
+               labels = get(ichGM1@call$data)$id))
+dev.off()
+
+png('acyGM2.png',
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(allEffects(acyGM2, residuals = TRUE),
+     main = NULL,
+     xlab = 'Shannon diversity in field margins',
+     id = list(n = length(get(ichGM1@call$data)$id),
+               labels = get(ichGM1@call$data)$id))
+dev.off()
+
+
+
+
 #### Arachnida ####
 # Build global model selection table
 arachnida_mod_table_sp <- readRDS('modTabs/Arachnida_spring_8class')
 # Plot best mod and call summary
-buildBestLandcoverMod(mod_table = arachnida_mod_table_sp, rank = 1, 'Spring')
+buildBestLandcoverMod(mod_table = arachnida_mod_table_sp, rank = 1, 'Spring season')
 # Plot var importance charts
 plotVarImportance(mod_table = arachnida_mod_table_sp)
 # make global mod table (single distweight)

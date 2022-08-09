@@ -860,7 +860,7 @@ taxaList <- c('Arachnida',
 tabList <- c()
 for (i in 1:length(taxaList)) {
 
-  tabList[[i]] <- readRDS(paste0('modTabs/', tList[[i]], '_spring_8class'))
+  tabList[[i]] <- readRDS(paste0('modTabs/', taxaList[[i]], '_spring_8class'))
 
 }
 # generate vi heatmaps
@@ -904,7 +904,7 @@ plotGlobalVarImportance(araG2)
 ggsave('araG2.png', width = 6.25, height = 6, units = 'in')
 
 
-ggplot(field_data, aes(x = reorder(id, wet_sig5), y = wet_sig5)) +
+ggplot(field_data, aes(x = reorder(id, wet_sig1), y = wet_sig1)) +
   geom_col() +
   labs(y = 'Riparian, very aggressive weighting',
        x = 'Field') +
@@ -917,6 +917,16 @@ plotGlobalVarImportance(coccG1)
 ggsave('coccG1.png', width = 6.25, height = 6, units = 'in')
 plotGlobalVarImportance(coccG2)
 ggsave('coccG2.png', width = 6.25, height = 6, units = 'in')
+
+ggplot(field_data, aes(x = reorder(id, weedy_sig4), y = weedy_sig4)) +
+  geom_col() +
+  labs(y = 'Weedy, moderate weighting',
+       x = 'Field') +
+  theme(axis.text.x=element_text(angle = 45, hjust = 1))
+ggsave('weedy_sig4.png', width = 6, height = 4, units = 'in')
+
+
+
 
 # geoc
 geocG1 <- makeGlobalLandcoverModTabSpring(tabList[[3]], 8, 3)

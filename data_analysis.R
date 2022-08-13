@@ -100,16 +100,19 @@ ggsave('aph-abund.png', width = 12.5, height = 6, units = 'in')
 # spring
 ggplot(data = aph_data %>%
          filter(Season == 'Spring',
-                Taxa %in% c('Acyrthosiphon', 'Aphis', 'Therioaphis')),
+                Taxa %in% c('Acyrthosiphon', 'NonAcy')),
        aes(x = LogDensity, y = Taxa, fill = Taxa)) +
   geom_boxplot() +
   xlim(c(0, 8.5)) +
-  scale_fill_manual(values = c('#548235', '#3b3838', '#c78f00'),
+  scale_fill_manual(values = c('#548235', '#3b3838'),
                     guide = 'none') +
-  labs(y = 'Aphid genus', x = 'log(Density)')+
+  labs(y = '', x = 'log(Density)')+
   coord_flip() +
-  theme(text = element_text(size = 20))
-# ggsave('spring_aphid_density.jpg', width = 7, height = 5)
+  theme(text = element_text(size = 20)) +
+  scale_y_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids","Other taxa"))
+
+
+ggsave('spring_aphid_density.jpg', width = 7, height = 5)
 # fall
 ggplot(data = aph_data %>%
          filter(Season == 'Fall',
@@ -352,6 +355,52 @@ plot(allEffects(best.acy.mod.sp, residuals = TRUE),
                  pull(id)))
 # dev.off()
 
+## better plot
+bmod <- lmer(Acyrthosiphon ~ Coccinellidae +
+         (1|Site)+(1|Field),
+       na.action = 'na.omit',
+       REML = FALSE,
+       data = mean_density %>%
+         filter(Season=='Spring') %>%
+         mutate(Coccinellidae = log(Coccinellidae+1),
+                Acyrthosiphon = log(Acyrthosiphon+1)))
+
+summary(bmod)
+
+dfb <-mean_density %>%
+  filter(Season=='Spring') %>%
+  mutate(Coccinellidae = log(Coccinellidae+1),
+         Acyrthosiphon = log(Acyrthosiphon+1))
+trellis.device()
+trellis.par.get()
+
+
+png('lattice.png', height = 6, width = 6, units = 'in', res = 300)
+trellis.par.set(list(par.xlab.text = list(cex=2),
+                     par.ylab.text = list(cex=2),
+                     par.main.text = list(col = "blue", cex=0.5)))
+plot(effect('Coccinellidae',bmod,
+                residuals = T),
+     partial.residuals = list(smooth=F),
+     axes = list(x = list(Coccinellidae = list(lab = 'Log(Ladybug density)')),
+                 y = list(lab = 'Log(Aphid density)')),
+     main = NULL,
+     lattice=list(key.args=list(axis.text = list(cex=10))))
+
+dev.off()
+dfb %>%
+  ggplot(aes(Coccinellidae, Acyrthosiphon))+
+  geom_point()
+
+
+library(ggeffects)
+b <- ggemmeans(bmod, terms = 'Coccinellidae')
+
+ggplot(b, aes(x, predicted)) +
+  geom_point()+
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1)
+
 # extract and examine the top Aphis model.
 best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
 summary(best.aphis.mod)
@@ -403,17 +452,17 @@ p <- bind_rows(importance_tab, .id = 'Taxon') %>%
   mutate(VarWeights = as.numeric(VarWeights),
          ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
          Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
-  filter(ExpVars %in% c("Coccinellidae", "Geocoris", "Ichneumonoidea")) %>%
-  ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
-  geom_tile() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 0),
-        legend.title = element_text('Variable Importance')) +
-  scale_fill_gradient(low="blue", high="red") +
-  labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Spring') +
-  theme(text = element_text(size = 15),
-        axis.text.x=element_text(angle=30,hjust=0.9))
+  # filter(ExpVars %in% c("Coccinellidae", "Geocoris", "Ichneumonoidea")) %>%
+  filter(Taxon %in% c("Acyrthosiphon")) %>%
+  ggplot(aes(x = reorder(ExpVars, desc(VarWeights)), y = VarWeights, fill = VarWeights)) +
+  geom_col() +
+  scale_fill_gradient('', low="blue", high="red", breaks = c(0.3,0.9), labels = c('low','high')) +
+  labs(x = '', y = 'Variable importance') +
+  theme_gray(base_size = 25)+
+  theme( legend.position = c(0.95,0.85)) +
+  scale_x_discrete(labels=c('Ladybugs', 'Spiders', 'Parasitoid\nwasps', 'Damsel\nbugs', 'Minute pirate\nbugs','Bigeyed\nbugs'))
 p
-# ggsave('spring_aphid_varweights.jpg', width = 6, height = 4)
+ggsave('spring_aphid_varweights.jpg', width = 12.5, height = 7.5)
 
 ### fall data only ####
 
@@ -654,8 +703,10 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
 
   p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
     geom_tile() +
-    theme(axis.text.x=element_text(angle = 45, hjust = 0),
-          axis.text.y = element_text(angle = 45)) +
+    theme_gray(base_size = 20)+
+    theme(
+      axis.text.x=element_text(angle = 45, hjust = 0),
+      axis.text.y = element_text(angle = 45))+
     scale_fill_gradient(low="blue", high="red") +
     labs(x = 'Landcover class',
          y = 'Distance weighting algorithm',
@@ -673,12 +724,13 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
   q <- ggplot(data = group_importance,
               aes(x = '', y = distWeight, fill = weight)) +
     geom_tile() +
+    theme_gray(base_size = 20) +
     theme(axis.text = element_blank(),
           axis.ticks = element_blank()) +
     scale_fill_gradient(low="blue", high="red") +
     labs(x = 'Landcover class',
          y = 'Distance weighting algorithm',
-         fill = 'Variable importance')
+         fill = '')
 
   qq <- ggplotly(q, tooltip = 'weight')
   subplot(pp, qq, widths = c(7/8, 1/8))
@@ -1023,7 +1075,7 @@ r=ggplot(fD_spring_flood,
 
 grid.arrange(p,q,r, nrow =1)
 
-mean_cl_normal()
+
 flooded <- fD_spring_flood %>% filter(wateringMethod=='Flooded') %>%
   mutate(Acyrthosiphon = log(Acyrthosiphon+1)) %>%
   select(Acyrthosiphon)
@@ -1104,13 +1156,17 @@ for (i in 1:length(taxaList)) {
   tabList[[i]] <- readRDS(paste0('modTabs/', taxaList[[i]], '_spring_8class'))
 
 }
-# generate vi heatmaps
+# generate vi heatmaps ####
 viList <- c()
 for (i in 1:length(taxaList)) {
 
   viList[[i]] <- plotVarImportance(tabList[[i]], 'Spring')
 
 }
+viList[[5]]
+
+ggsave('cocc_var_heatmap.png', width = 12.5, height = 7, units = 'in')
+
 # view head of tabs
 heads <- c()
 for (i in 1:length(taxaList)) {
@@ -1126,23 +1182,38 @@ View(tabList[[5]])
 
 k =5
   plotName <- paste0(taxaList[[k]], '_rank1_mod_effect.png')
-  plotMod <- get.models(tabList[[k]], 1)[[1]]
+  plotMod <- get.models(tabList[[k]], 2)[[1]]
   # plotMod <- get.models(acyG1, 4)[[1]]
   summary(plotMod)
-  nullMod <- lmer(log(Acyrthosiphon + 1)~(1|Site), data = fD_spring, REML = F)
+  nullMod <- lmer(log(Coccinellidae + 1)~(1|Site), data = fD_spring, REML = F)
   anova(plotMod, nullMod)
-  png(paste0('fixed',plotName),
-      width = 6.5,
+  png(paste0('fixeda',plotName),
+      width = 6,
       height = 6,
       units = 'in',
       res = 300)
   plot(effect('wet_sig2',plotMod, residuals = TRUE),
        main = NULL,
-       xlab = 'Riparian vegetation,\n aggressive weighting',
+       partial.residuals = list( smooth = F),
+       xlab = 'Riparian cover,\nslight weighting',
+       ylab = 'log(Aphid density)',
        id = list(n = length(get(plotMod@call$data)$id),
                  labels = get(plotMod@call$data)$id))
   dev.off()
 
+  png(paste0('fixedb',plotName),
+      width = 6,
+      height = 6,
+      units = 'in',
+      res = 300)
+  plot(effect('weedy_sig1',plotMod, residuals = TRUE),
+       main = NULL,
+       partial.residuals = list( smooth = F),
+       xlab = 'Weedy cover,\nvery aggressive weighting',
+       ylab = 'log(Ladybug density)',
+       id = list(n = length(get(plotMod@call$data)$id),
+                 labels = get(plotMod@call$data)$id))
+  dev.off()
 
 
 
@@ -1167,7 +1238,7 @@ ggplot(field_data, aes(x = reorder(id, wet_sig1), y = wet_sig1)) +
        x = 'Field') +
   theme(axis.text.x=element_text(angle = 45, hjust = 1))
 ggsave('riparian_sig1.png', width = 6, height = 4, units = 'in')
-# cocc
+# cocc ####
 coccG1 <- makeGlobalLandcoverModTabSpring(tabList[[2]], 1, 3)
 coccG2 <- makeGlobalLandcoverModTabSpring(tabList[[2]], 5, 3)
 plotGlobalVarImportance(coccG1)
@@ -1177,7 +1248,7 @@ ggsave('coccG2.png', width = 6.25, height = 6, units = 'in')
 
 
 c1mod<-lmer(log(Coccinellidae+1)~weedy_sig1+(1|Site),
-            data = fD_spring_sub, REML = FALSE)
+            data = fD_spring, REML = FALSE)
 c2mod<-lmer(log(Coccinellidae+1)~rich+(1|Site),
             data = fD_spring_sub, REML = FALSE)
 c3mod<-lmer(log(Coccinellidae+1)~total_cover+(1|Site),
@@ -1196,6 +1267,7 @@ png(paste0('cmods.png'),
 
 plot(effect('weedy_sig1',c1mod, residuals = TRUE),
      main = NULL,
+     ylab = 'log(Ladybug density)',
      xlab = 'Weedy cover,\n very aggressive weighting',
      id = list(n = length(get(c1mod@call$data)$id),
                labels = get(c1mod@call$data)$id))
@@ -2092,17 +2164,21 @@ sem_data_fall <- data_long %>%
 
 
 names(sem_data)
+fD_spring_flood$id
+
+sem_data2 <- sem_data %>% left_join(fD_spring_flood %>% select(id, wateringMethod), by = c('id.y'='id')) %>%
+  cbind(., to.dummy(.$wateringMethod, 'Wtr'))
 
 
 detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
 spring_acy_sem <- psem(
-  lmer(Coccinellidae ~ `weedy_sig1` + `Trt.Sham` + (1|site),
-     data = sem_data),
-  lmer(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`+ (1|site),
-     data = sem_data)
+  lmer(Coccinellidae ~ `weedy_sig1` + `Trt.Sham` + Acyrthosiphon +(1|site),
+     data = sem_data2),
+  lmer(Acyrthosiphon ~ `Wtr.Flooding` +(1|site),
+     data = sem_data2)
   )
 plot(spring_acy_sem)
-install.packages('DiagrammeRsvg')
+qinstall.packages('DiagrammeRsvg')
 library(DiagrammeRsvg)
 plot(spring_acy_sem)%>%
   export_svg %>% charToRaw %>% rsvg_png("graph.png")

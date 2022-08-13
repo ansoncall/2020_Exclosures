@@ -1,109 +1,109 @@
-Number,Vial,Site,Field,Plot,Treatment,Sorter,Counter,Arachnida,Nabis,Geocoris,Anthocoridae,Coccinellidae,Ichneumonidae,Lygus,Acyrthosiphon,Aphis,Therioaphis,Thysanoptera,Other
-1,YF3P2 full,Yerington,3,2,Full,Anson,Sami,0,0,0,2,0,20,0,534,48,60,60,39
-2,YF3P2 sham,Yerington,3,2,Sham,Anson,Sami,1,0,0,12,1,169,1,620,45,138,111,92
-3,YF3P3 sham,Yerington,3,3,Sham,Sami,Sami,0,0,0,11,0,110,0,1140,46,186,108,49
-4,YF3P3 cont,Yerington,3,3,Control,Sami,Sami,1,0,0,1,0,7,0,463,14,48,7,23
-5,YF3P3 full,Yerington,3,3,Full,Sami,Sami,0,0,0,4,1,21,2,856,107,120,43,47
-6,YF2P3 cont,Yerington,2,3,Control,Sami,Sami,0,0,0,6,2,12,1,203,8,33,2,16
-7,YF2P3 full,Yerington,2,3,Full,Sami,Sami,1,0,0,4,0,13,1,162,4,29,1,12
-8,L3P1 cont,Lovelock,3,1,Control,Sami,Sami,3,0,0,2,4,4,1,378,80,489,45,43
-9,FALF3P1 sham,Fallon,3,1,Sham,Sami,Sami,0,1,0,5,0,0,0,38,0,0,0,16
-10,L3P2 cont,Lovelock,3,2,Control,Sami,Sami,1,0,0,5,1,4,1,209,1167,371,52,42
-11,YF2P1 cont,Yerington,2,1,Control,Sami,Sami,0,0,0,0,0,7,3,89,16,43,6,19
-12,YF2P1 full,Yerington,2,1,Full,Anson,Sami,0,1,0,5,1,14,0,220,6,62,29,11
-13,L3P2 sham,Lovelock,3,2,Sham,Sami,Sami,4,0,2,4,0,17,0,74,34,79,76,15
-14,YF2P2 cont,Yerington,2,2,Control,Sami,Sami,0,0,0,3,0,5,1,150,15,33,13,19
-15,YF2P2 full,Yerington,2,2,Full,Sami,Sami,0,0,0,1,0,4,1,59,4,7,2,4
-16,Y1F1P2 sham,Yerington,1,2,Sham,Sami,Sami,0,0,0,1,0,5,2,40,2,46,29,482
-17,YF1P3 cont,Yerington,1,3,Control,Sami,Sami,0,4,0,4,0,5,3,133,8,52,28,272
-18,YF1P3 sham,Yerington,1,3,Sham,Sami,Sami,3,1,0,6,0,33,0,166,3,108,36,211
-19,YF1P3 full,Yerington,1,3,Full,Sami,Sami,1,1,1,2,0,4,1,88,2,76,112,234
-20,FALF4P1 full,Fallon,4,1,Full,Sami,Sami,0,1,0,2,0,1,1,70,5,8,51,18
-21,YF1P1 sham,Yerington,1,1,Sham,Sami,Sami,2,0,0,5,1,6,0,161,4,16,1,10
-22,YF1P7 sham,Yerington,1,,Sham,Sami,Sami,1,0,0,3,1,19,2,179,26,121,20,232
-23,Y1F1P1 full,Yerington,1,1,Full,Sami,Sami,0,1,0,2,0,5,1,46,18,66,87,84
-24,Y1F1P2 cont,Yerington,1,2,Control,Sami,Sami,0,1,0,2,0,4,0,54,0,53,19,215
-25,Y1F1P2 full,Yerington,1,2,Full,Sami,Sami,0,2,0,1,0,17,0,112,4,71,94,199
-26,FALF4P3 full,Fallon,4,3,Full,Sami,Sami,5,0,1,0,2,4,0,58,3,0,5,9
-27,L2P1 cont,Lovelock,2,1,Control,Sami,Sami,4,0,0,2,0,11,0,71,27,558,94,20
-28,L1P1 sham,Lovelock,1,1,Sham,Anson,Sami,21,0,0,4,0,4,1,33,5,44,54,13
-29,L1P1 full,Lovelock,1,1,Full,Anson,Sami,11,0,0,2,0,76,1,60,4,30,99,7
-30,FALF4P3 sham,Fallon,4,3,Sham,Sami,Sami,0,1,0,5,0,3,1,85,1,6,6,102
-31,FALF3P1 cont,Fallon,3,1,Control,Sami,Sami,0,0,0,8,0,2,0,26,0,4,19,28
-32,L1P2 sham,Lovelock,1,2,Sham,Anson,Sami,10,0,0,5,0,48,8,79,4,117,59,18
-33,L1P2 full,Lovelock,1,2,Full,Anson,Sami,6,0,0,8,0,5,4,59,8,54,51,16
-34,L1P2 cont,Lovelock,1,2,Control,Anson,Sami,22,0,0,3,0,5,3,27,0,14,20,11
-35,L2P1 sham,Lovelock,2,1,Sham,Anson,Sami,1,0,1,2,0,17,0,62,85,372,41,21
-36,L2P1 full,Lovelock,2,1,Full,Sami,Sami,2,0,0,2,4,4,0,24,60,84,102,7
-37,FALF4P3 cont,Fallon,4,3,Control,Sami,Sami,1,0,1,1,0,2,0,171,1,2,3,74
-38,FALF4P2,Fallon,4,2,Pre-,Anson,Sami,0,0,0,1,0,1,1,111,0,5,7,20
-39,L7P3 full,Lovelock,,3,Full,Sami,Sami,0,0,0,0,0,5,1,708,9,11,6,5
-40,FALF4P2 cont,Fallon,4,2,Control,Anson,Sami,1,0,0,2,0,1,1,65,2,2,29,14
-41,FALF4P3 sham,Fallon,4,3,Sham,Sami,Sami,0,0,2,1,3,4,0,18,0,0,0,8
-42,FALF3P3 cont,Fallon,3,3,Control,Sami,Sami,1,0,0,4,0,1,1,36,0,1,1,7
-43,FALF4P3 full,Fallon,4,3,Full,Sami,Sami,0,0,0,1,0,2,0,101,0,5,39,61
-44,FALF3P1 full,Fallon,3,1,Full,Sami,Sami,0,0,0,1,0,0,0,21,16,0,1,7
-45,L3P3 full,Lovelock,3,3,Full,Sami,Sami,2,0,0,8,0,4,0,31,63,245,176,4
-46,FALF4P1 cont,Fallon,4,1,Control,Sami,Sami,0,0,0,1,1,0,0,85,0,9,19,19
-47,FALF1P3 full,Fallon,1,3,Full,Sami,Sami,0,1,0,0,0,3,0,42,4,1,4,5
-48,FALF3P3 sham,Fallon,3,3,Sham,Sami,Sami,0,0,0,2,0,0,1,19,0,0,2,13
-49,FALF3P2 cont,Fallon,3,2,Control,Sami,Sami,0,0,0,6,0,1,3,35,1,1,38,21
-50,FALF4P1 sham,Fallon,4,1,Sham,Sami,Sami,0,0,0,4,0,2,0,88,3,7,13,20
-51,L3P1 sham,Lovelock,3,1,Sham,Sami,Sami,1,0,2,3,5,2,0,77,66,22,1,13
-52,L1P1 cont,Lovelock,1,1,Control,Sami,Sami,10,0,0,4,0,3,1,113,3,15,6,15
-53,YF2P3 sham,Yerington,2,3,Sham,Sami,Sami,0,1,0,1,0,0,2,93,3,13,2,8
-54,YF3P1 full,Yerington,3,1,Full,Sami,Sami,0,0,0,2,0,19,0,314,186,221,67,129
-55,YF3P1 sham,Yerington,3,1,Sham,Sami,Sami,0,0,0,6,1,75,0,364,31,113,45,101
-56,YF2P2 sham,Yerington,2,2,Sham,Sami,Sami,0,0,0,6,2,12,0,154,16,37,5,9
-57,YF3P1 cont,Yerington,3,1,Control,Sami,Sami,0,0,0,3,0,3,0,292,24,51,0,15
-58,FALF3P2 full,Fallon,3,2,Full,Sami,Sami,1,0,0,0,0,1,0,11,7,0,0,7
-59,FALF1P3 sham,Fallon,1,3,Sham,Sami,Sami,2,0,0,8,0,3,5,110,0,1,0,9
-60,FALF3P2 sham,Fallon,3,2,Sham,Sami,Sami,2,0,0,3,0,1,3,34,1,4,0,6
-61,FALF1P3 cont,Fallon,1,3,Control,Sami,Sami,1,0,0,5,0,5,0,167,7,5,34,15
-62,FALF3P3 full,Fallon,3,3,Full,Sami,Sami,1,0,0,1,0,0,2,42,5,0,0,5
-63,FALF1P2 sham,Fallon,1,2,Sham,Sami,Sami,3,1,0,2,0,3,2,90,0,0,0,9
-64,FALF1P1 cont,Fallon,1,1,Control,Sami,Sami,1,2,0,8,0,2,2,102,0,0,43,23
-65,FALF1P2 cont,Fallon,1,2,Control,Sami,Sami,2,0,0,7,1,4,0,139,0,3,3,21
-66,FALF1P1 sham,Fallon,1,1,Sham,Sami,Sami,3,1,0,3,0,4,0,96,8,1,20,24
-67,FALF1P1 full,Fallon,1,1,Full,Sami,Sami,0,1,0,1,0,0,0,90,3,0,1,8
-68,FALF4P2 sham,Fallon,4,2,Sham,Sami,Sami,2,0,0,1,0,2,1,108,0,8,9,60
-69,FALF1P2 full,Fallon,1,2,Full,Sami,Sami,0,1,0,0,0,3,2,58,0,0,0,2
-70,L3P3 cont,Lovelock,3,3,Control,Sami,Sami,0,0,2,2,3,2,0,18,1,0,0,8
-71,FALF1P3,Fallon,1,3,Pre-,Sami,Sami,0,3,0,14,1,6,4,45,0,0,1,14
-72,FALF4P3,Fallon,4,3,Pre-,Sami,Sami,1,0,0,2,0,1,1,73,0,4,5,17
-73,FALF4P2,Fallon,4,2,Pre-,Sami,Sami,2,1,0,4,0,4,1,72,0,5,12,42
-74,FALF4P1,Fallon,4,1,Pre-,Sami,Sami,1,0,0,1,0,3,1,45,0,6,0,24
-75,FALF1P2,Fallon,1,2,Pre-,Sami,Sami,2,0,0,9,0,9,3,47,0,3,1,12
-76,YF1P1 cont,Yerington,1,1,Control,Sami,Sami,0,3,0,2,0,3,0,57,4,73,8,296
-77,FALF1P1,Fallon,1,1,Pre-,Sami,Sami,5,2,0,11,0,4,3,63,0,3,15,44
-78,FALF3P1,Fallon,3,1,Pre-,Sami,Sami,0,0,0,8,0,1,1,9,6,2,0,12
-79,FALF3P2,Fallon,3,2,Pre-,Sami,Sami,0,0,0,0,0,0,0,0,0,1,1,3
-80,FALF3P3,Fallon,3,3,Pre-,Sami,Sami,0,0,0,4,1,1,0,9,3,0,0,6
-81,L1P3 cont,Lovelock,1,3,Control,Sami,Sami,6,0,0,2,0,18,1,385,95,26,23,11
-82,L3P1 full,Lovelock,3,1,Full,Sami,Sami,1,0,0,6,3,4,0,301,963,293,165,19
-83,L2P3 full,Lovelock,2,3,Full,Sami,Sami,0,0,0,1,1,0,2,176,9430,398,142,9
-84,YF3P2 cont,Yerington,3,2,Control,Sami,Sami,0,0,0,9,0,23,1,1225,99,247,253,465
-85,L2P2 sham,Lovelock,2,2,Sham,Sami,Sami,0,0,0,1,1,3,1,1988,1809,676,252,98
-86,L2P2 cont,Lovelock,2,2,Control,Anson,Sami,2,0,1,0,0,12,0,701,419,346,124,64
-87,L1P3 sham,Lovelock,1,3,Sham,Anson,Sami,4,0,0,1,0,33,4,2061,76,19,37,17
-88,L2P3 cont,Lovelock,2,3,Control,Sami,Sami,1,0,0,1,0,6,0,2154,2570,1298,30,63
-89,L2P3 sham,Lovelock,2,3,Sham,Sami,Sami,0,1,0,3,0,8,0,2488,2432,909,71,86
-90,L2P2 full,Lovelock,2,2,Full,Sami,Sami,0,0,0,0,0,1,0,492,8934,917,77,30
-91,YF1P1,Yerington,1,1,Pre-,Anson,Sami,0,0,1,5,0,2,1,39,1,200,7,363
-92,YF1P2,Yerington,1,2,Pre-,Anson,Sami,0,0,0,2,0,4,7,13,0,135,5,202
-93,YF1P3,Yerington,1,3,Pre-,Anson,Sami,0,1,3,5,0,6,3,26,0,170,6,219
-94,YF3P3,Yerington,3,3,Pre-,Anson,Sami,0,1,1,4,0,48,0,192,3,139,29,46
-95,YF3P1,Yerington,3,1,Pre-,Anson,Sami,0,0,1,3,0,12,7,96,0,118,8,59
-96,YF2P1,Yerington,2,1,Pre-,Sami,Sami,3,0,2,6,2,4,2,18,1,8,0,36
-97,YF2P2,Yerington,2,2,Pre-,Sami,Sami,0,0,2,3,0,40,6,44,0,58,2,65
-98,YF2P3,Yerington,2,3,Pre-,Sami,Sami,1,1,3,10,1,24,8,53,0,84,3,106
-99,YF3P2,Yerington,3,2,Pre-,Sami,Sami,2,0,2,9,0,45,1,134,0,134,116,193
-100,LF1P1,Lovelock,1,1,Pre-,Sami,Sami,2,0,1,4,1,3,3,183,27,12,1,8
-101,LF1P2,Lovelock,1,2,Pre-,Sami,Sami,1,0,0,3,1,3,2,33,8,6,1,6
-102,LF1P3,Lovelock,1,3,Pre-,Sami,Sami,1,0,0,3,1,1,0,231,7,4,0,9
-103,LF2P1,Lovelock,2,1,Pre-,Sami,Sami,0,0,0,0,1,0,0,41,22,34,0,9
-104,LF2P2,Lovelock,2,2,Pre-,Sami,Sami,0,0,0,0,2,0,0,121,16,62,0,12
-105,LF2P3,Lovelock,2,3,Pre-,Sami,Sami,0,0,0,2,0,7,0,321,95,67,0,8
-106,LF3P1,Lovelock,3,1,Pre-,Sami,Sami,1,0,3,7,3,4,0,29,7,134,1,20
-107,LF3P2,Lovelock,3,2,Pre-,Sami,Sami,0,0,0,5,1,2,0,5,4,25,1,9
-108,LF3P3,Lovelock,3,3,Pre-,Sami,Sami,0,0,2,2,0,1,0,3,1,50,0,3
+Number,Vial,Site,Field,Plot,Treatment,Sorter,Counter,Counter_2,Arachnida,Nabis,Geocoris,Anthocoridae,Coccinellidae,Ichneumonoidea,Acyrthosiphon,Aphis,Therioaphis,Lygus,Thysanoptera,Other,Notes
+1,YF3P2 full,Yerington,3,2,Full,Anson,Sami,,0,0,0,2,0,20,534,48,60,0,60,39,
+2,YF3P2 sham,Yerington,3,2,Sham,Anson,Sami,,1,0,0,12,1,169,620,45,138,1,111,92,
+3,YF3P3 sham,Yerington,3,3,Sham,Sami,Sami,,0,0,0,11,0,110,1140,46,186,0,108,49,
+4,YF3P3 cont,Yerington,3,3,Control,Sami,Sami,,1,0,0,1,0,7,463,14,48,0,7,23,
+5,YF3P3 full,Yerington,3,3,Full,Sami,Sami,,0,0,0,4,1,21,856,107,120,2,43,47,
+6,YF2P3 cont,Yerington,2,3,Control,Sami,Sami,,0,0,0,6,2,12,203,8,33,1,2,16,
+7,YF2P3 full,Yerington,2,3,Full,Sami,Sami,,1,0,0,4,0,13,162,4,29,1,1,12,
+8,L3P1 cont,Lovelock,3,1,Control,Sami,Sami,,3,0,0,2,4,4,378,80,489,1,45,43,
+9,FALF3P1 sham,Fallon,3,1,Sham,Sami,Sami,,0,1,0,5,0,0,38,0,0,0,0,16,
+10,L3P2 cont,Lovelock,3,2,Control,Sami,Sami,,1,0,0,5,1,4,209,1167,371,1,52,42,
+11,YF2P1 cont,Yerington,2,1,Control,Sami,Sami,,0,0,0,0,0,7,89,16,43,3,6,19,
+12,YF2P1 full,Yerington,2,1,Full,Anson,Sami,,0,1,0,5,1,14,220,6,62,0,29,11,
+13,L3P2 sham,Lovelock,3,2,Sham,Sami,Sami,,4,0,2,4,0,17,74,34,79,0,76,15,
+14,YF2P2 cont,Yerington,2,2,Control,Sami,Sami,,0,0,0,3,0,5,150,15,33,1,13,19,
+15,YF2P2 full,Yerington,2,2,Full,Sami,Sami,,0,0,0,1,0,4,59,4,7,1,2,4,
+16,Y1F1P2 sham,Yerington,1,2,Sham,Sami,Sami,,0,0,0,1,0,5,40,2,46,2,29,482,
+17,YF1P3 cont,Yerington,1,3,Control,Sami,Sami,,0,4,0,4,0,5,133,8,52,3,28,272,
+18,YF1P3 sham,Yerington,1,3,Sham,Sami,Sami,,3,1,0,6,0,33,166,3,108,0,36,211,
+19,YF1P3 full,Yerington,1,3,Full,Sami,Sami,,1,1,1,2,0,4,88,2,76,1,112,234,
+20,FALF4P1 full,Fallon,4,1,Full,Sami,Sami,,0,1,0,2,0,1,70,5,8,1,51,18,
+21,YF1P1 sham,Yerington,1,1,Sham,Sami,Sami,,2,0,0,5,1,6,161,4,16,0,1,10,
+22,YF1P7 sham,Yerington,1,,Sham,Sami,Sami,,1,0,0,3,1,19,179,26,121,2,20,232,
+23,Y1F1P1 full,Yerington,1,1,Full,Sami,Sami,,0,1,0,2,0,5,46,18,66,1,87,84,
+24,Y1F1P2 cont,Yerington,1,2,Control,Sami,Sami,,0,1,0,2,0,4,54,0,53,0,19,215,
+25,Y1F1P2 full,Yerington,1,2,Full,Sami,Sami,,0,2,0,1,0,17,112,4,71,0,94,199,
+26,FALF4P3 full,Fallon,4,3,Full,Sami,Sami,,5,0,1,0,2,4,58,3,0,0,5,9,
+27,L2P1 cont,Lovelock,2,1,Control,Sami,Sami,,4,0,0,2,0,11,71,27,558,0,94,20,
+28,L1P1 sham,Lovelock,1,1,Sham,Anson,Sami,,21,0,0,4,0,4,33,5,44,1,54,13,
+29,L1P1 full,Lovelock,1,1,Full,Anson,Sami,,11,0,0,2,0,76,60,4,30,1,99,7,
+30,FALF4P3 sham,Fallon,4,3,Sham,Sami,Sami,,0,1,0,5,0,3,85,1,6,1,6,102,
+31,FALF3P1 cont,Fallon,3,1,Control,Sami,Sami,,0,0,0,8,0,2,26,0,4,0,19,28,
+32,L1P2 sham,Lovelock,1,2,Sham,Anson,Sami,,10,0,0,5,0,48,79,4,117,8,59,18,
+33,L1P2 full,Lovelock,1,2,Full,Anson,Sami,,6,0,0,8,0,5,59,8,54,4,51,16,
+34,L1P2 cont,Lovelock,1,2,Control,Anson,Sami,,22,0,0,3,0,5,27,0,14,3,20,11,
+35,L2P1 sham,Lovelock,2,1,Sham,Anson,Sami,,1,0,1,2,0,17,62,85,372,0,41,21,
+36,L2P1 full,Lovelock,2,1,Full,Sami,Sami,,2,0,0,2,4,4,24,60,84,0,102,7,
+37,FALF4P3 cont,Fallon,4,3,Control,Sami,Sami,,1,0,1,1,0,2,171,1,2,0,3,74,
+38,FALF4P2,Fallon,4,2,Pre-,Anson,Sami,,0,0,0,1,0,1,111,0,5,1,7,20,
+39,L7P3 full,Lovelock,,3,Full,Sami,Sami,,0,0,0,0,0,5,708,9,11,1,6,5,
+40,FALF4P2 cont,Fallon,4,2,Control,Anson,Sami,,1,0,0,2,0,1,65,2,2,1,29,14,
+41,FALF4P3 sham,Fallon,4,3,Sham,Sami,Sami,,0,0,2,1,3,4,18,0,0,0,0,8,
+42,FALF3P3 cont,Fallon,3,3,Control,Sami,Sami,,1,0,0,4,0,1,36,0,1,1,1,7,
+43,FALF4P3 full,Fallon,4,3,Full,Sami,Sami,,0,0,0,1,0,2,101,0,5,0,39,61,
+44,FALF3P1 full,Fallon,3,1,Full,Sami,Sami,,0,0,0,1,0,0,21,16,0,0,1,7,
+45,L3P3 full,Lovelock,3,3,Full,Sami,Sami,,2,0,0,8,0,4,31,63,245,0,176,4,
+46,FALF4P1 cont,Fallon,4,1,Control,Sami,Sami,,0,0,0,1,1,0,85,0,9,0,19,19,
+47,FALF1P3 full,Fallon,1,3,Full,Sami,Sami,,0,1,0,0,0,3,42,4,1,0,4,5,
+48,FALF3P3 sham,Fallon,3,3,Sham,Sami,Sami,,0,0,0,2,0,0,19,0,0,1,2,13,
+49,FALF3P2 cont,Fallon,3,2,Control,Sami,Sami,,0,0,0,6,0,1,35,1,1,3,38,21,
+50,FALF4P1 sham,Fallon,4,1,Sham,Sami,Sami,,0,0,0,4,0,2,88,3,7,0,13,20,
+51,L3P1 sham,Lovelock,3,1,Sham,Sami,Sami,,1,0,2,3,5,2,77,66,22,0,1,13,
+52,L1P1 cont,Lovelock,1,1,Control,Sami,Sami,,10,0,0,4,0,3,113,3,15,1,6,15,
+53,YF2P3 sham,Yerington,2,3,Sham,Sami,Sami,,0,1,0,1,0,0,93,3,13,2,2,8,
+54,YF3P1 full,Yerington,3,1,Full,Sami,Sami,,0,0,0,2,0,19,314,186,221,0,67,129,
+55,YF3P1 sham,Yerington,3,1,Sham,Sami,Sami,,0,0,0,6,1,75,364,31,113,0,45,101,
+56,YF2P2 sham,Yerington,2,2,Sham,Sami,Sami,,0,0,0,6,2,12,154,16,37,0,5,9,
+57,YF3P1 cont,Yerington,3,1,Control,Sami,Sami,,0,0,0,3,0,3,292,24,51,0,0,15,
+58,FALF3P2 full,Fallon,3,2,Full,Sami,Sami,,1,0,0,0,0,1,11,7,0,0,0,7,
+59,FALF1P3 sham,Fallon,1,3,Sham,Sami,Sami,,2,0,0,8,0,3,110,0,1,5,0,9,
+60,FALF3P2 sham,Fallon,3,2,Sham,Sami,Sami,,2,0,0,3,0,1,34,1,4,3,0,6,
+61,FALF1P3 cont,Fallon,1,3,Control,Sami,Sami,,1,0,0,5,0,5,167,7,5,0,34,15,
+62,FALF3P3 full,Fallon,3,3,Full,Sami,Sami,,1,0,0,1,0,0,42,5,0,2,0,5,
+63,FALF1P2 sham,Fallon,1,2,Sham,Sami,Sami,,3,1,0,2,0,3,90,0,0,2,0,9,
+64,FALF1P1 cont,Fallon,1,1,Control,Sami,Sami,,1,2,0,8,0,2,102,0,0,2,43,23,
+65,FALF1P2 cont,Fallon,1,2,Control,Sami,Sami,,2,0,0,7,1,4,139,0,3,0,3,21,
+66,FALF1P1 sham,Fallon,1,1,Sham,Sami,Sami,,3,1,0,3,0,4,96,8,1,0,20,24,
+67,FALF1P1 full,Fallon,1,1,Full,Sami,Sami,,0,1,0,1,0,0,90,3,0,0,1,8,
+68,FALF4P2 sham,Fallon,4,2,Sham,Sami,Sami,,2,0,0,1,0,2,108,0,8,1,9,60,
+69,FALF1P2 full,Fallon,1,2,Full,Sami,Sami,,0,1,0,0,0,3,58,0,0,2,0,2,
+70,L3P3 cont,Lovelock,3,3,Control,Sami,Sami,,0,0,2,2,3,2,18,1,0,0,0,8,
+71,FALF1P3,Fallon,1,3,Pre-,Sami,Sami,,0,3,0,14,1,6,45,0,0,4,1,14,
+72,FALF4P3,Fallon,4,3,Pre-,Sami,Sami,,1,0,0,2,0,1,73,0,4,1,5,17,
+73,FALF4P2,Fallon,4,2,Pre-,Sami,Sami,,2,1,0,4,0,4,72,0,5,1,12,42,
+74,FALF4P1,Fallon,4,1,Pre-,Sami,Sami,,1,0,0,1,0,3,45,0,6,1,0,24,
+75,FALF1P2,Fallon,1,2,Pre-,Sami,Sami,,2,0,0,9,0,9,47,0,3,3,1,12,
+76,YF1P1 cont,Yerington,1,1,Control,Sami,Sami,,0,3,0,2,0,3,57,4,73,0,8,296,
+77,FALF1P1,Fallon,1,1,Pre-,Sami,Sami,,5,2,0,11,0,4,63,0,3,3,15,44,
+78,FALF3P1,Fallon,3,1,Pre-,Sami,Sami,,0,0,0,8,0,1,9,6,2,1,0,12,
+79,FALF3P2,Fallon,3,2,Pre-,Sami,Sami,,0,0,0,0,0,0,0,0,1,0,1,3,
+80,FALF3P3,Fallon,3,3,Pre-,Sami,Sami,,0,0,0,4,1,1,9,3,0,0,0,6,
+81,L1P3 cont,Lovelock,1,3,Control,Sami,Sami,,6,0,0,2,0,18,385,95,26,1,23,11,
+82,L3P1 full,Lovelock,3,1,Full,Sami,Sami,,1,0,0,6,3,4,301,963,293,0,165,19,
+83,L2P3 full,Lovelock,2,3,Full,Sami,Sami,,0,0,0,1,1,0,176,9430,398,2,142,9,
+84,YF3P2 cont,Yerington,3,2,Control,Sami,Sami,,0,0,0,9,0,23,1225,99,247,1,253,465,
+85,L2P2 sham,Lovelock,2,2,Sham,Sami,Sami,,0,0,0,1,1,3,1988,1809,676,1,252,98,
+86,L2P2 cont,Lovelock,2,2,Control,Anson,Sami,,2,0,1,0,0,12,701,419,346,0,124,64,
+87,L1P3 sham,Lovelock,1,3,Sham,Anson,Sami,,4,0,0,1,0,33,2061,76,19,4,37,17,
+88,L2P3 cont,Lovelock,2,3,Control,Sami,Sami,,1,0,0,1,0,6,2154,2570,1298,0,30,63,
+89,L2P3 sham,Lovelock,2,3,Sham,Sami,Sami,,0,1,0,3,0,8,2488,2432,909,0,71,86,
+90,L2P2 full,Lovelock,2,2,Full,Sami,Sami,,0,0,0,0,0,1,492,8934,917,0,77,30,
+91,YF1P1,Yerington,1,1,Pre-,Anson,Sami,,0,0,1,5,0,2,39,1,200,1,7,363,
+92,YF1P2,Yerington,1,2,Pre-,Anson,Sami,,0,0,0,2,0,4,13,0,135,7,5,202,
+93,YF1P3,Yerington,1,3,Pre-,Anson,Sami,,0,1,3,5,0,6,26,0,170,3,6,219,
+94,YF3P3,Yerington,3,3,Pre-,Anson,Sami,,0,1,1,4,0,48,192,3,139,0,29,46,
+95,YF3P1,Yerington,3,1,Pre-,Anson,Sami,,0,0,1,3,0,12,96,0,118,7,8,59,
+96,YF2P1,Yerington,2,1,Pre-,Sami,Sami,,3,0,2,6,2,4,18,1,8,2,0,36,
+97,YF2P2,Yerington,2,2,Pre-,Sami,Sami,,0,0,2,3,0,40,44,0,58,6,2,65,
+98,YF2P3,Yerington,2,3,Pre-,Sami,Sami,,1,1,3,10,1,24,53,0,84,8,3,106,
+99,YF3P2,Yerington,3,2,Pre-,Sami,Sami,,2,0,2,9,0,45,134,0,134,1,116,193,
+100,LF1P1,Lovelock,1,1,Pre-,Sami,Sami,,2,0,1,4,1,3,183,27,12,3,1,8,
+101,LF1P2,Lovelock,1,2,Pre-,Sami,Sami,,1,0,0,3,1,3,33,8,6,2,1,6,
+102,LF1P3,Lovelock,1,3,Pre-,Sami,Sami,,1,0,0,3,1,1,231,7,4,0,0,9,
+103,LF2P1,Lovelock,2,1,Pre-,Sami,Sami,,0,0,0,0,1,0,41,22,34,0,0,9,
+104,LF2P2,Lovelock,2,2,Pre-,Sami,Sami,,0,0,0,0,2,0,121,16,62,0,0,12,
+105,LF2P3,Lovelock,2,3,Pre-,Sami,Sami,,0,0,0,2,0,7,321,95,67,0,0,8,
+106,LF3P1,Lovelock,3,1,Pre-,Sami,Sami,,1,0,3,7,3,4,29,7,134,0,1,20,
+107,LF3P2,Lovelock,3,2,Pre-,Sami,Sami,,0,0,0,5,1,2,5,4,25,0,1,9,
+108,LF3P3,Lovelock,3,3,Pre-,Sami,Sami,,0,0,2,2,0,1,3,1,50,0,0,3,

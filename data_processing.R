@@ -64,9 +64,9 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
 # now only 1 csv (supervised classification, 8 classes)
 # import csv files
 #
-landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv')
+# landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv')
 # if you want target fields according to classifier instead of fixed class:
-# landcover <- read_csv('raw_data/superDove_areaScores.csv')
+landcover <- read_csv('raw_data/superDove_areaScores.csv')
 
 # check data ####
 ## check spring and fall data ####
@@ -821,6 +821,11 @@ for (i in 1:length(field)) {
   sitename[[i]] = paste0(site[[i]], field[[i]])
 }
 sitename
+# FIX ERROR ####
+#2022-08-10T15:00:57Z
+# ee exports are sorted "naturally" eg 0, 1, 10, 11, 2, 3
+# updates sitename to correct for this
+sitename <- c(sitename[1:2], sitename[11:12], sitename[3:10])
 # tidy
 tidyLandcover <- landcover %>%
   # split cols
@@ -1034,7 +1039,7 @@ vegSites # final site-level veg data from surveys
 # export tidy data ####
 # build list of data to export
 tidy_data <- list(data, data_long, tidyLandcover, vegPlots, vegSites)
-data_names <- list('data', 'data_long', 'landcover_fixed', 'vegPlots', 'vegSites')
+data_names <- list('data', 'data_long', 'landcover', 'vegPlots', 'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data/', .y, ".csv")))
 

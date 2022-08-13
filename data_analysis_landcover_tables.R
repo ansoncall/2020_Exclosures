@@ -324,7 +324,7 @@ for (i in 1:length(namesList)) {
 
 
 
-# 8 class here ####
+  # 8 class here ####
 # read in data ####
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
@@ -477,6 +477,9 @@ fD_fall <- field_data %>%
 fD_fallFixed <- field_dataFixed %>%
   filter(Season == 'Fall') %>%
   mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
+#2022-08-10T15:48:14Z
+## ERROR ####
+# surface water class not scaled here??? not fixed yet!!
 
 # Subset data for modeling with landcover classes and margin data.
 fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
@@ -578,12 +581,12 @@ for (i in 1:length(taxa)) {
 }
 
 
-# build spring fixed tabs
-for (i in 1:length(taxa)) {
-
-  springFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_springFixed, 3)
-
-}
+# # build spring fixed tabs
+# for (i in 1:length(taxa)) {
+#
+#   springFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_springFixed, 3)
+#
+# }
 
 # fall List
 fallNonFix <- list()
@@ -598,21 +601,23 @@ for (i in 1:length(taxa)) {
 }
 
 
-# build fall fixed tabs
-for (i in 1:length(taxa)) {
-
-  fallFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_fallFixed, 3)
-
-}
-
-tabsList <- c(springNonFix, springFix, fallNonFix, fallFix)
-namesList <- c(springItemNames, springFixItemNames, fallItemNames, fallFixItemNames)
-# currently: 7 class
-################################
-
-
+# # build fall fixed tabs
+# for (i in 1:length(taxa)) {
+#
+#   fallFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_fallFixed, 3)
+#
+# }
+#
+# tabsList <- c(springNonFix, springFix, fallNonFix, fallFix)
+tabsList <- c(springNonFix, fallNonFix)
+# namesList <- c(springItemNames, springFixItemNames, fallItemNames, fallFixItemNames)
+namesList <- c(springItemNames, fallItemNames)
+# # currently: 8 class
+# ################################
+#
+#
 for (i in 1:length(namesList)) {
 
-  saveRDS(tabsList[[i]], paste0('modTabs-distFixed/',namesList[[i]]))
+  saveRDS(tabsList[[i]], paste0('modTabs/',namesList[[i]]))
 
 }

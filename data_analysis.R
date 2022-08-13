@@ -1,5 +1,6 @@
 # Load packages ####
 library(car) # for Anova() on lmer model objects
+library(corrr) # for correlation plots of landcover vars
 library(crayon) # for colored terminal outputs
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
@@ -82,7 +83,8 @@ aph_data <- data_long %>%
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
   filter(Taxa %in% aphlist) %>%
-  mutate(LogDensity = log(Density+1))
+  mutate(LogDensity = log(Density+1)) %>%
+  filter(Taxa %in% c('Acyrthosiphon', 'NonAcy'))
 
 # build density plot
 ggplot(data = aph_data, aes(y = Taxa, x = LogDensity, fill = Taxa)) +
@@ -93,7 +95,7 @@ ggplot(data = aph_data, aes(y = Taxa, x = LogDensity, fill = Taxa)) +
   theme(legend.position = 'none') +
   facet_wrap(~ Season, nrow = 2) +
   xlim(-1, 10)
-
+ggsave('aph-abund.png', width = 12.5, height = 6, units = 'in')
 # barchart for slideshow
 # spring
 ggplot(data = aph_data %>%
@@ -226,7 +228,18 @@ ggplot(landcover_long,
   geom_bar( stat = "identity") +
   facet_wrap(ncol = 7, ~site*distanceWeight, scales = 'free') +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave(filename = 'lc.jpg', width = 9, height = 7, units = 'in')
+# ggsave(filename = 'lc.jpg', width = 9, height = 7, units = 'in')
+
+
+ggplot(landcover_long %>% filter(site == 'Lovelock'),
+       # aes - limit x axis to 4 characters
+       aes(x = sub(class, pattern = "(\\w{4}).*", replacement = "\\1."),
+           y = areaScore,
+           fill = class)) +
+  geom_bar( stat = "identity") +
+  facet_wrap(ncol = 7, ~field*distanceWeight, scales = 'free') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# ggsave(filename = 'lc.jpg', width = 9, height = 7, units = 'in')
 
 ## Notes #### Obviously this can't work. Need a way to succinctly show how
 ## distance weighting affects the areaScores. Also, color, class names, etc.
@@ -265,7 +278,7 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 # define list of aphid taxa
 short_aphlist <- c('Acyrthosiphon',
              'Aphis',
-             'Therioaphis')
+             'Therioaphis', 'NonAcy')
 
 # create empty lists
 dredges <- list()
@@ -448,7 +461,6 @@ fallTabs <- lapply(dredges, slice_head, n = 5)
 names(fallTabs) <- short_aphlist
 # show tables
 # fallTabs
-
 # Extract and examine the top Acyrthosiphon model.
 best.acy.mod <- get.models(fallTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
@@ -495,12 +507,40 @@ plot(allEffects(best.therio.mod,
      main = 'Therioaphis, Fall')
 # dev.off()
 
+# Nonacy
+# Extract and examine the top NonAcy model.
+best.nonacy.mod <- get.models(fallTabs[[4]], subset = 1)[[1]]
+summary(best.nonacy.mod)
+# Must remake to plot effects.
+best.nonacy.mod <- lmer(log(NonAcy + 1) ~ log(Arachnida + 1) +
+                          (1|Site) +
+                          (1|Field),
+                        data = mean_density %>% filter(Season == 'Spring'),
+                        REML = FALSE)
+# make plot
+# png('fall_nonacy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
+plot(allEffects(best.nonacy.mod,
+                residuals = TRUE),
+     main = 'NonAcy, Fall')
+
+# ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
+#   geom_tile() +
+#   theme(axis.text.x=element_text(angle = 45, hjust = 0),
+#         axis.text.y = element_text(angle = 45)) +
+#   scale_fill_gradient(low="blue", high="red") +
+#   labs(x = 'Landcover class',
+#        y = 'Distance weighting algorithm',
+#        title = paste0('log(', getPred[2], ')',
+#                       ' Variable importance, ',
+#                       season)
+#   )
+
 # make plot
 p <- bind_rows(importance_tab, .id = 'Taxon') %>%
   mutate(VarWeights = as.numeric(VarWeights),
          ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
          Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
-  filter(ExpVars %in% c("Arachnida", "Geocoris", "Ichneumonoidea")) %>%
+  filter(ExpVars %in% c("Arachnida", "Geocoris", "Ichneumonoidea", "Anthocoridae")) %>%
   ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
   geom_tile() +
   theme(axis.text.x = element_text(angle = 45, hjust = 0),
@@ -511,7 +551,7 @@ p <- bind_rows(importance_tab, .id = 'Taxon') %>%
         axis.text.x=element_text(angle=30,hjust=0.9))
 
 p
-# ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
+ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
 
 # clean environment
 rm(dredges, fallTabs,
@@ -848,6 +888,207 @@ fD_spring <- field_data %>%
 fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 
 
+### Correlation of landcover factors ####
+distList <- c('_sig1',
+              '_sig2',
+              '_sig3',
+              '_sig4',
+              '_sig5',
+              '_const',
+              'no')
+
+distList2 <- c('Very Aggressive',
+              'Aggressive',
+              'Moderately aggressive',
+              'Moderate',
+              'Slight',
+              'Constant',
+              'None')
+
+dVarList <- c()
+library(tidyselect)
+for (i in 1:length(distList)) {
+
+  dVarList[[i]] <- fD_spring %>%
+    select(ends_with(distList[[i]])) %>%
+    rename_with(~ str_remove(.x, "_.+")) %>%
+    rename('Agricultural' = ag,
+           'Alfalfa' = alfalfa,
+           'Bare soil +\n dirt road' = dirt,
+           'Impermeable' = impermeable,
+           'Natural' = naturalArid,
+           'Surface\nwater' = water,
+           'Weedy' = weedy,
+           'Riparian' = wet) %>%
+    relocate(sort(peek_vars())) %>%
+    correlate %>%
+    shave
+
+
+}
+
+dVarList
+for (i in 1:length(distList)) {
+
+  print(rplot(dVarList[[i]], print_cor = TRUE, legend = FALSE, .order = 'alphabet') +
+          theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
+          labs(title = paste(distList2[[i]]))
+  )
+  ggsave(paste0('corr', distList[[i]], '.png'),
+         width = 4,
+         height = 4,
+         units = 'in')
+
+}
+
+fD_spring %>%
+  select(ends_with('sig3'), id) %>%
+  rename_with(~ str_remove(.x, "_.+")) %>%
+  ggplot(aes(wet, dirt)) +
+  geom_point() +
+  geom_text(aes(label = id), hjust = 0, vjust = 0)+
+  labs(x = 'Riparian, moderate weighting',
+       y = 'Bare soil + dirt road,\nmoderate weighting')+
+  coord_cartesian(xlim = c(-1.2, 2.4))
+
+ggsave('dirtByWet_sig3.png', width = 7, height = 5, units = 'in')
+
+### Flooded vs sprinklers ####
+
+wateringMethod <- c(
+  'Flooding',
+  'Flooding',
+  'Flooding',
+  'Flooding',
+  'Flooding',
+  'Flooding',
+  'Sprinklers',
+  'Sprinklers',
+  'Sprinklers',
+  'Sprinklers',
+  'Flooding',
+  'Flooding'
+)
+
+fD_spring_flood <- cbind(fD_spring, wateringMethod)
+
+floodMod <- lmer(log(Acyrthosiphon+1)~wateringMethod+(1|site),
+                 data = fD_spring_flood)
+floodMod
+summary(floodMod)
+
+plot(allEffects(floodMod))
+
+floodMod2 <- lm(log(Acyrthosiphon+1)~wateringMethod, data = fD_spring_flood)
+floodMod2
+summary(floodMod2)
+
+plot(allEffects(floodMod2))
+
+p=ggplot(fD_spring_flood,
+       aes(x = wateringMethod,
+           y = log(Acyrthosiphon + 1))) +
+  # geom_boxplot() +
+  # geom_jitter() +
+  # geom_violin()
+  geom_jitter(aes(color = Site), size = 6, width = 0.06) +
+  # geom_smooth(method = 'lm') +
+  stat_summary(fun.data = 'mean_cl_boot') +
+  labs(title = 'mean_cl_boot',
+       subtitle = 'basic nonparametric bootstrap for obtaining confidence limits')
+
+q=ggplot(fD_spring_flood,
+       aes(x = wateringMethod,
+           y = log(Acyrthosiphon + 1))) +
+  # geom_boxplot() +
+  # geom_jitter() +
+  # geom_violin()
+  geom_jitter(aes(color = Site), size = 6, width = 0.06) +
+  # geom_smooth(method = 'lm') +
+  stat_summary(fun.data = 'mean_cl_normal') +
+  labs(title = 'mean_cl_normal',
+       subtitle = 'lower and upper Gaussian confidence limits based on the t-distribution')
+
+r=ggplot(fD_spring_flood,
+       aes(x = wateringMethod,
+           y = log(Acyrthosiphon + 1))) +
+  geom_boxplot() +
+  # geom_jitter() +
+  # geom_violin()
+  geom_jitter(aes(color = Site), size = 6, width = 0.06) +
+  # geom_smooth(method = 'lm') +
+  # stat_summary(fun.data = 'mean_cl_normal') +
+  labs(title = 'boxplot',
+       subtitle = 'a normal boxplot')
+
+grid.arrange(p,q,r, nrow =1)
+
+mean_cl_normal()
+flooded <- fD_spring_flood %>% filter(wateringMethod=='Flooded') %>%
+  mutate(Acyrthosiphon = log(Acyrthosiphon+1)) %>%
+  select(Acyrthosiphon)
+sprinklers <- fD_spring_flood %>% filter(wateringMethod=='Sprinklers') %>%
+  mutate(Acyrthosiphon = log(Acyrthosiphon+1)) %>%
+  select(Acyrthosiphon)
+
+t.test(flooded, sprinklers, var.equal = TRUE)
+t.test(flooded, sprinklers)
+
+final_fig <- ggplot(fD_spring_flood,
+                    aes(x = wateringMethod,
+                        y = log(Acyrthosiphon + 1))) +
+  geom_jitter(aes(color = Site), size = 6, width = 0.1) +
+  stat_summary(fun.data = 'mean_cl_boot', geom="errorbar", width = 0.3)+
+  labs(
+       y = 'log(Acyrthosiphon density)',
+       x = 'Irrigation method')+
+  theme_classic(base_size = 20) +
+  scale_color_brewer(type = 'qual', palette = 2)
+final_fig
+ggsave('watering.png', width = 5.5, height = 6.5)
+
+
+
+### sum of nat ####
+sums <- field_data %>%
+  filter(Season == 'Spring') %>% # must not use scaled data
+  mutate(sum_no = rowSums(across(ends_with('no')))) %>%
+  mutate(sum_sig4 = rowSums(across(ends_with('sig4')))) %>%
+  mutate(sum_sig2 = rowSums(across(ends_with('sig2')))) %>%
+  select(id, ends_with('no'), ends_with('sig4'), ends_with('sig2')) %>%
+  select(id, starts_with('naturalArid'), starts_with('sum')) %>%
+  mutate(ratio_no = (naturalArid_no/sum_no)*100,
+         ratio_sig4 = (naturalArid_sig4/sum_sig4)*100,
+         ratio_sig2 = (naturalArid_sig2/sum_sig2)*100) %>%
+  select(id, starts_with('ratio')) %>%
+  filter(id == 'Minden02')
+
+
+sums
+ratios<-sums %>% select(-id)
+percentile <- ratios$ratio_no
+ggplot() +
+  geom_col(aes("", 100)) +
+  geom_col(aes("", percentile), fill = "#CF3FFF") +
+  coord_flip() +
+  theme_void()
+ggsave('naNo.png', width = 3, height = 0.5, units = 'in')
+percentile <- ratios$ratio_sig4
+ggplot() +
+  geom_col(aes("", 100)) +
+  geom_col(aes("", percentile), fill = "#CF3FFF") +
+  coord_flip() +
+  theme_void()
+ggsave('sig4No.png', width = 3, height = 0.5, units = 'in')
+percentile <- ratios$ratio_sig2
+ggplot() +
+  geom_col(aes("", 100)) +
+  geom_col(aes("", percentile), fill = "#CF3FFF") +
+  coord_flip() +
+  theme_void()
+ggsave('sig2No.png', width = 3, height = 0.5, units = 'in')
+
+
 #### General figs ####
 # define list of taxa of interest
 taxaList <- c('Arachnida',
@@ -877,23 +1118,39 @@ for (i in 1:length(taxaList)) {
   heads[[i]] <- head(tabList[[i]])
 
 }
+
+viList[[5]]
+View(tabList[[5]])
+
 # plot top mod effects (one at a time, manually)
 
-k = 1
+k =5
   plotName <- paste0(taxaList[[k]], '_rank1_mod_effect.png')
-  plotMod <- get.models(tabList[[k]], 2)[[1]]
-  png(plotName,
-      width = 12.5,
+  plotMod <- get.models(tabList[[k]], 1)[[1]]
+  # plotMod <- get.models(acyG1, 4)[[1]]
+  summary(plotMod)
+  nullMod <- lmer(log(Acyrthosiphon + 1)~(1|Site), data = fD_spring, REML = F)
+  anova(plotMod, nullMod)
+  png(paste0('fixed',plotName),
+      width = 6.5,
       height = 6,
       units = 'in',
       res = 300)
-  plot(effect('impermeable_sig3',plotMod, residuals = TRUE),
+  plot(effect('wet_sig2',plotMod, residuals = TRUE),
        main = NULL,
-       xlab = 'Impermeable cover, moderately aggressive weighting',
+       xlab = 'Riparian vegetation,\n aggressive weighting',
        id = list(n = length(get(plotMod@call$data)$id),
                  labels = get(plotMod@call$data)$id))
   dev.off()
 
+
+
+
+ggplot(fD_spring_sub, aes(reorder(id, shan, desc), shan)) +
+  geom_col() +
+  theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
+  labs(x = 'Field', y = 'Shannon diversity of field margin')
+ggsave('shan.png', width = 12.5, height = 6, units = 'in')
 # make global modsel tabs
 # ara
 araG1 <- makeGlobalLandcoverModTabSpring(tabList[[1]], 1, 3)
@@ -914,11 +1171,63 @@ ggsave('riparian_sig1.png', width = 6, height = 4, units = 'in')
 coccG1 <- makeGlobalLandcoverModTabSpring(tabList[[2]], 1, 3)
 coccG2 <- makeGlobalLandcoverModTabSpring(tabList[[2]], 5, 3)
 plotGlobalVarImportance(coccG1)
-ggsave('coccG1.png', width = 6.25, height = 6, units = 'in')
+ggsave('coccG1.png', width = 12.5, height = 6, units = 'in')
 plotGlobalVarImportance(coccG2)
 ggsave('coccG2.png', width = 6.25, height = 6, units = 'in')
 
-ggplot(field_data, aes(x = reorder(id, weedy_sig4), y = weedy_sig4)) +
+
+c1mod<-lmer(log(Coccinellidae+1)~weedy_sig1+(1|Site),
+            data = fD_spring_sub, REML = FALSE)
+c2mod<-lmer(log(Coccinellidae+1)~rich+(1|Site),
+            data = fD_spring_sub, REML = FALSE)
+c3mod<-lmer(log(Coccinellidae+1)~total_cover+(1|Site),
+            data = fD_spring_sub, REML = FALSE)
+cmods<-list(c1mod, c2mod, c3mod)
+model.sel(cmods)
+
+anova(c1mod, c2mod)
+plot(allEffects(c1mod, residuals = T))
+
+png(paste0('cmods.png'),
+    width = 6.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+
+plot(effect('weedy_sig1',c1mod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Weedy cover,\n very aggressive weighting',
+     id = list(n = length(get(c1mod@call$data)$id),
+               labels = get(c1mod@call$data)$id))
+dev.off()
+
+png(paste0('cmods2.png'),
+    width = 6.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('rich',c2mod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Plant species richness in field margins',
+     id = list(n = length(get(c2mod@call$data)$id),
+               labels = get(c2mod@call$data)$id))
+dev.off()
+png(paste0('cmods3.png'),
+    width = 6.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('total_cover',c3mod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Plant cover in field margins',
+     id = list(n = length(get(c2mod@call$data)$id),
+               labels = get(c2mod@call$data)$id))
+dev.off()
+dev.off()
+plot(allEffects(c2mod, residuals = T))
+plot()
+
+gplot(field_data, aes(x = reorder(id, weedy_sig4), y = weedy_sig4)) +
   geom_col() +
   labs(y = 'Weedy, moderate weighting',
        x = 'Field') +
@@ -1221,6 +1530,183 @@ fD_fall <- field_data %>%
 # Subset data for modeling with landcover classes and margin data.
 fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
 
+
+# define list of taxa of interest
+taxaList <- c('Arachnida',
+              'Coccinellidae',
+              'Geocoris',
+              'Ichneumonidae',
+              'Acyrthosiphon',
+              'NonAcy')
+
+# read in tabs
+tabList <- c()
+for (i in 1:length(taxaList)) {
+
+  tabList[[i]] <- readRDS(paste0('modTabs/', taxaList[[i]], '_fall_8class'))
+
+}
+# generate vi heatmaps
+viList <- c()
+for (i in 1:length(taxaList)) {
+
+  viList[[i]] <- plotVarImportance(tabList[[i]], 'Fall')
+
+}
+
+viList[[1]]
+viList[[2]]
+viList[[3]]
+viList[[4]]
+viList[[5]]
+viList[[6]]
+# view head of tabs
+heads <- c()
+for (i in 1:length(taxaList)) {
+
+  heads[[i]] <- head(tabList[[i]])
+
+}
+
+# plot top mod effects (one at a time, manually)
+
+k =4
+View(tabList[[1]])
+plotName <- paste0(taxaList[[k]], '_rank1_mod_effect_fa.png')
+plotMod <- get.models(tabList[[k]], 1)[[1]]
+# plotMod <- get.models(acyG1, 4)[[1]]
+summary(plotMod)
+nullMod <- lmer(log(Ichneumonidae
+                    + 1)~(1|Site), data = fD_fall, REML = F)
+anova(plotMod, nullMod)
+png(paste0('b',plotName),
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('ag_sig1',plotMod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Agricultural cover,\n Very aggressive weighting',
+     # ylim = c(0,10),
+     id = list(n = length(get(plotMod@call$data)$id),
+               labels = get(plotMod@call$data)$id))
+dev.off()
+
+
+
+
+ggplot(fD_fall, aes(reorder(id, Anthocoridae), log(Anthocoridae+1))) +
+  geom_col()
+  # theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
+  geom_text(aes(label=id), hjust = 0, vjust=0)+
+  labs(x = 'Very aggressive', y = 'Moderate',
+       title = 'Natural landcover, correlation between weightings')+
+  coord_cartesian(xlim = c(-1,2.7))
+ggsave('non-field.png', width = 6, height = 6, units = 'in')
+# make global modsel tabs
+araFD1 <- makeGlobalLandcoverModTabFall(tabList[[1]], 1, 3)
+ggsave('anthG.png', width = 6, height = 6, units = 'in')
+plotGlobalVarImportance(araFD1)
+fD_fall_sub
+
+
+#### Anthocoridae ####
+buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
+  # taxon='NonAcy'
+  # data=fD_fall
+
+  distList <- c('_no ',
+                '_const ',
+                '_sig1 ',
+                '_sig2 ',
+                '_sig3 ',
+                '_sig4 ',
+                '_sig5 ')
+
+  cand_mod_tabs <- list()
+
+  if (taxon == 'empty' | !is_tibble(data)) {
+    stop(red("Please specify taxon and data \n"), call. = FALSE)
+  }
+
+  # print inputs
+  cat(yellow('Taxon:'),
+      green(taxon),
+      yellow('Data:'),
+      green(deparse(substitute(data))),
+      '\n')
+
+  # get dfname
+  dfname <- as.name(deparse(substitute(data)))
+  # Build models
+  for (i in 1:length(distList)) {
+    # i=2
+
+    # incase full model fails to fit, try 'tricking' dredge
+    message(blue('fitting', distList[[i]],'models'))
+    # fit reduced model
+    fmod.red <- lmer(as.formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ (1|Site)'
+      )),
+      data = data,
+      REML = FALSE,
+      na.action = 'na.fail')
+    # define full model formula
+    form <-formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ ',
+             paste0(varList, distList[[i]], '+ ', collapse = ''),
+             '(1|Site)'
+      ))
+    # Replace reduced model formula with full global model formula.
+    attr(fmod.red@frame, "formula") <- form
+    # Run dredge() with m.max parameter to avoid convergence failures.
+    fmod.red@call$data <- dfname
+
+    cand_mod_tabs[[i]] <-  # superassign?
+      model.sel(lapply(
+        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
+        eval))
+
+    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
+
+  }
+  # Rbind the elements of the list together. This forces recalculation of AICc
+  mod_table <- rbind(cand_mod_tabs[[1]],
+                     cand_mod_tabs[[2]],
+                     cand_mod_tabs[[3]],
+                     cand_mod_tabs[[4]],
+                     cand_mod_tabs[[5]],
+                     cand_mod_tabs[[6]],
+                     cand_mod_tabs[[7]])
+
+  return(mod_table)
+}
+
+# anthMods <- buildLandcoverModTab('Anthocoridae', fD_fall, 3)
+plotName <- paste0('Anth', '_rank1_mod_effect_fa.png')
+View(anthMods)
+plotVarImportance(anthMods)
+plotMod <- get.models(anthMods, 10)[[1]]
+# plotMod <- get.models(acyG1, 4)[[1]]
+summary(plotMod)
+nullMod <- lmer(log(Anthocoridae
+                    + 1)~(1|Site), data = fD_fall, REML = F)
+anova(plotMod, nullMod)
+png(paste0('a',plotName),
+    width = 12.5,
+    height = 6,
+    units = 'in',
+    res = 300)
+plot(effect('alfalfa_no',plotMod, residuals = TRUE),
+     main = NULL,
+     xlab = 'Alfalfa cover,\n No weighting',
+     id = list(n = length(get(plotMod@call$data)$id),
+               labels = get(plotMod@call$data)$id))
+dev.off()
 #### Arachnida ####
 # Build global model selection table
 arachnida_mod_table_fa <- buildLandcoverModTab('Arachnida', fD_fall)
@@ -1420,7 +1906,7 @@ buildBestLandcoverMod(geocoris_global_fa, 1)
 ##### Acyrthosiphon ####
 
 # Build global model selection table
-acyrthosiphon_mod_table_sp <- buildLandcoverModTab('Acyrthosiphon', fD_spring)
+acyrthosiphon_mod_table_sp <- readRDS('modTabs/Acyrthosiphon_spring_8class')
 # Plot best mod and call summary
 buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 1, 'Spring')
 # similar effect with sig1
@@ -1428,7 +1914,7 @@ buildBestLandcoverMod(mod_table = acyrthosiphon_mod_table_sp, rank = 1, 'Spring'
 # Plot var importance charts
 plotVarImportance(mod_table = acyrthosiphon_mod_table_sp)
 # make global mod table (single distweight)
-acyrthosiphon_global_sp <- makeGlobalLandcoverModTab(acyrthosiphon_mod_table_sp, 1)
+acyrthosiphon_global_sp <- makeGlobalLandcoverModTabSpring(acyrthosiphon_mod_table_sp, 1)
 # plot var importance for global mod table
 plotGlobalVarImportance(acyrthosiphon_global_sp)
 # build best model
@@ -1439,7 +1925,47 @@ plot(allEffects(acyrthosiphon_fin_mod_sp, residuals = TRUE),
      id = list(n = nrow(acyrthosiphon_fin_mod_sp@frame),
                labels = acyrthosiphon_fin_mod_sp@frame %>%
                  pull(Site)))
+dev.off()
 # View(acyrthosiphon_fin_mod_sp)
+
+## add in coccinellidae
+modSig5 <- lmer(log(Acyrthosiphon + 1) ~
+                  alfalfa_sig5+naturalArid_sig5+
+                  dirt_sig5+
+                  ag_sig5+
+                  impermeable_sig5+
+                  weedy_sig5+wet_sig5+water_sig5+
+                  log(Coccinellidae+1)+(1|Site),
+                data = fD_spring,
+                REML = FALSE,
+                na.action = 'na.fail')
+modSig3 <- lmer(log(Acyrthosiphon + 1) ~
+                  alfalfa_sig3+naturalArid_sig3+
+                  dirt_sig3+
+                  ag_sig3+
+                  impermeable_sig3+
+                  weedy_sig3+wet_sig3+water_sig3+
+                  log(Coccinellidae+1)+(1|Site),
+                data = fD_spring,
+                REML = FALSE,
+                na.action = 'na.fail')
+acyD1 <- dredge(modSig5, m.lim = c(1,4))
+acyD2 <- dredge(modSig3, m.lim = c(1,4))
+acyS5best <- get.models(acyD1, 1)[[1]]
+acyS3best <- get.models(acyD2, 1)[[1]]
+# acyS5bestPred <- get.models(acyD1pred, 1)[[1]]
+View(acyD1)
+View(acyD2)
+plotGlobalVarImportance(acyD1)
+plotGlobalVarImportance(acyD2)
+ggsave('acyGlobal2.png', width = 12.5, height = 6, units = 'in')
+acyMod <- lmer(log(Acyrthosiphon + 1) ~
+
+                 log(Coccinellidae+1)+(1|Site),
+               data = fD_spring,
+               REML = FALSE,
+               na.action = 'na.fail')
+summary(acyMod)
 
 #### Fall ####
 ##### Non-acyrthosiphon #####
@@ -1549,19 +2075,90 @@ sem_data <- data_long %>%
               values_from = Density) %>%
   cbind(., to.dummy(.$Treatment, 'Trt'))
 
+sem_data_fall <- data_long %>%
+  mutate(Density = log(Density + 1)) %>%
+  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
+                             Treatment !='Pre-' ~ Density)) %>%
+  unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>%
+  mutate(fieldID = paste(Site, Field)) %>%
+  left_join(landcover_sem, by = 'fieldID') %>%
+  filter(Season == 'Fall',
+         Treatment != 'Pre-') %>%
+  select(-`id.x`) %>%
+  mutate(measurementID = paste(Site, Field, Plot)) %>%
+  pivot_wider(              names_from = c(Taxa),
+                            values_from = Density) %>%
+  cbind(., to.dummy(.$Treatment, 'Trt'))
+
 
 names(sem_data)
 
 
 detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
 spring_acy_sem <- psem(
-  lmer(Coccinellidae ~ `weedyWet_sig4` + `Trt.Sham` + (1|site),
+  lmer(Coccinellidae ~ `weedy_sig1` + `Trt.Sham` + (1|site),
      data = sem_data),
-  lmer(Acyrthosiphon ~ Coccinellidae + `impermeable_sig3` + `Trt.Sham`+ (1|site),
+  lmer(Acyrthosiphon ~ Coccinellidae + `Trt.Sham`+ (1|site),
      data = sem_data)
   )
 plot(spring_acy_sem)
+install.packages('DiagrammeRsvg')
+library(DiagrammeRsvg)
+plot(spring_acy_sem)%>%
+  export_svg %>% charToRaw %>% rsvg_png("graph.png")
+install.packages('rsvg')
+library(rsvg)
+export_graph(plot(spring_acy_sem),
+             file_name = "pic.png",
+             file_type = "png")
 plot(spring_acy_sem, show = 'unstd') #what do standardized coefs mean?
+
+
+fall_acy_sem <- psem(
+  lmer(Acyrthosiphon ~ Ichneumonidae + `Trt.Sham` + (1|Site),
+       data = sem_data_fall),
+  # lmer(Anthocoridae ~ `ag_sig1` + `naturalArid_sig1` + `Trt.Sham` + (1|Site),
+  #      data = sem_data_fall),
+  lmer(Ichneumonidae ~ `dirt_sig4` + `water_sig4` + `Trt.Sham` + (1|Site),
+       data = sem_data_fall)
+)
+
+
+fall_nonacy_sem <- psem(
+  lmer(NonAcy ~ Arachnida + Ichneumonidae + `Trt.Sham` + (1|Site),
+       data = sem_data_fall),
+  lmer(Arachnida ~ `ag_sig2` + `Trt.Sham` + (1|Site),
+       data = sem_data_fall),
+  lmer(Ichneumonidae ~ `dirt_sig4` + `water_sig4` + `Trt.Sham` + (1|Site),
+       data = sem_data_fall)
+)
+
+foo <-plot(fall_acy_sem)
+bar <-plot(fall_nonacy_sem)
+
+foo
+bar
+foo %>%
+export_svg() %>%
+  charToRaw %>%
+  rsvg_png("./foo.svg")
+bar %>%
+export_svg() %>%
+  charToRaw %>%
+  rsvg_png("./bar.svg")
+
+field_data %>%
+  select(id, Season, Coccinellidae) %>%
+  pivot_wider(id_cols = id, names_from = Season,
+              values_from = Coccinellidae) %>%
+  ggplot(aes(Spring, Fall, label = id)) +
+  geom_point() +
+  geom_text(hjust = 0, vjust = 0) +
+  geom_smooth(method = 'lm')#+
+  # geom_text(label = 'R^2 = 0.09')
+  # stat_smooth_func(geom="text",method="lm",hjust=0,parse=TRUE)
+ggsave('s_f_c.png', width = 12.5, height = 6, units = 'in')
+
 
 
 plots.dir.path <- list.files(tempdir(), pattern="rs-graphics", full.names = TRUE)
@@ -1671,3 +2268,126 @@ test <- lmer(log(Anthocoridae + 1)~total_cover+(1|Site), data = fD_spring, REML 
 
 summary(test)
 plot(allEffects(test, residuals = TRUE))
+
+
+stat_smooth_func <- function(mapping = NULL, data = NULL,
+                             geom = "smooth", position = "identity",
+                             ...,
+                             method = "auto",
+                             formula = y ~ x,
+                             se = TRUE,
+                             n = 80,
+                             span = 0.75,
+                             fullrange = FALSE,
+                             level = 0.95,
+                             method.args = list(),
+                             na.rm = FALSE,
+                             show.legend = NA,
+                             inherit.aes = TRUE,
+                             xpos = NULL,
+                             ypos = NULL) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = StatSmoothFunc,
+    geom = geom,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      method = method,
+      formula = formula,
+      se = se,
+      n = n,
+      fullrange = fullrange,
+      level = level,
+      na.rm = na.rm,
+      method.args = method.args,
+      span = span,
+      xpos = xpos,
+      ypos = ypos,
+      ...
+    )
+  )
+}
+
+
+StatSmoothFunc <- ggproto("StatSmooth", Stat,
+
+                          setup_params = function(data, params) {
+                            # Figure out what type of smoothing to do: loess for small datasets,
+                            # gam with a cubic regression basis for large data
+                            # This is based on the size of the _largest_ group.
+                            if (identical(params$method, "auto")) {
+                              max_group <- max(table(data$group))
+
+                              if (max_group < 1000) {
+                                params$method <- "loess"
+                              } else {
+                                params$method <- "gam"
+                                params$formula <- y ~ s(x, bs = "cs")
+                              }
+                            }
+                            if (identical(params$method, "gam")) {
+                              params$method <- mgcv::gam
+                            }
+
+                            params
+                          },
+
+                          compute_group = function(data, scales, method = "auto", formula = y~x,
+                                                   se = TRUE, n = 80, span = 0.75, fullrange = FALSE,
+                                                   xseq = NULL, level = 0.95, method.args = list(),
+                                                   na.rm = FALSE, xpos=NULL, ypos=NULL) {
+                            if (length(unique(data$x)) < 2) {
+                              # Not enough data to perform fit
+                              return(data.frame())
+                            }
+
+                            if (is.null(data$weight)) data$weight <- 1
+
+                            if (is.null(xseq)) {
+                              if (is.integer(data$x)) {
+                                if (fullrange) {
+                                  xseq <- scales$x$dimension()
+                                } else {
+                                  xseq <- sort(unique(data$x))
+                                }
+                              } else {
+                                if (fullrange) {
+                                  range <- scales$x$dimension()
+                                } else {
+                                  range <- range(data$x, na.rm = TRUE)
+                                }
+                                xseq <- seq(range[1], range[2], length.out = n)
+                              }
+                            }
+                            # Special case span because it's the most commonly used model argument
+                            if (identical(method, "loess")) {
+                              method.args$span <- span
+                            }
+
+                            if (is.character(method)) method <- match.fun(method)
+
+                            base.args <- list(quote(formula), data = quote(data), weights = quote(weight))
+                            model <- do.call(method, c(base.args, method.args))
+
+                            m = model
+                            eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2,
+                                             list(a = format(coef(m)[1], digits = 3),
+                                                  b = format(coef(m)[2], digits = 3),
+                                                  r2 = format(summary(m)$r.squared, digits = 3)))
+                            func_string = as.character(as.expression(eq))
+
+                            if(is.null(xpos)) xpos = min(data$x)*0.9
+                            if(is.null(ypos)) ypos = max(data$y)*0.9
+                            data.frame(x=xpos, y=ypos, label=func_string)
+
+                          },
+
+                          required_aes = c("x", "y")
+)
+
+
+
+

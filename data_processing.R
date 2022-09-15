@@ -65,8 +65,11 @@ veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
 # import csv files
 #
 # landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv')
+# 2022.09.15 NOTE: fixedClass areaScore data is probably outdated.
+
 # if you want target fields according to classifier instead of fixed class:
-landcover <- read_csv('raw_data/superDove_areaScores.csv')
+# this is up to date 2022.09.15
+landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore.csv')
 
 # check data ####
 ## check spring and fall data ####

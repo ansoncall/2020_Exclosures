@@ -21,19 +21,19 @@ getSeason <- function(DATES) {
 }
 
 # import data ####
-## spring data ####
+## spring arthropod data ####
 spring <-
   read_csv('raw_data/Spring_counts.csv',
-           col_types = 'cfffffffddddddddddddc') %>%
+           col_types = 'icfffffffddddddddddddc') %>%
   select(-Sorter, -Counter, -Counter_2) %>%
   mutate(AllAph = Acyrthosiphon + Aphis + Therioaphis,
          NonAcy = Aphis + Therioaphis) %>%
   mutate(Season = 'Spring')
 
-## fall data ####
+## fall arthropod data ####
 fall <- read_csv('raw_data/Fall_counts.csv',
-                 col_types = 'dcffffffdddddddddddd') %>%
-  select(-Sorter, -Counter) %>%
+                 col_types = 'icfffffffddddddddddddc') %>%
+  select(-Sorter, -Counter, -Counter_2) %>%
   mutate(AllAph = Acyrthosiphon + Aphis + Therioaphis,
          NonAcy = Aphis + Therioaphis) %>%
   mutate(Season = 'Fall')
@@ -43,8 +43,9 @@ vegdata <- read_csv('raw_data/VegSurvey.csv',
                     col_types = 'Dcfffddccc') %>%
   mutate(waypointID = paste(site, waypoint))
 
-## updated plant ids for vegdata ####
-new_ids <- read_csv('raw_data/updated_plant_ids.csv') %>%
+## veg data updated plant ids ####
+new_ids <- read_csv('raw_data/updated_plant_ids.csv',
+                    col_types = 'ccccccccc') %>%
   select(orig_code, new_code)
 
 ## field location data ####
@@ -60,16 +61,20 @@ veg_survey_classes <- read_csv('raw_data/vegSurveyClasses.csv',
 ## landcover data ####
 # now only 1 csv (supervised classification, 8 classes)
 # import csv files
-#
-# landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv')
+# landcover <-
+#   read_csv(
+#     'raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv'
+#   )
 # 2022.09.15 NOTE: fixedClass areaScore data is probably outdated.
-
+#
 # if you want target fields according to classifier instead of fixed class:
 # this is up to date 2022.09.15
-landcover <- read_csv('raw_data/superDoveSupervisedClassification_areaScore.csv')
+landcover <-
+  read_csv('raw_data/superDoveSupervisedClassification_areaScore.csv',
+           col_types = 'c')
 
 # check data ####
-## check spring and fall data ####
+## check arthropod data ####
 spring %>%
   group_by(Site, Field) %>%
   count()
@@ -77,7 +82,7 @@ spring %>%
   group_by(Site, Treatment) %>%
   count()
 
-# Identify error 1
+# identify error 1
 spring %>%
   group_by(Site, Field, Treatment) %>%
   filter(Site=='Lovelock')
@@ -88,7 +93,7 @@ spring %<>%
   mutate(Field = case_when(Vial=='L3P2Full' ~ '3',
                            Vial!='L3P2Full' ~ as.character(Field)))
 
-# Identify error 2
+# identify error 2
 spring %>%
   group_by(Site, Field, Treatment) %>% filter(Site=='Lovelock') %>% count()
 # Lovelock field 3 now overweight
@@ -122,7 +127,7 @@ spring %<>%
   mutate(Season = case_when(Vial=='L3P2Full' ~ 'Fall',
                             Vial!='L3P2Full' ~ as.character(Season)))
 
-# Identify error 3
+# identify error 3
 spring %>%
   group_by(Site, Treatment) %>%
   filter(Season=='Spring') %>%
@@ -170,7 +175,7 @@ spring %<>%
   mutate(Season = case_when(Vial=='L3P3SHAM' ~ 'Fall',
                             Vial!='L3P3SHAM' ~ as.character(Season)))
 
-# Identify error 4
+# identify error 4
 spring %>%
   group_by(Site, Field) %>%
   filter(Season=='Spring') %>%
@@ -207,7 +212,7 @@ spring %<>%
                            Vial!='YF2(YF1?)P2SHAM' | Field!='2?1' ~
                              as.character(Field)))
 
-# Identify error 5
+# identify error 5
 spring %>%
   group_by(Site, Field) %>%
   filter(Season=='Spring') %>%
@@ -238,7 +243,7 @@ spring %<>%
                            Vial!='YF2(YF1?)P2FULL' | Field!='2?1' ~
                              as.character(Field)))
 
-# Identify error 6
+# identify error 6
 spring %>%
   group_by(Site, Field) %>%
   filter(Season=='Spring') %>%
@@ -328,7 +333,7 @@ fall %<>%
                             Vial!='FALF4P3 sham' | AllAph != 92 ~
                               as.character(Season)))
 
-# Identify error 7
+# identify error 7
 fall %>%
   group_by(Site, Treatment) %>%
   filter(Season=='Fall') %>%
@@ -384,7 +389,7 @@ spring %>%
   filter(Season=='Fall') %>%
   count
 
-# Identify error 8
+# identify error 8
 spring %>%
   group_by(Site, Treatment) %>%
   filter(Season=='Spring') %>%
@@ -419,7 +424,7 @@ spring %<>%
                                Vial!='LLF3P2SHAM[?]' | AllAph != 86 ~
                                  as.character(Treatment)))
 
-# Identify error 9
+# identify error 9
 fall %>%
   group_by(Site, Field) %>%
   count
@@ -441,7 +446,7 @@ fall %<>%
   mutate(Field = case_when(Field == '' ~ '1',
                            Field != '' ~ as.character(Field)))
 
-# Identify error 10
+# identify error 10
 fall %>%
   group_by(Site, Plot) %>%
   count
@@ -462,7 +467,9 @@ fall %>% filter(Site=='Yerington', Field=='2', Plot=='1')
 # Yerington field 2 plot 1 sham is missing, and the YF1P7 measurement is from a
 # sham exclosure
 # this suggests that YF1P7 should be moved to Yerington field 2 plot 1
-fall %>% filter(Site=='Yerington', Field=='1' | Field=='2', Plot=='1' | is.na(Plot)) %>%
+fall %>% filter(Site=='Yerington',
+                Field=='1' | Field=='2',
+                Plot=='1' | is.na(Plot)) %>%
   mutate(VialID = paste(Vial, AllAph)) %>%
   ggplot(aes(x = VialID, y = AllAph, fill = Treatment)) +
   geom_bar(stat = 'identity')
@@ -478,7 +485,7 @@ fall %<>%
                            !is.na(Plot) ~ as.character(Field)),
          Plot = case_when(Plot == '' ~ '1', !is.na(Plot) ~ as.character(Plot)))
 
-# Identify error 11
+# identify error 11
 spring %>%
   group_by(Field, Plot, Treatment, Season) %>%
   filter(Season=='Spring') %>%
@@ -547,8 +554,8 @@ spring %>%
 # fall data looks complete
 
 # merge spring and fall data into a single tibble
-data <- rbind(spring %>% select(-Notes),
-              fall %>% select(-Number)) %>%
+data <- rbind(spring %>% select(-Number, -Notes),
+              fall %>% select(-Number, -Notes)) %>%
   mutate(Season = as_factor(Season))
 data %>%
   group_by(Field) %>%
@@ -579,7 +586,7 @@ data %>%
 rm(spring, fall)
 
 ## check veg data ####
-# Identify error 1
+# identify error 1
 str(vegdata)
 levels(vegdata$species)
 vegdata %>%
@@ -743,7 +750,8 @@ locs <- rawlocs %>%
                           .$Name))) %>% # parse site col
   select(id, field_id, long = POINT_X, lat = POINT_Y) %>% # drop unused cols
   left_join(veg_survey_classes %>%
-              mutate(id = paste0(site, plotnum)), # join veg_survey_classes from ee data
+              # join veg_survey_classes from ee data
+              mutate(id = paste0(site, plotnum)),
             by = 'id') %>%
   select(-name) %>%  # drop 'name' col
   relocate(id, site, plotnum, type, lat, long, field_id) # reorder cols
@@ -813,8 +821,7 @@ for (i in 1:length(field)) {
   sitename[[i]] = paste0(site[[i]], field[[i]])
 }
 sitename
-# FIX ERROR ####
-#2022-08-10T15:00:57Z
+
 # ee exports are sorted "naturally" eg 0, 1, 10, 11, 2, 3
 # updates sitename to correct for this
 sitename <- c(sitename[1:2], sitename[11:12], sitename[3:10])
@@ -909,7 +916,7 @@ rm(df, no, const, sig1, sig2, sig3, sig4, sig5,
    noRatio, constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio,
    distanceWeight, out, field, site)
 
-## calculate vegdata diversity metrics ####
+## calculate veg data metrics ####
 # these metrics are all based on cover, since this is the more complete data
 ### make subplot-level diversity table ####
 subplot_divdata <- vegdata %>%
@@ -940,7 +947,17 @@ vegPlots <- subplot_divdata %>%
   select(-id) %>% # drop simple (no season) id since this is no longer needed
   mutate(type = as_factor(type)) %>% # covert 'type' to factor
   # reorder all cols, fix capitalization
-  relocate(id = id_season, field_id, site, plotnum, type, season, lat, long, shan, simp, rich)
+  relocate(id = id_season,
+           field_id,
+           site,
+           plotnum,
+           type,
+           season,
+           lat,
+           long,
+           shan,
+           simp,
+           rich)
 
 # rm helper vars
 rm(subplot_divdata, shan, simp, rich, locs)
@@ -982,37 +999,6 @@ vegSites %<>%
 # rm helper vars
 rm(shan, simp, rich, vegdata)
 
-# define convenience identifiers ####
-# move this to main script
-# define lists of predator and aphid taxa
-predlist <- c('Arachnida','Coccinellidae','Ichneumonidae',
-              'Nabis', 'Geocoris', 'Anthocoridae')
-aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis', 'AllAph', 'NonAcy')
-
-# define predator- and aphid-only tibbles
-# filter data to include only predators
-preddata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
-                       data_long %>% filter(Treatment == 'Pre-'),
-                       by = c('Site','Field','Plot','Taxa','Season')) %>%
-  select(Site:Plot,
-         Treatment = Treatment.x,
-         Taxa,
-         Density = Density.x,
-         Pre_Density = Density.y,
-         Season) %>%
-  filter(Taxa %in% predlist)
-
-aphdata <- right_join(data_long %>% filter(Treatment != 'Pre-'),
-                      data_long %>% filter(Treatment == 'Pre-'),
-                      by = c('Site','Field','Plot','Taxa','Season')) %>%
-  select(Site:Plot,
-         Treatment = Treatment.x,
-         Taxa,
-         Density = Density.x,
-         Pre_Density = Density.y,
-         Season) %>%
-  filter(Taxa %in% aphlist)
-
 # filter out 'Full' data ####
 # remove 'Full' treatments from all data
 data %<>% filter(Treatment != 'Full')
@@ -1034,4 +1020,3 @@ tidy_data <- list(data, data_long, tidyLandcover, vegPlots, vegSites)
 data_names <- list('data', 'data_long', 'landcover', 'vegPlots', 'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data/', .y, ".csv")))
-

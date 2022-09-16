@@ -4,7 +4,7 @@ YF1P1,Yerington,1,1,Pre-,Spring,Nabis,1
 YF1P1,Yerington,1,1,Pre-,Spring,Geocoris,2
 YF1P1,Yerington,1,1,Pre-,Spring,Anthocoridae,21
 YF1P1,Yerington,1,1,Pre-,Spring,Coccinellidae,0
-YF1P1,Yerington,1,1,Pre-,Spring,Ichneumonidae,40
+YF1P1,Yerington,1,1,Pre-,Spring,Ichneumonoidea,40
 YF1P1,Yerington,1,1,Pre-,Spring,Acyrthosiphon,4
 YF1P1,Yerington,1,1,Pre-,Spring,Aphis,0
 YF1P1,Yerington,1,1,Pre-,Spring,Therioaphis,0
@@ -18,7 +18,7 @@ YF1P2,Yerington,1,2,Pre-,Spring,Nabis,0
 YF1P2,Yerington,1,2,Pre-,Spring,Geocoris,6
 YF1P2,Yerington,1,2,Pre-,Spring,Anthocoridae,5
 YF1P2,Yerington,1,2,Pre-,Spring,Coccinellidae,7
-YF1P2,Yerington,1,2,Pre-,Spring,Ichneumonidae,156
+YF1P2,Yerington,1,2,Pre-,Spring,Ichneumonoidea,156
 YF1P2,Yerington,1,2,Pre-,Spring,Acyrthosiphon,1
 YF1P2,Yerington,1,2,Pre-,Spring,Aphis,1
 YF1P2,Yerington,1,2,Pre-,Spring,Therioaphis,0
@@ -32,7 +32,7 @@ YF1P3,Yerington,1,3,Pre-,Spring,Nabis,0
 YF1P3,Yerington,1,3,Pre-,Spring,Geocoris,1
 YF1P3,Yerington,1,3,Pre-,Spring,Anthocoridae,16
 YF1P3,Yerington,1,3,Pre-,Spring,Coccinellidae,0
-YF1P3,Yerington,1,3,Pre-,Spring,Ichneumonidae,137
+YF1P3,Yerington,1,3,Pre-,Spring,Ichneumonoidea,137
 YF1P3,Yerington,1,3,Pre-,Spring,Acyrthosiphon,0
 YF1P3,Yerington,1,3,Pre-,Spring,Aphis,0
 YF1P3,Yerington,1,3,Pre-,Spring,Therioaphis,0
@@ -46,7 +46,7 @@ YF2P1,Yerington,2,1,Pre-,Spring,Nabis,1
 YF2P1,Yerington,2,1,Pre-,Spring,Geocoris,7
 YF2P1,Yerington,2,1,Pre-,Spring,Anthocoridae,10
 YF2P1,Yerington,2,1,Pre-,Spring,Coccinellidae,3
-YF2P1,Yerington,2,1,Pre-,Spring,Ichneumonidae,46
+YF2P1,Yerington,2,1,Pre-,Spring,Ichneumonoidea,46
 YF2P1,Yerington,2,1,Pre-,Spring,Acyrthosiphon,23
 YF2P1,Yerington,2,1,Pre-,Spring,Aphis,0
 YF2P1,Yerington,2,1,Pre-,Spring,Therioaphis,0
@@ -60,7 +60,7 @@ YF2P2,Yerington,2,2,Pre-,Spring,Nabis,2
 YF2P2,Yerington,2,2,Pre-,Spring,Geocoris,7
 YF2P2,Yerington,2,2,Pre-,Spring,Anthocoridae,14
 YF2P2,Yerington,2,2,Pre-,Spring,Coccinellidae,6
-YF2P2,Yerington,2,2,Pre-,Spring,Ichneumonidae,77
+YF2P2,Yerington,2,2,Pre-,Spring,Ichneumonoidea,77
 YF2P2,Yerington,2,2,Pre-,Spring,Acyrthosiphon,20
 YF2P2,Yerington,2,2,Pre-,Spring,Aphis,0
 YF2P2,Yerington,2,2,Pre-,Spring,Therioaphis,0
@@ -74,7 +74,7 @@ YF2P3,Yerington,2,3,Pre-,Spring,Nabis,2
 YF2P3,Yerington,2,3,Pre-,Spring,Geocoris,7
 YF2P3,Yerington,2,3,Pre-,Spring,Anthocoridae,19
 YF2P3,Yerington,2,3,Pre-,Spring,Coccinellidae,2
-YF2P3,Yerington,2,3,Pre-,Spring,Ichneumonidae,97
+YF2P3,Yerington,2,3,Pre-,Spring,Ichneumonoidea,97
 YF2P3,Yerington,2,3,Pre-,Spring,Acyrthosiphon,42
 YF2P3,Yerington,2,3,Pre-,Spring,Aphis,1
 YF2P3,Yerington,2,3,Pre-,Spring,Therioaphis,0
@@ -88,7 +88,7 @@ YF2.2(Location3),Yerington,3,1,Pre-,Spring,Nabis,0
 YF2.2(Location3),Yerington,3,1,Pre-,Spring,Geocoris,4
 YF2.2(Location3),Yerington,3,1,Pre-,Spring,Anthocoridae,9
 YF2.2(Location3),Yerington,3,1,Pre-,Spring,Coccinellidae,5
-YF2.2(Location3),Yerington,3,1,Pre-,Spring,Ichneumonidae,22
+YF2.2(Location3),Yerington,3,1,Pre-,Spring,Ichneumonoidea,22
 YF2.2(Location3),Yerington,3,1,Pre-,Spring,Acyrthosiphon,10
 YF2.2(Location3),Yerington,3,1,Pre-,Spring,Aphis,0
 YF2.2(Location3),Yerington,3,1,Pre-,Spring,Therioaphis,0
@@ -102,7 +102,7 @@ YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Nabis,2
 YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Geocoris,7
 YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Anthocoridae,4
 YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Coccinellidae,6
-YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Ichneumonidae,32
+YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Ichneumonoidea,32
 YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Acyrthosiphon,16
 YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Aphis,0
 YF2(Loc3)p2,Yerington,3,2,Pre-,Spring,Therioaphis,0
@@ -116,7 +116,7 @@ YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Nabis,1
 YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Geocoris,18
 YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Anthocoridae,6
 YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Coccinellidae,5
-YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Ichneumonidae,52
+YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Ichneumonoidea,52
 YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Acyrthosiphon,15
 YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Aphis,0
 YF2-2(Location3)P3,Yerington,3,3,Pre-,Spring,Therioaphis,0
@@ -130,7 +130,7 @@ MF1P1,Minden,1,1,Pre-,Spring,Nabis,0
 MF1P1,Minden,1,1,Pre-,Spring,Geocoris,2
 MF1P1,Minden,1,1,Pre-,Spring,Anthocoridae,8
 MF1P1,Minden,1,1,Pre-,Spring,Coccinellidae,1
-MF1P1,Minden,1,1,Pre-,Spring,Ichneumonidae,1
+MF1P1,Minden,1,1,Pre-,Spring,Ichneumonoidea,1
 MF1P1,Minden,1,1,Pre-,Spring,Acyrthosiphon,7
 MF1P1,Minden,1,1,Pre-,Spring,Aphis,0
 MF1P1,Minden,1,1,Pre-,Spring,Therioaphis,2
@@ -144,7 +144,7 @@ MF1P2,Minden,1,2,Pre-,Spring,Nabis,0
 MF1P2,Minden,1,2,Pre-,Spring,Geocoris,0
 MF1P2,Minden,1,2,Pre-,Spring,Anthocoridae,8
 MF1P2,Minden,1,2,Pre-,Spring,Coccinellidae,0
-MF1P2,Minden,1,2,Pre-,Spring,Ichneumonidae,4
+MF1P2,Minden,1,2,Pre-,Spring,Ichneumonoidea,4
 MF1P2,Minden,1,2,Pre-,Spring,Acyrthosiphon,11
 MF1P2,Minden,1,2,Pre-,Spring,Aphis,0
 MF1P2,Minden,1,2,Pre-,Spring,Therioaphis,1
@@ -158,7 +158,7 @@ MF1P3,Minden,1,3,Pre-,Spring,Nabis,1
 MF1P3,Minden,1,3,Pre-,Spring,Geocoris,1
 MF1P3,Minden,1,3,Pre-,Spring,Anthocoridae,14
 MF1P3,Minden,1,3,Pre-,Spring,Coccinellidae,0
-MF1P3,Minden,1,3,Pre-,Spring,Ichneumonidae,15
+MF1P3,Minden,1,3,Pre-,Spring,Ichneumonoidea,15
 MF1P3,Minden,1,3,Pre-,Spring,Acyrthosiphon,17
 MF1P3,Minden,1,3,Pre-,Spring,Aphis,0
 MF1P3,Minden,1,3,Pre-,Spring,Therioaphis,3
@@ -172,7 +172,7 @@ MindenF2P1,Minden,2,1,Pre-,Spring,Nabis,2
 MindenF2P1,Minden,2,1,Pre-,Spring,Geocoris,5
 MindenF2P1,Minden,2,1,Pre-,Spring,Anthocoridae,5
 MindenF2P1,Minden,2,1,Pre-,Spring,Coccinellidae,6
-MindenF2P1,Minden,2,1,Pre-,Spring,Ichneumonidae,8
+MindenF2P1,Minden,2,1,Pre-,Spring,Ichneumonoidea,8
 MindenF2P1,Minden,2,1,Pre-,Spring,Acyrthosiphon,11
 MindenF2P1,Minden,2,1,Pre-,Spring,Aphis,2
 MindenF2P1,Minden,2,1,Pre-,Spring,Therioaphis,10
@@ -186,7 +186,7 @@ MindenF2P2,Minden,2,2,Pre-,Spring,Nabis,1
 MindenF2P2,Minden,2,2,Pre-,Spring,Geocoris,8
 MindenF2P2,Minden,2,2,Pre-,Spring,Anthocoridae,13
 MindenF2P2,Minden,2,2,Pre-,Spring,Coccinellidae,4
-MindenF2P2,Minden,2,2,Pre-,Spring,Ichneumonidae,10
+MindenF2P2,Minden,2,2,Pre-,Spring,Ichneumonoidea,10
 MindenF2P2,Minden,2,2,Pre-,Spring,Acyrthosiphon,18
 MindenF2P2,Minden,2,2,Pre-,Spring,Aphis,1
 MindenF2P2,Minden,2,2,Pre-,Spring,Therioaphis,4
@@ -200,7 +200,7 @@ MindenF2P3,Minden,2,3,Pre-,Spring,Nabis,4
 MindenF2P3,Minden,2,3,Pre-,Spring,Geocoris,0
 MindenF2P3,Minden,2,3,Pre-,Spring,Anthocoridae,31
 MindenF2P3,Minden,2,3,Pre-,Spring,Coccinellidae,1
-MindenF2P3,Minden,2,3,Pre-,Spring,Ichneumonidae,16
+MindenF2P3,Minden,2,3,Pre-,Spring,Ichneumonoidea,16
 MindenF2P3,Minden,2,3,Pre-,Spring,Acyrthosiphon,26
 MindenF2P3,Minden,2,3,Pre-,Spring,Aphis,1
 MindenF2P3,Minden,2,3,Pre-,Spring,Therioaphis,11
@@ -214,7 +214,7 @@ MindenF3P1,Minden,3,1,Pre-,Spring,Nabis,0
 MindenF3P1,Minden,3,1,Pre-,Spring,Geocoris,11
 MindenF3P1,Minden,3,1,Pre-,Spring,Anthocoridae,20
 MindenF3P1,Minden,3,1,Pre-,Spring,Coccinellidae,5
-MindenF3P1,Minden,3,1,Pre-,Spring,Ichneumonidae,18
+MindenF3P1,Minden,3,1,Pre-,Spring,Ichneumonoidea,18
 MindenF3P1,Minden,3,1,Pre-,Spring,Acyrthosiphon,24
 MindenF3P1,Minden,3,1,Pre-,Spring,Aphis,0
 MindenF3P1,Minden,3,1,Pre-,Spring,Therioaphis,19
@@ -228,7 +228,7 @@ FallonField4Plot2,Fallon,2,2,Pre-,Spring,Nabis,0
 FallonField4Plot2,Fallon,2,2,Pre-,Spring,Geocoris,6
 FallonField4Plot2,Fallon,2,2,Pre-,Spring,Anthocoridae,1
 FallonField4Plot2,Fallon,2,2,Pre-,Spring,Coccinellidae,0
-FallonField4Plot2,Fallon,2,2,Pre-,Spring,Ichneumonidae,18
+FallonField4Plot2,Fallon,2,2,Pre-,Spring,Ichneumonoidea,18
 FallonField4Plot2,Fallon,2,2,Pre-,Spring,Acyrthosiphon,186
 FallonField4Plot2,Fallon,2,2,Pre-,Spring,Aphis,0
 FallonField4Plot2,Fallon,2,2,Pre-,Spring,Therioaphis,0
@@ -242,7 +242,7 @@ MindenF3P2,Minden,3,2,Pre-,Spring,Nabis,0
 MindenF3P2,Minden,3,2,Pre-,Spring,Geocoris,1
 MindenF3P2,Minden,3,2,Pre-,Spring,Anthocoridae,8
 MindenF3P2,Minden,3,2,Pre-,Spring,Coccinellidae,2
-MindenF3P2,Minden,3,2,Pre-,Spring,Ichneumonidae,13
+MindenF3P2,Minden,3,2,Pre-,Spring,Ichneumonoidea,13
 MindenF3P2,Minden,3,2,Pre-,Spring,Acyrthosiphon,60
 MindenF3P2,Minden,3,2,Pre-,Spring,Aphis,0
 MindenF3P2,Minden,3,2,Pre-,Spring,Therioaphis,1
@@ -256,7 +256,7 @@ MindenF3P3,Minden,3,3,Pre-,Spring,Nabis,0
 MindenF3P3,Minden,3,3,Pre-,Spring,Geocoris,2
 MindenF3P3,Minden,3,3,Pre-,Spring,Anthocoridae,7
 MindenF3P3,Minden,3,3,Pre-,Spring,Coccinellidae,2
-MindenF3P3,Minden,3,3,Pre-,Spring,Ichneumonidae,5
+MindenF3P3,Minden,3,3,Pre-,Spring,Ichneumonoidea,5
 MindenF3P3,Minden,3,3,Pre-,Spring,Acyrthosiphon,49
 MindenF3P3,Minden,3,3,Pre-,Spring,Aphis,0
 MindenF3P3,Minden,3,3,Pre-,Spring,Therioaphis,2
@@ -270,7 +270,7 @@ LF2P3,Lovelock,2,3,Pre-,Spring,Nabis,0
 LF2P3,Lovelock,2,3,Pre-,Spring,Geocoris,1
 LF2P3,Lovelock,2,3,Pre-,Spring,Anthocoridae,0
 LF2P3,Lovelock,2,3,Pre-,Spring,Coccinellidae,4
-LF2P3,Lovelock,2,3,Pre-,Spring,Ichneumonidae,43
+LF2P3,Lovelock,2,3,Pre-,Spring,Ichneumonoidea,43
 LF2P3,Lovelock,2,3,Pre-,Spring,Acyrthosiphon,607
 LF2P3,Lovelock,2,3,Pre-,Spring,Aphis,0
 LF2P3,Lovelock,2,3,Pre-,Spring,Therioaphis,2
@@ -284,7 +284,7 @@ LF1P2,Lovelock,1,2,Pre-,Spring,Nabis,0
 LF1P2,Lovelock,1,2,Pre-,Spring,Geocoris,0
 LF1P2,Lovelock,1,2,Pre-,Spring,Anthocoridae,3
 LF1P2,Lovelock,1,2,Pre-,Spring,Coccinellidae,5
-LF1P2,Lovelock,1,2,Pre-,Spring,Ichneumonidae,24
+LF1P2,Lovelock,1,2,Pre-,Spring,Ichneumonoidea,24
 LF1P2,Lovelock,1,2,Pre-,Spring,Acyrthosiphon,433
 LF1P2,Lovelock,1,2,Pre-,Spring,Aphis,0
 LF1P2,Lovelock,1,2,Pre-,Spring,Therioaphis,0
@@ -298,7 +298,7 @@ LF1P1,Lovelock,1,1,Pre-,Spring,Nabis,0
 LF1P1,Lovelock,1,1,Pre-,Spring,Geocoris,0
 LF1P1,Lovelock,1,1,Pre-,Spring,Anthocoridae,4
 LF1P1,Lovelock,1,1,Pre-,Spring,Coccinellidae,3
-LF1P1,Lovelock,1,1,Pre-,Spring,Ichneumonidae,22
+LF1P1,Lovelock,1,1,Pre-,Spring,Ichneumonoidea,22
 LF1P1,Lovelock,1,1,Pre-,Spring,Acyrthosiphon,567
 LF1P1,Lovelock,1,1,Pre-,Spring,Aphis,0
 LF1P1,Lovelock,1,1,Pre-,Spring,Therioaphis,0
@@ -312,7 +312,7 @@ LF1P3,Lovelock,1,3,Pre-,Spring,Nabis,0
 LF1P3,Lovelock,1,3,Pre-,Spring,Geocoris,0
 LF1P3,Lovelock,1,3,Pre-,Spring,Anthocoridae,2
 LF1P3,Lovelock,1,3,Pre-,Spring,Coccinellidae,2
-LF1P3,Lovelock,1,3,Pre-,Spring,Ichneumonidae,21
+LF1P3,Lovelock,1,3,Pre-,Spring,Ichneumonoidea,21
 LF1P3,Lovelock,1,3,Pre-,Spring,Acyrthosiphon,355
 LF1P3,Lovelock,1,3,Pre-,Spring,Aphis,0
 LF1P3,Lovelock,1,3,Pre-,Spring,Therioaphis,0
@@ -326,7 +326,7 @@ LF2P1,Lovelock,2,1,Pre-,Spring,Nabis,0
 LF2P1,Lovelock,2,1,Pre-,Spring,Geocoris,0
 LF2P1,Lovelock,2,1,Pre-,Spring,Anthocoridae,5
 LF2P1,Lovelock,2,1,Pre-,Spring,Coccinellidae,5
-LF2P1,Lovelock,2,1,Pre-,Spring,Ichneumonidae,49
+LF2P1,Lovelock,2,1,Pre-,Spring,Ichneumonoidea,49
 LF2P1,Lovelock,2,1,Pre-,Spring,Acyrthosiphon,313
 LF2P1,Lovelock,2,1,Pre-,Spring,Aphis,0
 LF2P1,Lovelock,2,1,Pre-,Spring,Therioaphis,0
@@ -340,7 +340,7 @@ LF2P2,Lovelock,2,2,Pre-,Spring,Nabis,0
 LF2P2,Lovelock,2,2,Pre-,Spring,Geocoris,2
 LF2P2,Lovelock,2,2,Pre-,Spring,Anthocoridae,1
 LF2P2,Lovelock,2,2,Pre-,Spring,Coccinellidae,8
-LF2P2,Lovelock,2,2,Pre-,Spring,Ichneumonidae,58
+LF2P2,Lovelock,2,2,Pre-,Spring,Ichneumonoidea,58
 LF2P2,Lovelock,2,2,Pre-,Spring,Acyrthosiphon,2950
 LF2P2,Lovelock,2,2,Pre-,Spring,Aphis,0
 LF2P2,Lovelock,2,2,Pre-,Spring,Therioaphis,0
@@ -354,7 +354,7 @@ LovelockF3P1,Lovelock,3,1,Pre-,Spring,Nabis,0
 LovelockF3P1,Lovelock,3,1,Pre-,Spring,Geocoris,0
 LovelockF3P1,Lovelock,3,1,Pre-,Spring,Anthocoridae,1
 LovelockF3P1,Lovelock,3,1,Pre-,Spring,Coccinellidae,5
-LovelockF3P1,Lovelock,3,1,Pre-,Spring,Ichneumonidae,158
+LovelockF3P1,Lovelock,3,1,Pre-,Spring,Ichneumonoidea,158
 LovelockF3P1,Lovelock,3,1,Pre-,Spring,Acyrthosiphon,479
 LovelockF3P1,Lovelock,3,1,Pre-,Spring,Aphis,0
 LovelockF3P1,Lovelock,3,1,Pre-,Spring,Therioaphis,0
@@ -368,7 +368,7 @@ LF3P2,Lovelock,3,2,Pre-,Spring,Nabis,0
 LF3P2,Lovelock,3,2,Pre-,Spring,Geocoris,0
 LF3P2,Lovelock,3,2,Pre-,Spring,Anthocoridae,2
 LF3P2,Lovelock,3,2,Pre-,Spring,Coccinellidae,4
-LF3P2,Lovelock,3,2,Pre-,Spring,Ichneumonidae,580
+LF3P2,Lovelock,3,2,Pre-,Spring,Ichneumonoidea,580
 LF3P2,Lovelock,3,2,Pre-,Spring,Acyrthosiphon,1090
 LF3P2,Lovelock,3,2,Pre-,Spring,Aphis,0
 LF3P2,Lovelock,3,2,Pre-,Spring,Therioaphis,0
@@ -382,7 +382,7 @@ LF3P3,Lovelock,3,3,Pre-,Spring,Nabis,0
 LF3P3,Lovelock,3,3,Pre-,Spring,Geocoris,0
 LF3P3,Lovelock,3,3,Pre-,Spring,Anthocoridae,1
 LF3P3,Lovelock,3,3,Pre-,Spring,Coccinellidae,2
-LF3P3,Lovelock,3,3,Pre-,Spring,Ichneumonidae,480
+LF3P3,Lovelock,3,3,Pre-,Spring,Ichneumonoidea,480
 LF3P3,Lovelock,3,3,Pre-,Spring,Acyrthosiphon,826
 LF3P3,Lovelock,3,3,Pre-,Spring,Aphis,47
 LF3P3,Lovelock,3,3,Pre-,Spring,Therioaphis,0
@@ -396,7 +396,7 @@ FallonF1P1,Fallon,1,1,Pre-,Spring,Nabis,0
 FallonF1P1,Fallon,1,1,Pre-,Spring,Geocoris,0
 FallonF1P1,Fallon,1,1,Pre-,Spring,Anthocoridae,4
 FallonF1P1,Fallon,1,1,Pre-,Spring,Coccinellidae,0
-FallonF1P1,Fallon,1,1,Pre-,Spring,Ichneumonidae,29
+FallonF1P1,Fallon,1,1,Pre-,Spring,Ichneumonoidea,29
 FallonF1P1,Fallon,1,1,Pre-,Spring,Acyrthosiphon,1160
 FallonF1P1,Fallon,1,1,Pre-,Spring,Aphis,2
 FallonF1P1,Fallon,1,1,Pre-,Spring,Therioaphis,3
@@ -410,7 +410,7 @@ FallonF1P2,Fallon,1,2,Pre-,Spring,Nabis,0
 FallonF1P2,Fallon,1,2,Pre-,Spring,Geocoris,0
 FallonF1P2,Fallon,1,2,Pre-,Spring,Anthocoridae,8
 FallonF1P2,Fallon,1,2,Pre-,Spring,Coccinellidae,2
-FallonF1P2,Fallon,1,2,Pre-,Spring,Ichneumonidae,15
+FallonF1P2,Fallon,1,2,Pre-,Spring,Ichneumonoidea,15
 FallonF1P2,Fallon,1,2,Pre-,Spring,Acyrthosiphon,1165
 FallonF1P2,Fallon,1,2,Pre-,Spring,Aphis,0
 FallonF1P2,Fallon,1,2,Pre-,Spring,Therioaphis,1
@@ -424,7 +424,7 @@ FallonF4P1,Fallon,2,1,Pre-,Spring,Nabis,0
 FallonF4P1,Fallon,2,1,Pre-,Spring,Geocoris,1
 FallonF4P1,Fallon,2,1,Pre-,Spring,Anthocoridae,5
 FallonF4P1,Fallon,2,1,Pre-,Spring,Coccinellidae,2
-FallonF4P1,Fallon,2,1,Pre-,Spring,Ichneumonidae,32
+FallonF4P1,Fallon,2,1,Pre-,Spring,Ichneumonoidea,32
 FallonF4P1,Fallon,2,1,Pre-,Spring,Acyrthosiphon,131
 FallonF4P1,Fallon,2,1,Pre-,Spring,Aphis,0
 FallonF4P1,Fallon,2,1,Pre-,Spring,Therioaphis,4
@@ -438,7 +438,7 @@ FallonF31P3,Fallon,3,3,Pre-,Spring,Nabis,0
 FallonF31P3,Fallon,3,3,Pre-,Spring,Geocoris,0
 FallonF31P3,Fallon,3,3,Pre-,Spring,Anthocoridae,4
 FallonF31P3,Fallon,3,3,Pre-,Spring,Coccinellidae,1
-FallonF31P3,Fallon,3,3,Pre-,Spring,Ichneumonidae,14
+FallonF31P3,Fallon,3,3,Pre-,Spring,Ichneumonoidea,14
 FallonF31P3,Fallon,3,3,Pre-,Spring,Acyrthosiphon,345
 FallonF31P3,Fallon,3,3,Pre-,Spring,Aphis,2
 FallonF31P3,Fallon,3,3,Pre-,Spring,Therioaphis,0
@@ -452,7 +452,7 @@ FallonF3P2,Fallon,3,2,Pre-,Spring,Nabis,0
 FallonF3P2,Fallon,3,2,Pre-,Spring,Geocoris,0
 FallonF3P2,Fallon,3,2,Pre-,Spring,Anthocoridae,2
 FallonF3P2,Fallon,3,2,Pre-,Spring,Coccinellidae,2
-FallonF3P2,Fallon,3,2,Pre-,Spring,Ichneumonidae,23
+FallonF3P2,Fallon,3,2,Pre-,Spring,Ichneumonoidea,23
 FallonF3P2,Fallon,3,2,Pre-,Spring,Acyrthosiphon,267
 FallonF3P2,Fallon,3,2,Pre-,Spring,Aphis,3
 FallonF3P2,Fallon,3,2,Pre-,Spring,Therioaphis,2
@@ -466,7 +466,7 @@ Fallon3-1,Fallon,3,1,Pre-,Spring,Nabis,0
 Fallon3-1,Fallon,3,1,Pre-,Spring,Geocoris,0
 Fallon3-1,Fallon,3,1,Pre-,Spring,Anthocoridae,1
 Fallon3-1,Fallon,3,1,Pre-,Spring,Coccinellidae,6
-Fallon3-1,Fallon,3,1,Pre-,Spring,Ichneumonidae,17
+Fallon3-1,Fallon,3,1,Pre-,Spring,Ichneumonoidea,17
 Fallon3-1,Fallon,3,1,Pre-,Spring,Acyrthosiphon,199
 Fallon3-1,Fallon,3,1,Pre-,Spring,Aphis,1
 Fallon3-1,Fallon,3,1,Pre-,Spring,Therioaphis,0
@@ -480,7 +480,7 @@ FallonF1P3,Fallon,1,3,Pre-,Spring,Nabis,0
 FallonF1P3,Fallon,1,3,Pre-,Spring,Geocoris,1
 FallonF1P3,Fallon,1,3,Pre-,Spring,Anthocoridae,7
 FallonF1P3,Fallon,1,3,Pre-,Spring,Coccinellidae,5
-FallonF1P3,Fallon,1,3,Pre-,Spring,Ichneumonidae,28
+FallonF1P3,Fallon,1,3,Pre-,Spring,Ichneumonoidea,28
 FallonF1P3,Fallon,1,3,Pre-,Spring,Acyrthosiphon,1216
 FallonF1P3,Fallon,1,3,Pre-,Spring,Aphis,5
 FallonF1P3,Fallon,1,3,Pre-,Spring,Therioaphis,0
@@ -494,7 +494,7 @@ FallonF4P3,Fallon,2,3,Pre-,Spring,Nabis,0
 FallonF4P3,Fallon,2,3,Pre-,Spring,Geocoris,1
 FallonF4P3,Fallon,2,3,Pre-,Spring,Anthocoridae,5
 FallonF4P3,Fallon,2,3,Pre-,Spring,Coccinellidae,1
-FallonF4P3,Fallon,2,3,Pre-,Spring,Ichneumonidae,25
+FallonF4P3,Fallon,2,3,Pre-,Spring,Ichneumonoidea,25
 FallonF4P3,Fallon,2,3,Pre-,Spring,Acyrthosiphon,176
 FallonF4P3,Fallon,2,3,Pre-,Spring,Aphis,1
 FallonF4P3,Fallon,2,3,Pre-,Spring,Therioaphis,0
@@ -508,7 +508,7 @@ MindenF1P1Control,Minden,1,1,Control,Spring,Nabis,0
 MindenF1P1Control,Minden,1,1,Control,Spring,Geocoris,1
 MindenF1P1Control,Minden,1,1,Control,Spring,Anthocoridae,13
 MindenF1P1Control,Minden,1,1,Control,Spring,Coccinellidae,2
-MindenF1P1Control,Minden,1,1,Control,Spring,Ichneumonidae,18
+MindenF1P1Control,Minden,1,1,Control,Spring,Ichneumonoidea,18
 MindenF1P1Control,Minden,1,1,Control,Spring,Acyrthosiphon,44
 MindenF1P1Control,Minden,1,1,Control,Spring,Aphis,0
 MindenF1P1Control,Minden,1,1,Control,Spring,Therioaphis,2
@@ -522,7 +522,7 @@ FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Nabis,0
 FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Geocoris,2
 FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Anthocoridae,4
 FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Coccinellidae,1
-FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Ichneumonidae,24
+FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Ichneumonoidea,24
 FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Acyrthosiphon,527
 FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Aphis,0
 FallonF1orF23P1Control,Fallon,1,1,Control,Spring,Therioaphis,1
@@ -536,7 +536,7 @@ FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Nabis,0
 FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Geocoris,3
 FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Anthocoridae,9
 FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Coccinellidae,5
-FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Ichneumonidae,25
+FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Ichneumonoidea,25
 FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Acyrthosiphon,691
 FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Aphis,0
 FallonF1P1SHAM,Fallon,1,1,Sham,Spring,Therioaphis,2
@@ -550,7 +550,7 @@ FallonF1P3Sham,Fallon,1,3,Sham,Spring,Nabis,0
 FallonF1P3Sham,Fallon,1,3,Sham,Spring,Geocoris,1
 FallonF1P3Sham,Fallon,1,3,Sham,Spring,Anthocoridae,7
 FallonF1P3Sham,Fallon,1,3,Sham,Spring,Coccinellidae,4
-FallonF1P3Sham,Fallon,1,3,Sham,Spring,Ichneumonidae,29
+FallonF1P3Sham,Fallon,1,3,Sham,Spring,Ichneumonoidea,29
 FallonF1P3Sham,Fallon,1,3,Sham,Spring,Acyrthosiphon,596
 FallonF1P3Sham,Fallon,1,3,Sham,Spring,Aphis,0
 FallonF1P3Sham,Fallon,1,3,Sham,Spring,Therioaphis,0
@@ -564,7 +564,7 @@ FallonF1P3Control,Fallon,1,3,Control,Spring,Nabis,0
 FallonF1P3Control,Fallon,1,3,Control,Spring,Geocoris,5
 FallonF1P3Control,Fallon,1,3,Control,Spring,Anthocoridae,3
 FallonF1P3Control,Fallon,1,3,Control,Spring,Coccinellidae,4
-FallonF1P3Control,Fallon,1,3,Control,Spring,Ichneumonidae,24
+FallonF1P3Control,Fallon,1,3,Control,Spring,Ichneumonoidea,24
 FallonF1P3Control,Fallon,1,3,Control,Spring,Acyrthosiphon,511
 FallonF1P3Control,Fallon,1,3,Control,Spring,Aphis,0
 FallonF1P3Control,Fallon,1,3,Control,Spring,Therioaphis,0
@@ -578,7 +578,7 @@ FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Nabis,0
 FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Geocoris,0
 FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Anthocoridae,6
 FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Coccinellidae,10
-FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Ichneumonidae,30
+FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Ichneumonoidea,30
 FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Acyrthosiphon,990
 FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Aphis,1
 FallonF1orF2?P2Sham,Fallon,1,2,Sham,Spring,Therioaphis,0
@@ -592,7 +592,7 @@ FallonF1P2Control,Fallon,1,2,Control,Spring,Nabis,0
 FallonF1P2Control,Fallon,1,2,Control,Spring,Geocoris,3
 FallonF1P2Control,Fallon,1,2,Control,Spring,Anthocoridae,1
 FallonF1P2Control,Fallon,1,2,Control,Spring,Coccinellidae,5
-FallonF1P2Control,Fallon,1,2,Control,Spring,Ichneumonidae,21
+FallonF1P2Control,Fallon,1,2,Control,Spring,Ichneumonoidea,21
 FallonF1P2Control,Fallon,1,2,Control,Spring,Acyrthosiphon,884
 FallonF1P2Control,Fallon,1,2,Control,Spring,Aphis,1
 FallonF1P2Control,Fallon,1,2,Control,Spring,Therioaphis,2
@@ -606,7 +606,7 @@ FallonF3P2Control,Fallon,3,2,Control,Spring,Nabis,1
 FallonF3P2Control,Fallon,3,2,Control,Spring,Geocoris,0
 FallonF3P2Control,Fallon,3,2,Control,Spring,Anthocoridae,7
 FallonF3P2Control,Fallon,3,2,Control,Spring,Coccinellidae,0
-FallonF3P2Control,Fallon,3,2,Control,Spring,Ichneumonidae,22
+FallonF3P2Control,Fallon,3,2,Control,Spring,Ichneumonoidea,22
 FallonF3P2Control,Fallon,3,2,Control,Spring,Acyrthosiphon,132
 FallonF3P2Control,Fallon,3,2,Control,Spring,Aphis,0
 FallonF3P2Control,Fallon,3,2,Control,Spring,Therioaphis,0
@@ -620,7 +620,7 @@ FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Nabis,0
 FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Geocoris,0
 FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Anthocoridae,6
 FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Coccinellidae,3
-FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Ichneumonidae,19
+FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Ichneumonoidea,19
 FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Acyrthosiphon,190
 FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Aphis,0
 FallonF3P1SHAM,Fallon,3,1,Sham,Spring,Therioaphis,0
@@ -634,7 +634,7 @@ FallonF3P1Control,Fallon,3,1,Control,Spring,Nabis,0
 FallonF3P1Control,Fallon,3,1,Control,Spring,Geocoris,0
 FallonF3P1Control,Fallon,3,1,Control,Spring,Anthocoridae,2
 FallonF3P1Control,Fallon,3,1,Control,Spring,Coccinellidae,4
-FallonF3P1Control,Fallon,3,1,Control,Spring,Ichneumonidae,18
+FallonF3P1Control,Fallon,3,1,Control,Spring,Ichneumonoidea,18
 FallonF3P1Control,Fallon,3,1,Control,Spring,Acyrthosiphon,158
 FallonF3P1Control,Fallon,3,1,Control,Spring,Aphis,0
 FallonF3P1Control,Fallon,3,1,Control,Spring,Therioaphis,0
@@ -648,7 +648,7 @@ FallonF3P3Control,Fallon,3,3,Control,Spring,Nabis,0
 FallonF3P3Control,Fallon,3,3,Control,Spring,Geocoris,0
 FallonF3P3Control,Fallon,3,3,Control,Spring,Anthocoridae,4
 FallonF3P3Control,Fallon,3,3,Control,Spring,Coccinellidae,2
-FallonF3P3Control,Fallon,3,3,Control,Spring,Ichneumonidae,11
+FallonF3P3Control,Fallon,3,3,Control,Spring,Ichneumonoidea,11
 FallonF3P3Control,Fallon,3,3,Control,Spring,Acyrthosiphon,125
 FallonF3P3Control,Fallon,3,3,Control,Spring,Aphis,3
 FallonF3P3Control,Fallon,3,3,Control,Spring,Therioaphis,0
@@ -662,7 +662,7 @@ FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Nabis,0
 FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Geocoris,0
 FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Anthocoridae,7
 FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Coccinellidae,2
-FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Ichneumonidae,16
+FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Ichneumonoidea,16
 FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Acyrthosiphon,158
 FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Aphis,0
 FallonF3P2SHAM,Fallon,3,2,Sham,Spring,Therioaphis,1
@@ -676,7 +676,7 @@ FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Nabis,0
 FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Geocoris,0
 FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Anthocoridae,9
 FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Coccinellidae,1
-FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Ichneumonidae,10
+FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Ichneumonoidea,10
 FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Acyrthosiphon,197
 FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Aphis,0
 FallonF3P3SHAM,Fallon,3,3,Sham,Spring,Therioaphis,0
@@ -690,7 +690,7 @@ FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Nabis,0
 FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Geocoris,3
 FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Anthocoridae,3
 FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Coccinellidae,0
-FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Ichneumonidae,21
+FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Ichneumonoidea,21
 FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Acyrthosiphon,93
 FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Aphis,0
 FallonF4P1CONTROL,Fallon,2,1,Control,Spring,Therioaphis,0
@@ -704,7 +704,7 @@ FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Nabis,0
 FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Geocoris,6
 FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Anthocoridae,5
 FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Coccinellidae,1
-FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Ichneumonidae,20
+FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Ichneumonoidea,20
 FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Acyrthosiphon,106
 FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Aphis,0
 FallonF4P1SHAM,Fallon,2,1,Sham,Spring,Therioaphis,4
@@ -718,7 +718,7 @@ FallonF4P2Control,Fallon,2,2,Control,Spring,Nabis,0
 FallonF4P2Control,Fallon,2,2,Control,Spring,Geocoris,5
 FallonF4P2Control,Fallon,2,2,Control,Spring,Anthocoridae,4
 FallonF4P2Control,Fallon,2,2,Control,Spring,Coccinellidae,0
-FallonF4P2Control,Fallon,2,2,Control,Spring,Ichneumonidae,7
+FallonF4P2Control,Fallon,2,2,Control,Spring,Ichneumonoidea,7
 FallonF4P2Control,Fallon,2,2,Control,Spring,Acyrthosiphon,61
 FallonF4P2Control,Fallon,2,2,Control,Spring,Aphis,2
 FallonF4P2Control,Fallon,2,2,Control,Spring,Therioaphis,2
@@ -732,7 +732,7 @@ YF1P2CONTROL,Yerington,1,2,Control,Spring,Nabis,0
 YF1P2CONTROL,Yerington,1,2,Control,Spring,Geocoris,6
 YF1P2CONTROL,Yerington,1,2,Control,Spring,Anthocoridae,5
 YF1P2CONTROL,Yerington,1,2,Control,Spring,Coccinellidae,1
-YF1P2CONTROL,Yerington,1,2,Control,Spring,Ichneumonidae,77
+YF1P2CONTROL,Yerington,1,2,Control,Spring,Ichneumonoidea,77
 YF1P2CONTROL,Yerington,1,2,Control,Spring,Acyrthosiphon,3
 YF1P2CONTROL,Yerington,1,2,Control,Spring,Aphis,0
 YF1P2CONTROL,Yerington,1,2,Control,Spring,Therioaphis,0
@@ -746,7 +746,7 @@ FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Nabis,0
 FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Geocoris,6
 FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Anthocoridae,4
 FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Coccinellidae,0
-FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Ichneumonidae,18
+FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Ichneumonoidea,18
 FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Acyrthosiphon,100
 FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Aphis,0
 FallonF4P2SHAM,Fallon,2,2,Sham,Spring,Therioaphis,3
@@ -760,7 +760,7 @@ YF3P3Control,Yerington,3,3,Control,Spring,Nabis,0
 YF3P3Control,Yerington,3,3,Control,Spring,Geocoris,5
 YF3P3Control,Yerington,3,3,Control,Spring,Anthocoridae,3
 YF3P3Control,Yerington,3,3,Control,Spring,Coccinellidae,2
-YF3P3Control,Yerington,3,3,Control,Spring,Ichneumonidae,7
+YF3P3Control,Yerington,3,3,Control,Spring,Ichneumonoidea,7
 YF3P3Control,Yerington,3,3,Control,Spring,Acyrthosiphon,12
 YF3P3Control,Yerington,3,3,Control,Spring,Aphis,0
 YF3P3Control,Yerington,3,3,Control,Spring,Therioaphis,0
@@ -774,7 +774,7 @@ YF1P1Control,Yerington,1,1,Control,Spring,Nabis,2
 YF1P1Control,Yerington,1,1,Control,Spring,Geocoris,5
 YF1P1Control,Yerington,1,1,Control,Spring,Anthocoridae,29
 YF1P1Control,Yerington,1,1,Control,Spring,Coccinellidae,0
-YF1P1Control,Yerington,1,1,Control,Spring,Ichneumonidae,15
+YF1P1Control,Yerington,1,1,Control,Spring,Ichneumonoidea,15
 YF1P1Control,Yerington,1,1,Control,Spring,Acyrthosiphon,20
 YF1P1Control,Yerington,1,1,Control,Spring,Aphis,0
 YF1P1Control,Yerington,1,1,Control,Spring,Therioaphis,0
@@ -788,7 +788,7 @@ YF1P1Mock,Yerington,1,1,Sham,Spring,Nabis,1
 YF1P1Mock,Yerington,1,1,Sham,Spring,Geocoris,2
 YF1P1Mock,Yerington,1,1,Sham,Spring,Anthocoridae,41
 YF1P1Mock,Yerington,1,1,Sham,Spring,Coccinellidae,1
-YF1P1Mock,Yerington,1,1,Sham,Spring,Ichneumonidae,29
+YF1P1Mock,Yerington,1,1,Sham,Spring,Ichneumonoidea,29
 YF1P1Mock,Yerington,1,1,Sham,Spring,Acyrthosiphon,22
 YF1P1Mock,Yerington,1,1,Sham,Spring,Aphis,1
 YF1P1Mock,Yerington,1,1,Sham,Spring,Therioaphis,0
@@ -802,7 +802,7 @@ YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Nabis,0
 YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Geocoris,3
 YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Anthocoridae,18
 YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Coccinellidae,5
-YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Ichneumonidae,24
+YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Ichneumonoidea,24
 YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Acyrthosiphon,16
 YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Aphis,0
 YF2(YF1?)P2SHAM,Yerington,2,2,Sham,Spring,Therioaphis,0
@@ -816,7 +816,7 @@ YF1P3CONTROL,Yerington,1,3,Control,Spring,Nabis,2
 YF1P3CONTROL,Yerington,1,3,Control,Spring,Geocoris,7
 YF1P3CONTROL,Yerington,1,3,Control,Spring,Anthocoridae,23
 YF1P3CONTROL,Yerington,1,3,Control,Spring,Coccinellidae,5
-YF1P3CONTROL,Yerington,1,3,Control,Spring,Ichneumonidae,91
+YF1P3CONTROL,Yerington,1,3,Control,Spring,Ichneumonoidea,91
 YF1P3CONTROL,Yerington,1,3,Control,Spring,Acyrthosiphon,8
 YF1P3CONTROL,Yerington,1,3,Control,Spring,Aphis,0
 YF1P3CONTROL,Yerington,1,3,Control,Spring,Therioaphis,0
@@ -830,7 +830,7 @@ YF1P3SHAM,Yerington,1,3,Sham,Spring,Nabis,2
 YF1P3SHAM,Yerington,1,3,Sham,Spring,Geocoris,2
 YF1P3SHAM,Yerington,1,3,Sham,Spring,Anthocoridae,22
 YF1P3SHAM,Yerington,1,3,Sham,Spring,Coccinellidae,4
-YF1P3SHAM,Yerington,1,3,Sham,Spring,Ichneumonidae,95
+YF1P3SHAM,Yerington,1,3,Sham,Spring,Ichneumonoidea,95
 YF1P3SHAM,Yerington,1,3,Sham,Spring,Acyrthosiphon,10
 YF1P3SHAM,Yerington,1,3,Sham,Spring,Aphis,1
 YF1P3SHAM,Yerington,1,3,Sham,Spring,Therioaphis,0
@@ -844,7 +844,7 @@ YF2P1CONT,Yerington,2,1,Control,Spring,Nabis,1
 YF2P1CONT,Yerington,2,1,Control,Spring,Geocoris,7
 YF2P1CONT,Yerington,2,1,Control,Spring,Anthocoridae,10
 YF2P1CONT,Yerington,2,1,Control,Spring,Coccinellidae,5
-YF2P1CONT,Yerington,2,1,Control,Spring,Ichneumonidae,16
+YF2P1CONT,Yerington,2,1,Control,Spring,Ichneumonoidea,16
 YF2P1CONT,Yerington,2,1,Control,Spring,Acyrthosiphon,20
 YF2P1CONT,Yerington,2,1,Control,Spring,Aphis,0
 YF2P1CONT,Yerington,2,1,Control,Spring,Therioaphis,0
@@ -858,7 +858,7 @@ YF2P1SHAM,Yerington,2,1,Sham,Spring,Nabis,3
 YF2P1SHAM,Yerington,2,1,Sham,Spring,Geocoris,2
 YF2P1SHAM,Yerington,2,1,Sham,Spring,Anthocoridae,18
 YF2P1SHAM,Yerington,2,1,Sham,Spring,Coccinellidae,10
-YF2P1SHAM,Yerington,2,1,Sham,Spring,Ichneumonidae,27
+YF2P1SHAM,Yerington,2,1,Sham,Spring,Ichneumonoidea,27
 YF2P1SHAM,Yerington,2,1,Sham,Spring,Acyrthosiphon,26
 YF2P1SHAM,Yerington,2,1,Sham,Spring,Aphis,0
 YF2P1SHAM,Yerington,2,1,Sham,Spring,Therioaphis,0
@@ -872,7 +872,7 @@ YF3P1Control,Yerington,3,1,Control,Spring,Nabis,0
 YF3P1Control,Yerington,3,1,Control,Spring,Geocoris,3
 YF3P1Control,Yerington,3,1,Control,Spring,Anthocoridae,6
 YF3P1Control,Yerington,3,1,Control,Spring,Coccinellidae,6
-YF3P1Control,Yerington,3,1,Control,Spring,Ichneumonidae,2
+YF3P1Control,Yerington,3,1,Control,Spring,Ichneumonoidea,2
 YF3P1Control,Yerington,3,1,Control,Spring,Acyrthosiphon,19
 YF3P1Control,Yerington,3,1,Control,Spring,Aphis,1
 YF3P1Control,Yerington,3,1,Control,Spring,Therioaphis,0
@@ -886,7 +886,7 @@ YF3P3SHAM,Yerington,3,3,Sham,Spring,Nabis,0
 YF3P3SHAM,Yerington,3,3,Sham,Spring,Geocoris,5
 YF3P3SHAM,Yerington,3,3,Sham,Spring,Anthocoridae,6
 YF3P3SHAM,Yerington,3,3,Sham,Spring,Coccinellidae,5
-YF3P3SHAM,Yerington,3,3,Sham,Spring,Ichneumonidae,6
+YF3P3SHAM,Yerington,3,3,Sham,Spring,Ichneumonoidea,6
 YF3P3SHAM,Yerington,3,3,Sham,Spring,Acyrthosiphon,11
 YF3P3SHAM,Yerington,3,3,Sham,Spring,Aphis,0
 YF3P3SHAM,Yerington,3,3,Sham,Spring,Therioaphis,0
@@ -900,7 +900,7 @@ YF2P3CONT,Yerington,2,3,Control,Spring,Nabis,0
 YF2P3CONT,Yerington,2,3,Control,Spring,Geocoris,2
 YF2P3CONT,Yerington,2,3,Control,Spring,Anthocoridae,13
 YF2P3CONT,Yerington,2,3,Control,Spring,Coccinellidae,2
-YF2P3CONT,Yerington,2,3,Control,Spring,Ichneumonidae,47
+YF2P3CONT,Yerington,2,3,Control,Spring,Ichneumonoidea,47
 YF2P3CONT,Yerington,2,3,Control,Spring,Acyrthosiphon,27
 YF2P3CONT,Yerington,2,3,Control,Spring,Aphis,0
 YF2P3CONT,Yerington,2,3,Control,Spring,Therioaphis,0
@@ -914,7 +914,7 @@ YF2P2CONT,Yerington,2,2,Control,Spring,Nabis,0
 YF2P2CONT,Yerington,2,2,Control,Spring,Geocoris,4
 YF2P2CONT,Yerington,2,2,Control,Spring,Anthocoridae,16
 YF2P2CONT,Yerington,2,2,Control,Spring,Coccinellidae,3
-YF2P2CONT,Yerington,2,2,Control,Spring,Ichneumonidae,24
+YF2P2CONT,Yerington,2,2,Control,Spring,Ichneumonoidea,24
 YF2P2CONT,Yerington,2,2,Control,Spring,Acyrthosiphon,46
 YF2P2CONT,Yerington,2,2,Control,Spring,Aphis,39
 YF2P2CONT,Yerington,2,2,Control,Spring,Therioaphis,0
@@ -928,7 +928,7 @@ YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Nabis,0
 YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Geocoris,7
 YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Anthocoridae,20
 YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Coccinellidae,0
-YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Ichneumonidae,42
+YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Ichneumonoidea,42
 YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Acyrthosiphon,4
 YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Aphis,0
 YF2(YF1?)P2SHAM,Yerington,1,2,Sham,Spring,Therioaphis,0
@@ -942,7 +942,7 @@ YF2P3SHAM,Yerington,2,3,Sham,Spring,Nabis,0
 YF2P3SHAM,Yerington,2,3,Sham,Spring,Geocoris,4
 YF2P3SHAM,Yerington,2,3,Sham,Spring,Anthocoridae,11
 YF2P3SHAM,Yerington,2,3,Sham,Spring,Coccinellidae,3
-YF2P3SHAM,Yerington,2,3,Sham,Spring,Ichneumonidae,35
+YF2P3SHAM,Yerington,2,3,Sham,Spring,Ichneumonoidea,35
 YF2P3SHAM,Yerington,2,3,Sham,Spring,Acyrthosiphon,38
 YF2P3SHAM,Yerington,2,3,Sham,Spring,Aphis,1
 YF2P3SHAM,Yerington,2,3,Sham,Spring,Therioaphis,0
@@ -956,7 +956,7 @@ YF3P1SHAM,Yerington,3,1,Sham,Spring,Nabis,0
 YF3P1SHAM,Yerington,3,1,Sham,Spring,Geocoris,5
 YF3P1SHAM,Yerington,3,1,Sham,Spring,Anthocoridae,14
 YF3P1SHAM,Yerington,3,1,Sham,Spring,Coccinellidae,4
-YF3P1SHAM,Yerington,3,1,Sham,Spring,Ichneumonidae,2
+YF3P1SHAM,Yerington,3,1,Sham,Spring,Ichneumonoidea,2
 YF3P1SHAM,Yerington,3,1,Sham,Spring,Acyrthosiphon,26
 YF3P1SHAM,Yerington,3,1,Sham,Spring,Aphis,0
 YF3P1SHAM,Yerington,3,1,Sham,Spring,Therioaphis,0
@@ -970,7 +970,7 @@ YF3P2CONT,Yerington,3,2,Control,Spring,Nabis,0
 YF3P2CONT,Yerington,3,2,Control,Spring,Geocoris,2
 YF3P2CONT,Yerington,3,2,Control,Spring,Anthocoridae,1
 YF3P2CONT,Yerington,3,2,Control,Spring,Coccinellidae,1
-YF3P2CONT,Yerington,3,2,Control,Spring,Ichneumonidae,3
+YF3P2CONT,Yerington,3,2,Control,Spring,Ichneumonoidea,3
 YF3P2CONT,Yerington,3,2,Control,Spring,Acyrthosiphon,15
 YF3P2CONT,Yerington,3,2,Control,Spring,Aphis,0
 YF3P2CONT,Yerington,3,2,Control,Spring,Therioaphis,0
@@ -984,7 +984,7 @@ YF3P2SHAM,Yerington,3,2,Sham,Spring,Nabis,0
 YF3P2SHAM,Yerington,3,2,Sham,Spring,Geocoris,2
 YF3P2SHAM,Yerington,3,2,Sham,Spring,Anthocoridae,5
 YF3P2SHAM,Yerington,3,2,Sham,Spring,Coccinellidae,3
-YF3P2SHAM,Yerington,3,2,Sham,Spring,Ichneumonidae,4
+YF3P2SHAM,Yerington,3,2,Sham,Spring,Ichneumonoidea,4
 YF3P2SHAM,Yerington,3,2,Sham,Spring,Acyrthosiphon,27
 YF3P2SHAM,Yerington,3,2,Sham,Spring,Aphis,0
 YF3P2SHAM,Yerington,3,2,Sham,Spring,Therioaphis,0
@@ -998,7 +998,7 @@ FallonF4P3CONT,Fallon,2,3,Control,Spring,Nabis,0
 FallonF4P3CONT,Fallon,2,3,Control,Spring,Geocoris,4
 FallonF4P3CONT,Fallon,2,3,Control,Spring,Anthocoridae,0
 FallonF4P3CONT,Fallon,2,3,Control,Spring,Coccinellidae,1
-FallonF4P3CONT,Fallon,2,3,Control,Spring,Ichneumonidae,14
+FallonF4P3CONT,Fallon,2,3,Control,Spring,Ichneumonoidea,14
 FallonF4P3CONT,Fallon,2,3,Control,Spring,Acyrthosiphon,113
 FallonF4P3CONT,Fallon,2,3,Control,Spring,Aphis,0
 FallonF4P3CONT,Fallon,2,3,Control,Spring,Therioaphis,2
@@ -1012,7 +1012,7 @@ MindenF1P1SHAM,Minden,1,1,Sham,Spring,Nabis,0
 MindenF1P1SHAM,Minden,1,1,Sham,Spring,Geocoris,0
 MindenF1P1SHAM,Minden,1,1,Sham,Spring,Anthocoridae,24
 MindenF1P1SHAM,Minden,1,1,Sham,Spring,Coccinellidae,1
-MindenF1P1SHAM,Minden,1,1,Sham,Spring,Ichneumonidae,3
+MindenF1P1SHAM,Minden,1,1,Sham,Spring,Ichneumonoidea,3
 MindenF1P1SHAM,Minden,1,1,Sham,Spring,Acyrthosiphon,36
 MindenF1P1SHAM,Minden,1,1,Sham,Spring,Aphis,0
 MindenF1P1SHAM,Minden,1,1,Sham,Spring,Therioaphis,5
@@ -1026,7 +1026,7 @@ MindenF1P2CONT,Minden,1,2,Control,Spring,Nabis,1
 MindenF1P2CONT,Minden,1,2,Control,Spring,Geocoris,3
 MindenF1P2CONT,Minden,1,2,Control,Spring,Anthocoridae,7
 MindenF1P2CONT,Minden,1,2,Control,Spring,Coccinellidae,1
-MindenF1P2CONT,Minden,1,2,Control,Spring,Ichneumonidae,1
+MindenF1P2CONT,Minden,1,2,Control,Spring,Ichneumonoidea,1
 MindenF1P2CONT,Minden,1,2,Control,Spring,Acyrthosiphon,33
 MindenF1P2CONT,Minden,1,2,Control,Spring,Aphis,0
 MindenF1P2CONT,Minden,1,2,Control,Spring,Therioaphis,0
@@ -1040,7 +1040,7 @@ MindenF1P2SHAM,Minden,1,2,Sham,Spring,Nabis,0
 MindenF1P2SHAM,Minden,1,2,Sham,Spring,Geocoris,0
 MindenF1P2SHAM,Minden,1,2,Sham,Spring,Anthocoridae,17
 MindenF1P2SHAM,Minden,1,2,Sham,Spring,Coccinellidae,0
-MindenF1P2SHAM,Minden,1,2,Sham,Spring,Ichneumonidae,3
+MindenF1P2SHAM,Minden,1,2,Sham,Spring,Ichneumonoidea,3
 MindenF1P2SHAM,Minden,1,2,Sham,Spring,Acyrthosiphon,35
 MindenF1P2SHAM,Minden,1,2,Sham,Spring,Aphis,0
 MindenF1P2SHAM,Minden,1,2,Sham,Spring,Therioaphis,0
@@ -1054,7 +1054,7 @@ MindenF1P3CONT,Minden,1,3,Control,Spring,Nabis,0
 MindenF1P3CONT,Minden,1,3,Control,Spring,Geocoris,0
 MindenF1P3CONT,Minden,1,3,Control,Spring,Anthocoridae,22
 MindenF1P3CONT,Minden,1,3,Control,Spring,Coccinellidae,0
-MindenF1P3CONT,Minden,1,3,Control,Spring,Ichneumonidae,7
+MindenF1P3CONT,Minden,1,3,Control,Spring,Ichneumonoidea,7
 MindenF1P3CONT,Minden,1,3,Control,Spring,Acyrthosiphon,28
 MindenF1P3CONT,Minden,1,3,Control,Spring,Aphis,1
 MindenF1P3CONT,Minden,1,3,Control,Spring,Therioaphis,2
@@ -1068,7 +1068,7 @@ MindenF1P3SHAM,Minden,1,3,Sham,Spring,Nabis,1
 MindenF1P3SHAM,Minden,1,3,Sham,Spring,Geocoris,1
 MindenF1P3SHAM,Minden,1,3,Sham,Spring,Anthocoridae,27
 MindenF1P3SHAM,Minden,1,3,Sham,Spring,Coccinellidae,2
-MindenF1P3SHAM,Minden,1,3,Sham,Spring,Ichneumonidae,6
+MindenF1P3SHAM,Minden,1,3,Sham,Spring,Ichneumonoidea,6
 MindenF1P3SHAM,Minden,1,3,Sham,Spring,Acyrthosiphon,33
 MindenF1P3SHAM,Minden,1,3,Sham,Spring,Aphis,1
 MindenF1P3SHAM,Minden,1,3,Sham,Spring,Therioaphis,0
@@ -1082,7 +1082,7 @@ MindenF2P1CONT,Minden,2,1,Control,Spring,Nabis,1
 MindenF2P1CONT,Minden,2,1,Control,Spring,Geocoris,1
 MindenF2P1CONT,Minden,2,1,Control,Spring,Anthocoridae,10
 MindenF2P1CONT,Minden,2,1,Control,Spring,Coccinellidae,2
-MindenF2P1CONT,Minden,2,1,Control,Spring,Ichneumonidae,3
+MindenF2P1CONT,Minden,2,1,Control,Spring,Ichneumonoidea,3
 MindenF2P1CONT,Minden,2,1,Control,Spring,Acyrthosiphon,19
 MindenF2P1CONT,Minden,2,1,Control,Spring,Aphis,0
 MindenF2P1CONT,Minden,2,1,Control,Spring,Therioaphis,3
@@ -1096,7 +1096,7 @@ MindenF2P1SHAM,Minden,2,1,Sham,Spring,Nabis,0
 MindenF2P1SHAM,Minden,2,1,Sham,Spring,Geocoris,4
 MindenF2P1SHAM,Minden,2,1,Sham,Spring,Anthocoridae,18
 MindenF2P1SHAM,Minden,2,1,Sham,Spring,Coccinellidae,1
-MindenF2P1SHAM,Minden,2,1,Sham,Spring,Ichneumonidae,8
+MindenF2P1SHAM,Minden,2,1,Sham,Spring,Ichneumonoidea,8
 MindenF2P1SHAM,Minden,2,1,Sham,Spring,Acyrthosiphon,14
 MindenF2P1SHAM,Minden,2,1,Sham,Spring,Aphis,0
 MindenF2P1SHAM,Minden,2,1,Sham,Spring,Therioaphis,2
@@ -1110,7 +1110,7 @@ MindenF2P2CONT,Minden,2,2,Control,Spring,Nabis,0
 MindenF2P2CONT,Minden,2,2,Control,Spring,Geocoris,2
 MindenF2P2CONT,Minden,2,2,Control,Spring,Anthocoridae,9
 MindenF2P2CONT,Minden,2,2,Control,Spring,Coccinellidae,0
-MindenF2P2CONT,Minden,2,2,Control,Spring,Ichneumonidae,6
+MindenF2P2CONT,Minden,2,2,Control,Spring,Ichneumonoidea,6
 MindenF2P2CONT,Minden,2,2,Control,Spring,Acyrthosiphon,9
 MindenF2P2CONT,Minden,2,2,Control,Spring,Aphis,0
 MindenF2P2CONT,Minden,2,2,Control,Spring,Therioaphis,3
@@ -1124,7 +1124,7 @@ MindenF2P2SHAM,Minden,2,2,Sham,Spring,Nabis,0
 MindenF2P2SHAM,Minden,2,2,Sham,Spring,Geocoris,11
 MindenF2P2SHAM,Minden,2,2,Sham,Spring,Anthocoridae,13
 MindenF2P2SHAM,Minden,2,2,Sham,Spring,Coccinellidae,3
-MindenF2P2SHAM,Minden,2,2,Sham,Spring,Ichneumonidae,4
+MindenF2P2SHAM,Minden,2,2,Sham,Spring,Ichneumonoidea,4
 MindenF2P2SHAM,Minden,2,2,Sham,Spring,Acyrthosiphon,17
 MindenF2P2SHAM,Minden,2,2,Sham,Spring,Aphis,0
 MindenF2P2SHAM,Minden,2,2,Sham,Spring,Therioaphis,2
@@ -1138,7 +1138,7 @@ MindenF2P3CONT,Minden,2,3,Control,Spring,Nabis,0
 MindenF2P3CONT,Minden,2,3,Control,Spring,Geocoris,1
 MindenF2P3CONT,Minden,2,3,Control,Spring,Anthocoridae,8
 MindenF2P3CONT,Minden,2,3,Control,Spring,Coccinellidae,1
-MindenF2P3CONT,Minden,2,3,Control,Spring,Ichneumonidae,3
+MindenF2P3CONT,Minden,2,3,Control,Spring,Ichneumonoidea,3
 MindenF2P3CONT,Minden,2,3,Control,Spring,Acyrthosiphon,18
 MindenF2P3CONT,Minden,2,3,Control,Spring,Aphis,0
 MindenF2P3CONT,Minden,2,3,Control,Spring,Therioaphis,1
@@ -1152,7 +1152,7 @@ MindenF2P3SHAM,Minden,2,3,Sham,Spring,Nabis,1
 MindenF2P3SHAM,Minden,2,3,Sham,Spring,Geocoris,5
 MindenF2P3SHAM,Minden,2,3,Sham,Spring,Anthocoridae,8
 MindenF2P3SHAM,Minden,2,3,Sham,Spring,Coccinellidae,3
-MindenF2P3SHAM,Minden,2,3,Sham,Spring,Ichneumonidae,6
+MindenF2P3SHAM,Minden,2,3,Sham,Spring,Ichneumonoidea,6
 MindenF2P3SHAM,Minden,2,3,Sham,Spring,Acyrthosiphon,28
 MindenF2P3SHAM,Minden,2,3,Sham,Spring,Aphis,0
 MindenF2P3SHAM,Minden,2,3,Sham,Spring,Therioaphis,4
@@ -1166,7 +1166,7 @@ MindenF3P1CONT,Minden,3,1,Control,Spring,Nabis,0
 MindenF3P1CONT,Minden,3,1,Control,Spring,Geocoris,5
 MindenF3P1CONT,Minden,3,1,Control,Spring,Anthocoridae,4
 MindenF3P1CONT,Minden,3,1,Control,Spring,Coccinellidae,0
-MindenF3P1CONT,Minden,3,1,Control,Spring,Ichneumonidae,1
+MindenF3P1CONT,Minden,3,1,Control,Spring,Ichneumonoidea,1
 MindenF3P1CONT,Minden,3,1,Control,Spring,Acyrthosiphon,48
 MindenF3P1CONT,Minden,3,1,Control,Spring,Aphis,0
 MindenF3P1CONT,Minden,3,1,Control,Spring,Therioaphis,31
@@ -1180,7 +1180,7 @@ MindenF3P1SHAM,Minden,3,1,Sham,Spring,Nabis,1
 MindenF3P1SHAM,Minden,3,1,Sham,Spring,Geocoris,7
 MindenF3P1SHAM,Minden,3,1,Sham,Spring,Anthocoridae,9
 MindenF3P1SHAM,Minden,3,1,Sham,Spring,Coccinellidae,3
-MindenF3P1SHAM,Minden,3,1,Sham,Spring,Ichneumonidae,2
+MindenF3P1SHAM,Minden,3,1,Sham,Spring,Ichneumonoidea,2
 MindenF3P1SHAM,Minden,3,1,Sham,Spring,Acyrthosiphon,62
 MindenF3P1SHAM,Minden,3,1,Sham,Spring,Aphis,0
 MindenF3P1SHAM,Minden,3,1,Sham,Spring,Therioaphis,34
@@ -1194,7 +1194,7 @@ MindenF3P2CONT,Minden,3,2,Control,Spring,Nabis,0
 MindenF3P2CONT,Minden,3,2,Control,Spring,Geocoris,1
 MindenF3P2CONT,Minden,3,2,Control,Spring,Anthocoridae,8
 MindenF3P2CONT,Minden,3,2,Control,Spring,Coccinellidae,1
-MindenF3P2CONT,Minden,3,2,Control,Spring,Ichneumonidae,8
+MindenF3P2CONT,Minden,3,2,Control,Spring,Ichneumonoidea,8
 MindenF3P2CONT,Minden,3,2,Control,Spring,Acyrthosiphon,114
 MindenF3P2CONT,Minden,3,2,Control,Spring,Aphis,0
 MindenF3P2CONT,Minden,3,2,Control,Spring,Therioaphis,4
@@ -1208,7 +1208,7 @@ MindenF3P2SHAM,Minden,3,2,Sham,Spring,Nabis,1
 MindenF3P2SHAM,Minden,3,2,Sham,Spring,Geocoris,10
 MindenF3P2SHAM,Minden,3,2,Sham,Spring,Anthocoridae,14
 MindenF3P2SHAM,Minden,3,2,Sham,Spring,Coccinellidae,3
-MindenF3P2SHAM,Minden,3,2,Sham,Spring,Ichneumonidae,0
+MindenF3P2SHAM,Minden,3,2,Sham,Spring,Ichneumonoidea,0
 MindenF3P2SHAM,Minden,3,2,Sham,Spring,Acyrthosiphon,71
 MindenF3P2SHAM,Minden,3,2,Sham,Spring,Aphis,0
 MindenF3P2SHAM,Minden,3,2,Sham,Spring,Therioaphis,7
@@ -1222,7 +1222,7 @@ MindenF3P3CONT,Minden,3,3,Control,Spring,Nabis,2
 MindenF3P3CONT,Minden,3,3,Control,Spring,Geocoris,7
 MindenF3P3CONT,Minden,3,3,Control,Spring,Anthocoridae,1
 MindenF3P3CONT,Minden,3,3,Control,Spring,Coccinellidae,3
-MindenF3P3CONT,Minden,3,3,Control,Spring,Ichneumonidae,3
+MindenF3P3CONT,Minden,3,3,Control,Spring,Ichneumonoidea,3
 MindenF3P3CONT,Minden,3,3,Control,Spring,Acyrthosiphon,38
 MindenF3P3CONT,Minden,3,3,Control,Spring,Aphis,1
 MindenF3P3CONT,Minden,3,3,Control,Spring,Therioaphis,3
@@ -1236,7 +1236,7 @@ MindenF3P3SHAM,Minden,3,3,Sham,Spring,Nabis,0
 MindenF3P3SHAM,Minden,3,3,Sham,Spring,Geocoris,1
 MindenF3P3SHAM,Minden,3,3,Sham,Spring,Anthocoridae,10
 MindenF3P3SHAM,Minden,3,3,Sham,Spring,Coccinellidae,1
-MindenF3P3SHAM,Minden,3,3,Sham,Spring,Ichneumonidae,2
+MindenF3P3SHAM,Minden,3,3,Sham,Spring,Ichneumonoidea,2
 MindenF3P3SHAM,Minden,3,3,Sham,Spring,Acyrthosiphon,57
 MindenF3P3SHAM,Minden,3,3,Sham,Spring,Aphis,0
 MindenF3P3SHAM,Minden,3,3,Sham,Spring,Therioaphis,2
@@ -1250,7 +1250,7 @@ LLF1P1CONT,Lovelock,1,1,Control,Spring,Nabis,0
 LLF1P1CONT,Lovelock,1,1,Control,Spring,Geocoris,2
 LLF1P1CONT,Lovelock,1,1,Control,Spring,Anthocoridae,2
 LLF1P1CONT,Lovelock,1,1,Control,Spring,Coccinellidae,2
-LLF1P1CONT,Lovelock,1,1,Control,Spring,Ichneumonidae,15
+LLF1P1CONT,Lovelock,1,1,Control,Spring,Ichneumonoidea,15
 LLF1P1CONT,Lovelock,1,1,Control,Spring,Acyrthosiphon,112
 LLF1P1CONT,Lovelock,1,1,Control,Spring,Aphis,0
 LLF1P1CONT,Lovelock,1,1,Control,Spring,Therioaphis,0
@@ -1264,7 +1264,7 @@ LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Nabis,0
 LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Geocoris,4
 LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Anthocoridae,6
 LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Coccinellidae,5
-LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Ichneumonidae,6
+LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Ichneumonoidea,6
 LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Acyrthosiphon,163
 LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Aphis,1
 LLF1P1SHAM,Lovelock,1,1,Sham,Spring,Therioaphis,0
@@ -1278,7 +1278,7 @@ LLF1P2CONT,Lovelock,1,2,Control,Spring,Nabis,0
 LLF1P2CONT,Lovelock,1,2,Control,Spring,Geocoris,0
 LLF1P2CONT,Lovelock,1,2,Control,Spring,Anthocoridae,2
 LLF1P2CONT,Lovelock,1,2,Control,Spring,Coccinellidae,1
-LLF1P2CONT,Lovelock,1,2,Control,Spring,Ichneumonidae,18
+LLF1P2CONT,Lovelock,1,2,Control,Spring,Ichneumonoidea,18
 LLF1P2CONT,Lovelock,1,2,Control,Spring,Acyrthosiphon,108
 LLF1P2CONT,Lovelock,1,2,Control,Spring,Aphis,0
 LLF1P2CONT,Lovelock,1,2,Control,Spring,Therioaphis,0
@@ -1292,7 +1292,7 @@ LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Nabis,0
 LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Geocoris,1
 LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Anthocoridae,3
 LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Coccinellidae,4
-LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Ichneumonidae,18
+LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Ichneumonoidea,18
 LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Acyrthosiphon,106
 LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Aphis,0
 LLF1P2SHAM,Lovelock,1,2,Sham,Spring,Therioaphis,0
@@ -1306,7 +1306,7 @@ L3P3SHAM,Lovelock,3,3,Sham,Fall,Nabis,0
 L3P3SHAM,Lovelock,3,3,Sham,Fall,Geocoris,0
 L3P3SHAM,Lovelock,3,3,Sham,Fall,Anthocoridae,7
 L3P3SHAM,Lovelock,3,3,Sham,Fall,Coccinellidae,0
-L3P3SHAM,Lovelock,3,3,Sham,Fall,Ichneumonidae,9
+L3P3SHAM,Lovelock,3,3,Sham,Fall,Ichneumonoidea,9
 L3P3SHAM,Lovelock,3,3,Sham,Fall,Acyrthosiphon,64
 L3P3SHAM,Lovelock,3,3,Sham,Fall,Aphis,165
 L3P3SHAM,Lovelock,3,3,Sham,Fall,Therioaphis,480
@@ -1320,7 +1320,7 @@ LLF1P3CONT,Lovelock,1,3,Control,Spring,Nabis,0
 LLF1P3CONT,Lovelock,1,3,Control,Spring,Geocoris,0
 LLF1P3CONT,Lovelock,1,3,Control,Spring,Anthocoridae,3
 LLF1P3CONT,Lovelock,1,3,Control,Spring,Coccinellidae,2
-LLF1P3CONT,Lovelock,1,3,Control,Spring,Ichneumonidae,13
+LLF1P3CONT,Lovelock,1,3,Control,Spring,Ichneumonoidea,13
 LLF1P3CONT,Lovelock,1,3,Control,Spring,Acyrthosiphon,90
 LLF1P3CONT,Lovelock,1,3,Control,Spring,Aphis,0
 LLF1P3CONT,Lovelock,1,3,Control,Spring,Therioaphis,0
@@ -1334,7 +1334,7 @@ LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Nabis,0
 LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Geocoris,1
 LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Anthocoridae,3
 LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Coccinellidae,4
-LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Ichneumonidae,11
+LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Ichneumonoidea,11
 LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Acyrthosiphon,102
 LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Aphis,0
 LLF1P3SHAM,Lovelock,1,3,Sham,Spring,Therioaphis,0
@@ -1348,7 +1348,7 @@ LLF2P1CONT,Lovelock,2,1,Control,Spring,Nabis,0
 LLF2P1CONT,Lovelock,2,1,Control,Spring,Geocoris,1
 LLF2P1CONT,Lovelock,2,1,Control,Spring,Anthocoridae,1
 LLF2P1CONT,Lovelock,2,1,Control,Spring,Coccinellidae,3
-LLF2P1CONT,Lovelock,2,1,Control,Spring,Ichneumonidae,19
+LLF2P1CONT,Lovelock,2,1,Control,Spring,Ichneumonoidea,19
 LLF2P1CONT,Lovelock,2,1,Control,Spring,Acyrthosiphon,98
 LLF2P1CONT,Lovelock,2,1,Control,Spring,Aphis,0
 LLF2P1CONT,Lovelock,2,1,Control,Spring,Therioaphis,0
@@ -1362,7 +1362,7 @@ LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Nabis,0
 LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Geocoris,2
 LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Anthocoridae,7
 LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Coccinellidae,2
-LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Ichneumonidae,26
+LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Ichneumonoidea,26
 LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Acyrthosiphon,444
 LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Aphis,0
 LLF2P1SHAM,Lovelock,2,1,Sham,Spring,Therioaphis,0
@@ -1376,7 +1376,7 @@ LLF2P2CONT,Lovelock,2,2,Control,Spring,Nabis,0
 LLF2P2CONT,Lovelock,2,2,Control,Spring,Geocoris,2
 LLF2P2CONT,Lovelock,2,2,Control,Spring,Anthocoridae,1
 LLF2P2CONT,Lovelock,2,2,Control,Spring,Coccinellidae,6
-LLF2P2CONT,Lovelock,2,2,Control,Spring,Ichneumonidae,46
+LLF2P2CONT,Lovelock,2,2,Control,Spring,Ichneumonoidea,46
 LLF2P2CONT,Lovelock,2,2,Control,Spring,Acyrthosiphon,3996
 LLF2P2CONT,Lovelock,2,2,Control,Spring,Aphis,2
 LLF2P2CONT,Lovelock,2,2,Control,Spring,Therioaphis,0
@@ -1390,7 +1390,7 @@ LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Nabis,0
 LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Geocoris,2
 LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Anthocoridae,3
 LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Coccinellidae,4
-LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Ichneumonidae,54
+LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Ichneumonoidea,54
 LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Acyrthosiphon,537
 LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Aphis,0
 LLF2P3SHAM,Lovelock,2,3,Sham,Spring,Therioaphis,0
@@ -1404,7 +1404,7 @@ LLF2P3CONT,Lovelock,2,3,Control,Spring,Nabis,0
 LLF2P3CONT,Lovelock,2,3,Control,Spring,Geocoris,2
 LLF2P3CONT,Lovelock,2,3,Control,Spring,Anthocoridae,2
 LLF2P3CONT,Lovelock,2,3,Control,Spring,Coccinellidae,1
-LLF2P3CONT,Lovelock,2,3,Control,Spring,Ichneumonidae,30
+LLF2P3CONT,Lovelock,2,3,Control,Spring,Ichneumonoidea,30
 LLF2P3CONT,Lovelock,2,3,Control,Spring,Acyrthosiphon,279
 LLF2P3CONT,Lovelock,2,3,Control,Spring,Aphis,0
 LLF2P3CONT,Lovelock,2,3,Control,Spring,Therioaphis,0
@@ -1418,7 +1418,7 @@ LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Nabis,0
 LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Geocoris,3
 LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Anthocoridae,3
 LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Coccinellidae,7
-LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Ichneumonidae,33
+LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Ichneumonoidea,33
 LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Acyrthosiphon,952
 LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Aphis,1
 LLF2P2SHAM,Lovelock,2,2,Sham,Spring,Therioaphis,0
@@ -1432,7 +1432,7 @@ LLF3P1CONT,Lovelock,3,1,Control,Spring,Nabis,0
 LLF3P1CONT,Lovelock,3,1,Control,Spring,Geocoris,0
 LLF3P1CONT,Lovelock,3,1,Control,Spring,Anthocoridae,0
 LLF3P1CONT,Lovelock,3,1,Control,Spring,Coccinellidae,0
-LLF3P1CONT,Lovelock,3,1,Control,Spring,Ichneumonidae,32
+LLF3P1CONT,Lovelock,3,1,Control,Spring,Ichneumonoidea,32
 LLF3P1CONT,Lovelock,3,1,Control,Spring,Acyrthosiphon,91
 LLF3P1CONT,Lovelock,3,1,Control,Spring,Aphis,0
 LLF3P1CONT,Lovelock,3,1,Control,Spring,Therioaphis,0
@@ -1446,7 +1446,7 @@ LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Nabis,0
 LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Geocoris,0
 LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Anthocoridae,0
 LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Coccinellidae,0
-LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Ichneumonidae,60
+LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Ichneumonoidea,60
 LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Acyrthosiphon,91
 LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Aphis,0
 LLF3P1SHAM,Lovelock,3,1,Sham,Spring,Therioaphis,0
@@ -1460,7 +1460,7 @@ LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Nabis,0
 LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Geocoris,0
 LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Anthocoridae,0
 LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Coccinellidae,3
-LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Ichneumonidae,90
+LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Ichneumonoidea,90
 LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Acyrthosiphon,86
 LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Aphis,0
 LLF3P2SHAM[?],Lovelock,3,2,Control,Spring,Therioaphis,0
@@ -1474,7 +1474,7 @@ LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Nabis,0
 LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Geocoris,0
 LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Anthocoridae,0
 LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Coccinellidae,2
-LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Ichneumonidae,54
+LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Ichneumonoidea,54
 LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Acyrthosiphon,107
 LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Aphis,0
 LLF3P2SHAM[?],Lovelock,3,2,Sham,Spring,Therioaphis,0
@@ -1488,7 +1488,7 @@ LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Nabis,0
 LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Geocoris,0
 LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Anthocoridae,0
 LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Coccinellidae,1
-LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Ichneumonidae,66
+LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Ichneumonoidea,66
 LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Acyrthosiphon,59
 LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Aphis,0
 LLF3P3SHAM,Lovelock,3,3,Sham,Spring,Therioaphis,0
@@ -1502,7 +1502,7 @@ LLF3P3CONT,Lovelock,3,3,Control,Spring,Nabis,0
 LLF3P3CONT,Lovelock,3,3,Control,Spring,Geocoris,0
 LLF3P3CONT,Lovelock,3,3,Control,Spring,Anthocoridae,2
 LLF3P3CONT,Lovelock,3,3,Control,Spring,Coccinellidae,0
-LLF3P3CONT,Lovelock,3,3,Control,Spring,Ichneumonidae,38
+LLF3P3CONT,Lovelock,3,3,Control,Spring,Ichneumonoidea,38
 LLF3P3CONT,Lovelock,3,3,Control,Spring,Acyrthosiphon,62
 LLF3P3CONT,Lovelock,3,3,Control,Spring,Aphis,5
 LLF3P3CONT,Lovelock,3,3,Control,Spring,Therioaphis,0
@@ -1516,7 +1516,7 @@ YF3P2 sham,Yerington,3,2,Sham,Fall,Nabis,0
 YF3P2 sham,Yerington,3,2,Sham,Fall,Geocoris,0
 YF3P2 sham,Yerington,3,2,Sham,Fall,Anthocoridae,12
 YF3P2 sham,Yerington,3,2,Sham,Fall,Coccinellidae,1
-YF3P2 sham,Yerington,3,2,Sham,Fall,Ichneumonidae,169
+YF3P2 sham,Yerington,3,2,Sham,Fall,Ichneumonoidea,169
 YF3P2 sham,Yerington,3,2,Sham,Fall,Acyrthosiphon,620
 YF3P2 sham,Yerington,3,2,Sham,Fall,Aphis,45
 YF3P2 sham,Yerington,3,2,Sham,Fall,Therioaphis,138
@@ -1530,7 +1530,7 @@ YF3P3 sham,Yerington,3,3,Sham,Fall,Nabis,0
 YF3P3 sham,Yerington,3,3,Sham,Fall,Geocoris,0
 YF3P3 sham,Yerington,3,3,Sham,Fall,Anthocoridae,11
 YF3P3 sham,Yerington,3,3,Sham,Fall,Coccinellidae,0
-YF3P3 sham,Yerington,3,3,Sham,Fall,Ichneumonidae,110
+YF3P3 sham,Yerington,3,3,Sham,Fall,Ichneumonoidea,110
 YF3P3 sham,Yerington,3,3,Sham,Fall,Acyrthosiphon,1140
 YF3P3 sham,Yerington,3,3,Sham,Fall,Aphis,46
 YF3P3 sham,Yerington,3,3,Sham,Fall,Therioaphis,186
@@ -1544,7 +1544,7 @@ YF3P3 cont,Yerington,3,3,Control,Fall,Nabis,0
 YF3P3 cont,Yerington,3,3,Control,Fall,Geocoris,0
 YF3P3 cont,Yerington,3,3,Control,Fall,Anthocoridae,1
 YF3P3 cont,Yerington,3,3,Control,Fall,Coccinellidae,0
-YF3P3 cont,Yerington,3,3,Control,Fall,Ichneumonidae,7
+YF3P3 cont,Yerington,3,3,Control,Fall,Ichneumonoidea,7
 YF3P3 cont,Yerington,3,3,Control,Fall,Acyrthosiphon,463
 YF3P3 cont,Yerington,3,3,Control,Fall,Aphis,14
 YF3P3 cont,Yerington,3,3,Control,Fall,Therioaphis,48
@@ -1558,7 +1558,7 @@ YF2P3 cont,Yerington,2,3,Control,Fall,Nabis,0
 YF2P3 cont,Yerington,2,3,Control,Fall,Geocoris,0
 YF2P3 cont,Yerington,2,3,Control,Fall,Anthocoridae,6
 YF2P3 cont,Yerington,2,3,Control,Fall,Coccinellidae,2
-YF2P3 cont,Yerington,2,3,Control,Fall,Ichneumonidae,12
+YF2P3 cont,Yerington,2,3,Control,Fall,Ichneumonoidea,12
 YF2P3 cont,Yerington,2,3,Control,Fall,Acyrthosiphon,203
 YF2P3 cont,Yerington,2,3,Control,Fall,Aphis,8
 YF2P3 cont,Yerington,2,3,Control,Fall,Therioaphis,33
@@ -1572,7 +1572,7 @@ L3P1 cont,Lovelock,3,1,Control,Fall,Nabis,0
 L3P1 cont,Lovelock,3,1,Control,Fall,Geocoris,0
 L3P1 cont,Lovelock,3,1,Control,Fall,Anthocoridae,2
 L3P1 cont,Lovelock,3,1,Control,Fall,Coccinellidae,4
-L3P1 cont,Lovelock,3,1,Control,Fall,Ichneumonidae,4
+L3P1 cont,Lovelock,3,1,Control,Fall,Ichneumonoidea,4
 L3P1 cont,Lovelock,3,1,Control,Fall,Acyrthosiphon,378
 L3P1 cont,Lovelock,3,1,Control,Fall,Aphis,80
 L3P1 cont,Lovelock,3,1,Control,Fall,Therioaphis,489
@@ -1586,7 +1586,7 @@ FALF3P1 sham,Fallon,3,1,Sham,Fall,Nabis,1
 FALF3P1 sham,Fallon,3,1,Sham,Fall,Geocoris,0
 FALF3P1 sham,Fallon,3,1,Sham,Fall,Anthocoridae,5
 FALF3P1 sham,Fallon,3,1,Sham,Fall,Coccinellidae,0
-FALF3P1 sham,Fallon,3,1,Sham,Fall,Ichneumonidae,0
+FALF3P1 sham,Fallon,3,1,Sham,Fall,Ichneumonoidea,0
 FALF3P1 sham,Fallon,3,1,Sham,Fall,Acyrthosiphon,38
 FALF3P1 sham,Fallon,3,1,Sham,Fall,Aphis,0
 FALF3P1 sham,Fallon,3,1,Sham,Fall,Therioaphis,0
@@ -1600,7 +1600,7 @@ L3P2 cont,Lovelock,3,2,Control,Fall,Nabis,0
 L3P2 cont,Lovelock,3,2,Control,Fall,Geocoris,0
 L3P2 cont,Lovelock,3,2,Control,Fall,Anthocoridae,5
 L3P2 cont,Lovelock,3,2,Control,Fall,Coccinellidae,1
-L3P2 cont,Lovelock,3,2,Control,Fall,Ichneumonidae,4
+L3P2 cont,Lovelock,3,2,Control,Fall,Ichneumonoidea,4
 L3P2 cont,Lovelock,3,2,Control,Fall,Acyrthosiphon,209
 L3P2 cont,Lovelock,3,2,Control,Fall,Aphis,1167
 L3P2 cont,Lovelock,3,2,Control,Fall,Therioaphis,371
@@ -1614,7 +1614,7 @@ YF2P1 cont,Yerington,2,1,Control,Fall,Nabis,0
 YF2P1 cont,Yerington,2,1,Control,Fall,Geocoris,0
 YF2P1 cont,Yerington,2,1,Control,Fall,Anthocoridae,0
 YF2P1 cont,Yerington,2,1,Control,Fall,Coccinellidae,0
-YF2P1 cont,Yerington,2,1,Control,Fall,Ichneumonidae,7
+YF2P1 cont,Yerington,2,1,Control,Fall,Ichneumonoidea,7
 YF2P1 cont,Yerington,2,1,Control,Fall,Acyrthosiphon,89
 YF2P1 cont,Yerington,2,1,Control,Fall,Aphis,16
 YF2P1 cont,Yerington,2,1,Control,Fall,Therioaphis,43
@@ -1628,7 +1628,7 @@ L3P2 sham,Lovelock,3,2,Sham,Fall,Nabis,0
 L3P2 sham,Lovelock,3,2,Sham,Fall,Geocoris,2
 L3P2 sham,Lovelock,3,2,Sham,Fall,Anthocoridae,4
 L3P2 sham,Lovelock,3,2,Sham,Fall,Coccinellidae,0
-L3P2 sham,Lovelock,3,2,Sham,Fall,Ichneumonidae,17
+L3P2 sham,Lovelock,3,2,Sham,Fall,Ichneumonoidea,17
 L3P2 sham,Lovelock,3,2,Sham,Fall,Acyrthosiphon,74
 L3P2 sham,Lovelock,3,2,Sham,Fall,Aphis,34
 L3P2 sham,Lovelock,3,2,Sham,Fall,Therioaphis,79
@@ -1642,7 +1642,7 @@ YF2P2 cont,Yerington,2,2,Control,Fall,Nabis,0
 YF2P2 cont,Yerington,2,2,Control,Fall,Geocoris,0
 YF2P2 cont,Yerington,2,2,Control,Fall,Anthocoridae,3
 YF2P2 cont,Yerington,2,2,Control,Fall,Coccinellidae,0
-YF2P2 cont,Yerington,2,2,Control,Fall,Ichneumonidae,5
+YF2P2 cont,Yerington,2,2,Control,Fall,Ichneumonoidea,5
 YF2P2 cont,Yerington,2,2,Control,Fall,Acyrthosiphon,150
 YF2P2 cont,Yerington,2,2,Control,Fall,Aphis,15
 YF2P2 cont,Yerington,2,2,Control,Fall,Therioaphis,33
@@ -1656,7 +1656,7 @@ Y1F1P2 sham,Yerington,1,2,Sham,Fall,Nabis,0
 Y1F1P2 sham,Yerington,1,2,Sham,Fall,Geocoris,0
 Y1F1P2 sham,Yerington,1,2,Sham,Fall,Anthocoridae,1
 Y1F1P2 sham,Yerington,1,2,Sham,Fall,Coccinellidae,0
-Y1F1P2 sham,Yerington,1,2,Sham,Fall,Ichneumonidae,5
+Y1F1P2 sham,Yerington,1,2,Sham,Fall,Ichneumonoidea,5
 Y1F1P2 sham,Yerington,1,2,Sham,Fall,Acyrthosiphon,40
 Y1F1P2 sham,Yerington,1,2,Sham,Fall,Aphis,2
 Y1F1P2 sham,Yerington,1,2,Sham,Fall,Therioaphis,46
@@ -1670,7 +1670,7 @@ YF1P3 cont,Yerington,1,3,Control,Fall,Nabis,4
 YF1P3 cont,Yerington,1,3,Control,Fall,Geocoris,0
 YF1P3 cont,Yerington,1,3,Control,Fall,Anthocoridae,4
 YF1P3 cont,Yerington,1,3,Control,Fall,Coccinellidae,0
-YF1P3 cont,Yerington,1,3,Control,Fall,Ichneumonidae,5
+YF1P3 cont,Yerington,1,3,Control,Fall,Ichneumonoidea,5
 YF1P3 cont,Yerington,1,3,Control,Fall,Acyrthosiphon,133
 YF1P3 cont,Yerington,1,3,Control,Fall,Aphis,8
 YF1P3 cont,Yerington,1,3,Control,Fall,Therioaphis,52
@@ -1684,7 +1684,7 @@ YF1P3 sham,Yerington,1,3,Sham,Fall,Nabis,1
 YF1P3 sham,Yerington,1,3,Sham,Fall,Geocoris,0
 YF1P3 sham,Yerington,1,3,Sham,Fall,Anthocoridae,6
 YF1P3 sham,Yerington,1,3,Sham,Fall,Coccinellidae,0
-YF1P3 sham,Yerington,1,3,Sham,Fall,Ichneumonidae,33
+YF1P3 sham,Yerington,1,3,Sham,Fall,Ichneumonoidea,33
 YF1P3 sham,Yerington,1,3,Sham,Fall,Acyrthosiphon,166
 YF1P3 sham,Yerington,1,3,Sham,Fall,Aphis,3
 YF1P3 sham,Yerington,1,3,Sham,Fall,Therioaphis,108
@@ -1698,7 +1698,7 @@ YF1P1 sham,Yerington,1,1,Sham,Fall,Nabis,0
 YF1P1 sham,Yerington,1,1,Sham,Fall,Geocoris,0
 YF1P1 sham,Yerington,1,1,Sham,Fall,Anthocoridae,5
 YF1P1 sham,Yerington,1,1,Sham,Fall,Coccinellidae,1
-YF1P1 sham,Yerington,1,1,Sham,Fall,Ichneumonidae,6
+YF1P1 sham,Yerington,1,1,Sham,Fall,Ichneumonoidea,6
 YF1P1 sham,Yerington,1,1,Sham,Fall,Acyrthosiphon,161
 YF1P1 sham,Yerington,1,1,Sham,Fall,Aphis,4
 YF1P1 sham,Yerington,1,1,Sham,Fall,Therioaphis,16
@@ -1712,7 +1712,7 @@ YF1P7 sham,Yerington,2,1,Sham,Fall,Nabis,0
 YF1P7 sham,Yerington,2,1,Sham,Fall,Geocoris,0
 YF1P7 sham,Yerington,2,1,Sham,Fall,Anthocoridae,3
 YF1P7 sham,Yerington,2,1,Sham,Fall,Coccinellidae,1
-YF1P7 sham,Yerington,2,1,Sham,Fall,Ichneumonidae,19
+YF1P7 sham,Yerington,2,1,Sham,Fall,Ichneumonoidea,19
 YF1P7 sham,Yerington,2,1,Sham,Fall,Acyrthosiphon,179
 YF1P7 sham,Yerington,2,1,Sham,Fall,Aphis,26
 YF1P7 sham,Yerington,2,1,Sham,Fall,Therioaphis,121
@@ -1726,7 +1726,7 @@ Y1F1P2 cont,Yerington,1,2,Control,Fall,Nabis,1
 Y1F1P2 cont,Yerington,1,2,Control,Fall,Geocoris,0
 Y1F1P2 cont,Yerington,1,2,Control,Fall,Anthocoridae,2
 Y1F1P2 cont,Yerington,1,2,Control,Fall,Coccinellidae,0
-Y1F1P2 cont,Yerington,1,2,Control,Fall,Ichneumonidae,4
+Y1F1P2 cont,Yerington,1,2,Control,Fall,Ichneumonoidea,4
 Y1F1P2 cont,Yerington,1,2,Control,Fall,Acyrthosiphon,54
 Y1F1P2 cont,Yerington,1,2,Control,Fall,Aphis,0
 Y1F1P2 cont,Yerington,1,2,Control,Fall,Therioaphis,53
@@ -1740,7 +1740,7 @@ L2P1 cont,Lovelock,2,1,Control,Fall,Nabis,0
 L2P1 cont,Lovelock,2,1,Control,Fall,Geocoris,0
 L2P1 cont,Lovelock,2,1,Control,Fall,Anthocoridae,2
 L2P1 cont,Lovelock,2,1,Control,Fall,Coccinellidae,0
-L2P1 cont,Lovelock,2,1,Control,Fall,Ichneumonidae,11
+L2P1 cont,Lovelock,2,1,Control,Fall,Ichneumonoidea,11
 L2P1 cont,Lovelock,2,1,Control,Fall,Acyrthosiphon,71
 L2P1 cont,Lovelock,2,1,Control,Fall,Aphis,27
 L2P1 cont,Lovelock,2,1,Control,Fall,Therioaphis,558
@@ -1754,7 +1754,7 @@ L1P1 sham,Lovelock,1,1,Sham,Fall,Nabis,0
 L1P1 sham,Lovelock,1,1,Sham,Fall,Geocoris,0
 L1P1 sham,Lovelock,1,1,Sham,Fall,Anthocoridae,4
 L1P1 sham,Lovelock,1,1,Sham,Fall,Coccinellidae,0
-L1P1 sham,Lovelock,1,1,Sham,Fall,Ichneumonidae,4
+L1P1 sham,Lovelock,1,1,Sham,Fall,Ichneumonoidea,4
 L1P1 sham,Lovelock,1,1,Sham,Fall,Acyrthosiphon,33
 L1P1 sham,Lovelock,1,1,Sham,Fall,Aphis,5
 L1P1 sham,Lovelock,1,1,Sham,Fall,Therioaphis,44
@@ -1768,7 +1768,7 @@ FALF4P3 sham,Fallon,2,3,Sham,Spring,Nabis,1
 FALF4P3 sham,Fallon,2,3,Sham,Spring,Geocoris,0
 FALF4P3 sham,Fallon,2,3,Sham,Spring,Anthocoridae,5
 FALF4P3 sham,Fallon,2,3,Sham,Spring,Coccinellidae,0
-FALF4P3 sham,Fallon,2,3,Sham,Spring,Ichneumonidae,3
+FALF4P3 sham,Fallon,2,3,Sham,Spring,Ichneumonoidea,3
 FALF4P3 sham,Fallon,2,3,Sham,Spring,Acyrthosiphon,85
 FALF4P3 sham,Fallon,2,3,Sham,Spring,Aphis,1
 FALF4P3 sham,Fallon,2,3,Sham,Spring,Therioaphis,6
@@ -1782,7 +1782,7 @@ FALF3P1 cont,Fallon,3,1,Control,Fall,Nabis,0
 FALF3P1 cont,Fallon,3,1,Control,Fall,Geocoris,0
 FALF3P1 cont,Fallon,3,1,Control,Fall,Anthocoridae,8
 FALF3P1 cont,Fallon,3,1,Control,Fall,Coccinellidae,0
-FALF3P1 cont,Fallon,3,1,Control,Fall,Ichneumonidae,2
+FALF3P1 cont,Fallon,3,1,Control,Fall,Ichneumonoidea,2
 FALF3P1 cont,Fallon,3,1,Control,Fall,Acyrthosiphon,26
 FALF3P1 cont,Fallon,3,1,Control,Fall,Aphis,0
 FALF3P1 cont,Fallon,3,1,Control,Fall,Therioaphis,4
@@ -1796,7 +1796,7 @@ L1P2 sham,Lovelock,1,2,Sham,Fall,Nabis,0
 L1P2 sham,Lovelock,1,2,Sham,Fall,Geocoris,0
 L1P2 sham,Lovelock,1,2,Sham,Fall,Anthocoridae,5
 L1P2 sham,Lovelock,1,2,Sham,Fall,Coccinellidae,0
-L1P2 sham,Lovelock,1,2,Sham,Fall,Ichneumonidae,48
+L1P2 sham,Lovelock,1,2,Sham,Fall,Ichneumonoidea,48
 L1P2 sham,Lovelock,1,2,Sham,Fall,Acyrthosiphon,79
 L1P2 sham,Lovelock,1,2,Sham,Fall,Aphis,4
 L1P2 sham,Lovelock,1,2,Sham,Fall,Therioaphis,117
@@ -1810,7 +1810,7 @@ L1P2 cont,Lovelock,1,2,Control,Fall,Nabis,0
 L1P2 cont,Lovelock,1,2,Control,Fall,Geocoris,0
 L1P2 cont,Lovelock,1,2,Control,Fall,Anthocoridae,3
 L1P2 cont,Lovelock,1,2,Control,Fall,Coccinellidae,0
-L1P2 cont,Lovelock,1,2,Control,Fall,Ichneumonidae,5
+L1P2 cont,Lovelock,1,2,Control,Fall,Ichneumonoidea,5
 L1P2 cont,Lovelock,1,2,Control,Fall,Acyrthosiphon,27
 L1P2 cont,Lovelock,1,2,Control,Fall,Aphis,0
 L1P2 cont,Lovelock,1,2,Control,Fall,Therioaphis,14
@@ -1824,7 +1824,7 @@ L2P1 sham,Lovelock,2,1,Sham,Fall,Nabis,0
 L2P1 sham,Lovelock,2,1,Sham,Fall,Geocoris,1
 L2P1 sham,Lovelock,2,1,Sham,Fall,Anthocoridae,2
 L2P1 sham,Lovelock,2,1,Sham,Fall,Coccinellidae,0
-L2P1 sham,Lovelock,2,1,Sham,Fall,Ichneumonidae,17
+L2P1 sham,Lovelock,2,1,Sham,Fall,Ichneumonoidea,17
 L2P1 sham,Lovelock,2,1,Sham,Fall,Acyrthosiphon,62
 L2P1 sham,Lovelock,2,1,Sham,Fall,Aphis,85
 L2P1 sham,Lovelock,2,1,Sham,Fall,Therioaphis,372
@@ -1838,7 +1838,7 @@ FALF4P3 cont,Fallon,2,3,Control,Fall,Nabis,0
 FALF4P3 cont,Fallon,2,3,Control,Fall,Geocoris,1
 FALF4P3 cont,Fallon,2,3,Control,Fall,Anthocoridae,1
 FALF4P3 cont,Fallon,2,3,Control,Fall,Coccinellidae,0
-FALF4P3 cont,Fallon,2,3,Control,Fall,Ichneumonidae,2
+FALF4P3 cont,Fallon,2,3,Control,Fall,Ichneumonoidea,2
 FALF4P3 cont,Fallon,2,3,Control,Fall,Acyrthosiphon,171
 FALF4P3 cont,Fallon,2,3,Control,Fall,Aphis,1
 FALF4P3 cont,Fallon,2,3,Control,Fall,Therioaphis,2
@@ -1852,7 +1852,7 @@ FALF4P2,Fallon,2,2,Pre-,Fall,Nabis,0
 FALF4P2,Fallon,2,2,Pre-,Fall,Geocoris,0
 FALF4P2,Fallon,2,2,Pre-,Fall,Anthocoridae,1
 FALF4P2,Fallon,2,2,Pre-,Fall,Coccinellidae,0
-FALF4P2,Fallon,2,2,Pre-,Fall,Ichneumonidae,1
+FALF4P2,Fallon,2,2,Pre-,Fall,Ichneumonoidea,1
 FALF4P2,Fallon,2,2,Pre-,Fall,Acyrthosiphon,111
 FALF4P2,Fallon,2,2,Pre-,Fall,Aphis,0
 FALF4P2,Fallon,2,2,Pre-,Fall,Therioaphis,5
@@ -1866,7 +1866,7 @@ FALF4P2 cont,Fallon,2,2,Control,Fall,Nabis,0
 FALF4P2 cont,Fallon,2,2,Control,Fall,Geocoris,0
 FALF4P2 cont,Fallon,2,2,Control,Fall,Anthocoridae,2
 FALF4P2 cont,Fallon,2,2,Control,Fall,Coccinellidae,0
-FALF4P2 cont,Fallon,2,2,Control,Fall,Ichneumonidae,1
+FALF4P2 cont,Fallon,2,2,Control,Fall,Ichneumonoidea,1
 FALF4P2 cont,Fallon,2,2,Control,Fall,Acyrthosiphon,65
 FALF4P2 cont,Fallon,2,2,Control,Fall,Aphis,2
 FALF4P2 cont,Fallon,2,2,Control,Fall,Therioaphis,2
@@ -1880,7 +1880,7 @@ FALF4P3 sham,Fallon,2,3,Sham,Fall,Nabis,0
 FALF4P3 sham,Fallon,2,3,Sham,Fall,Geocoris,2
 FALF4P3 sham,Fallon,2,3,Sham,Fall,Anthocoridae,1
 FALF4P3 sham,Fallon,2,3,Sham,Fall,Coccinellidae,3
-FALF4P3 sham,Fallon,2,3,Sham,Fall,Ichneumonidae,4
+FALF4P3 sham,Fallon,2,3,Sham,Fall,Ichneumonoidea,4
 FALF4P3 sham,Fallon,2,3,Sham,Fall,Acyrthosiphon,18
 FALF4P3 sham,Fallon,2,3,Sham,Fall,Aphis,0
 FALF4P3 sham,Fallon,2,3,Sham,Fall,Therioaphis,0
@@ -1894,7 +1894,7 @@ FALF3P3 cont,Fallon,3,3,Control,Fall,Nabis,0
 FALF3P3 cont,Fallon,3,3,Control,Fall,Geocoris,0
 FALF3P3 cont,Fallon,3,3,Control,Fall,Anthocoridae,4
 FALF3P3 cont,Fallon,3,3,Control,Fall,Coccinellidae,0
-FALF3P3 cont,Fallon,3,3,Control,Fall,Ichneumonidae,1
+FALF3P3 cont,Fallon,3,3,Control,Fall,Ichneumonoidea,1
 FALF3P3 cont,Fallon,3,3,Control,Fall,Acyrthosiphon,36
 FALF3P3 cont,Fallon,3,3,Control,Fall,Aphis,0
 FALF3P3 cont,Fallon,3,3,Control,Fall,Therioaphis,1
@@ -1908,7 +1908,7 @@ FALF4P1 cont,Fallon,2,1,Control,Fall,Nabis,0
 FALF4P1 cont,Fallon,2,1,Control,Fall,Geocoris,0
 FALF4P1 cont,Fallon,2,1,Control,Fall,Anthocoridae,1
 FALF4P1 cont,Fallon,2,1,Control,Fall,Coccinellidae,1
-FALF4P1 cont,Fallon,2,1,Control,Fall,Ichneumonidae,0
+FALF4P1 cont,Fallon,2,1,Control,Fall,Ichneumonoidea,0
 FALF4P1 cont,Fallon,2,1,Control,Fall,Acyrthosiphon,85
 FALF4P1 cont,Fallon,2,1,Control,Fall,Aphis,0
 FALF4P1 cont,Fallon,2,1,Control,Fall,Therioaphis,9
@@ -1922,7 +1922,7 @@ FALF3P3 sham,Fallon,3,3,Sham,Fall,Nabis,0
 FALF3P3 sham,Fallon,3,3,Sham,Fall,Geocoris,0
 FALF3P3 sham,Fallon,3,3,Sham,Fall,Anthocoridae,2
 FALF3P3 sham,Fallon,3,3,Sham,Fall,Coccinellidae,0
-FALF3P3 sham,Fallon,3,3,Sham,Fall,Ichneumonidae,0
+FALF3P3 sham,Fallon,3,3,Sham,Fall,Ichneumonoidea,0
 FALF3P3 sham,Fallon,3,3,Sham,Fall,Acyrthosiphon,19
 FALF3P3 sham,Fallon,3,3,Sham,Fall,Aphis,0
 FALF3P3 sham,Fallon,3,3,Sham,Fall,Therioaphis,0
@@ -1936,7 +1936,7 @@ FALF3P2 cont,Fallon,3,2,Control,Fall,Nabis,0
 FALF3P2 cont,Fallon,3,2,Control,Fall,Geocoris,0
 FALF3P2 cont,Fallon,3,2,Control,Fall,Anthocoridae,6
 FALF3P2 cont,Fallon,3,2,Control,Fall,Coccinellidae,0
-FALF3P2 cont,Fallon,3,2,Control,Fall,Ichneumonidae,1
+FALF3P2 cont,Fallon,3,2,Control,Fall,Ichneumonoidea,1
 FALF3P2 cont,Fallon,3,2,Control,Fall,Acyrthosiphon,35
 FALF3P2 cont,Fallon,3,2,Control,Fall,Aphis,1
 FALF3P2 cont,Fallon,3,2,Control,Fall,Therioaphis,1
@@ -1950,7 +1950,7 @@ FALF4P1 sham,Fallon,2,1,Sham,Fall,Nabis,0
 FALF4P1 sham,Fallon,2,1,Sham,Fall,Geocoris,0
 FALF4P1 sham,Fallon,2,1,Sham,Fall,Anthocoridae,4
 FALF4P1 sham,Fallon,2,1,Sham,Fall,Coccinellidae,0
-FALF4P1 sham,Fallon,2,1,Sham,Fall,Ichneumonidae,2
+FALF4P1 sham,Fallon,2,1,Sham,Fall,Ichneumonoidea,2
 FALF4P1 sham,Fallon,2,1,Sham,Fall,Acyrthosiphon,88
 FALF4P1 sham,Fallon,2,1,Sham,Fall,Aphis,3
 FALF4P1 sham,Fallon,2,1,Sham,Fall,Therioaphis,7
@@ -1964,7 +1964,7 @@ L3P1 sham,Lovelock,3,1,Sham,Fall,Nabis,0
 L3P1 sham,Lovelock,3,1,Sham,Fall,Geocoris,2
 L3P1 sham,Lovelock,3,1,Sham,Fall,Anthocoridae,3
 L3P1 sham,Lovelock,3,1,Sham,Fall,Coccinellidae,5
-L3P1 sham,Lovelock,3,1,Sham,Fall,Ichneumonidae,2
+L3P1 sham,Lovelock,3,1,Sham,Fall,Ichneumonoidea,2
 L3P1 sham,Lovelock,3,1,Sham,Fall,Acyrthosiphon,77
 L3P1 sham,Lovelock,3,1,Sham,Fall,Aphis,66
 L3P1 sham,Lovelock,3,1,Sham,Fall,Therioaphis,22
@@ -1978,7 +1978,7 @@ L1P1 cont,Lovelock,1,1,Control,Fall,Nabis,0
 L1P1 cont,Lovelock,1,1,Control,Fall,Geocoris,0
 L1P1 cont,Lovelock,1,1,Control,Fall,Anthocoridae,4
 L1P1 cont,Lovelock,1,1,Control,Fall,Coccinellidae,0
-L1P1 cont,Lovelock,1,1,Control,Fall,Ichneumonidae,3
+L1P1 cont,Lovelock,1,1,Control,Fall,Ichneumonoidea,3
 L1P1 cont,Lovelock,1,1,Control,Fall,Acyrthosiphon,113
 L1P1 cont,Lovelock,1,1,Control,Fall,Aphis,3
 L1P1 cont,Lovelock,1,1,Control,Fall,Therioaphis,15
@@ -1992,7 +1992,7 @@ YF2P3 sham,Yerington,2,3,Sham,Fall,Nabis,1
 YF2P3 sham,Yerington,2,3,Sham,Fall,Geocoris,0
 YF2P3 sham,Yerington,2,3,Sham,Fall,Anthocoridae,1
 YF2P3 sham,Yerington,2,3,Sham,Fall,Coccinellidae,0
-YF2P3 sham,Yerington,2,3,Sham,Fall,Ichneumonidae,0
+YF2P3 sham,Yerington,2,3,Sham,Fall,Ichneumonoidea,0
 YF2P3 sham,Yerington,2,3,Sham,Fall,Acyrthosiphon,93
 YF2P3 sham,Yerington,2,3,Sham,Fall,Aphis,3
 YF2P3 sham,Yerington,2,3,Sham,Fall,Therioaphis,13
@@ -2006,7 +2006,7 @@ YF3P1 sham,Yerington,3,1,Sham,Fall,Nabis,0
 YF3P1 sham,Yerington,3,1,Sham,Fall,Geocoris,0
 YF3P1 sham,Yerington,3,1,Sham,Fall,Anthocoridae,6
 YF3P1 sham,Yerington,3,1,Sham,Fall,Coccinellidae,1
-YF3P1 sham,Yerington,3,1,Sham,Fall,Ichneumonidae,75
+YF3P1 sham,Yerington,3,1,Sham,Fall,Ichneumonoidea,75
 YF3P1 sham,Yerington,3,1,Sham,Fall,Acyrthosiphon,364
 YF3P1 sham,Yerington,3,1,Sham,Fall,Aphis,31
 YF3P1 sham,Yerington,3,1,Sham,Fall,Therioaphis,113
@@ -2020,7 +2020,7 @@ YF2P2 sham,Yerington,2,2,Sham,Fall,Nabis,0
 YF2P2 sham,Yerington,2,2,Sham,Fall,Geocoris,0
 YF2P2 sham,Yerington,2,2,Sham,Fall,Anthocoridae,6
 YF2P2 sham,Yerington,2,2,Sham,Fall,Coccinellidae,2
-YF2P2 sham,Yerington,2,2,Sham,Fall,Ichneumonidae,12
+YF2P2 sham,Yerington,2,2,Sham,Fall,Ichneumonoidea,12
 YF2P2 sham,Yerington,2,2,Sham,Fall,Acyrthosiphon,154
 YF2P2 sham,Yerington,2,2,Sham,Fall,Aphis,16
 YF2P2 sham,Yerington,2,2,Sham,Fall,Therioaphis,37
@@ -2034,7 +2034,7 @@ YF3P1 cont,Yerington,3,1,Control,Fall,Nabis,0
 YF3P1 cont,Yerington,3,1,Control,Fall,Geocoris,0
 YF3P1 cont,Yerington,3,1,Control,Fall,Anthocoridae,3
 YF3P1 cont,Yerington,3,1,Control,Fall,Coccinellidae,0
-YF3P1 cont,Yerington,3,1,Control,Fall,Ichneumonidae,3
+YF3P1 cont,Yerington,3,1,Control,Fall,Ichneumonoidea,3
 YF3P1 cont,Yerington,3,1,Control,Fall,Acyrthosiphon,292
 YF3P1 cont,Yerington,3,1,Control,Fall,Aphis,24
 YF3P1 cont,Yerington,3,1,Control,Fall,Therioaphis,51
@@ -2048,7 +2048,7 @@ FALF1P3 sham,Fallon,1,3,Sham,Fall,Nabis,0
 FALF1P3 sham,Fallon,1,3,Sham,Fall,Geocoris,0
 FALF1P3 sham,Fallon,1,3,Sham,Fall,Anthocoridae,8
 FALF1P3 sham,Fallon,1,3,Sham,Fall,Coccinellidae,0
-FALF1P3 sham,Fallon,1,3,Sham,Fall,Ichneumonidae,3
+FALF1P3 sham,Fallon,1,3,Sham,Fall,Ichneumonoidea,3
 FALF1P3 sham,Fallon,1,3,Sham,Fall,Acyrthosiphon,110
 FALF1P3 sham,Fallon,1,3,Sham,Fall,Aphis,0
 FALF1P3 sham,Fallon,1,3,Sham,Fall,Therioaphis,1
@@ -2062,7 +2062,7 @@ FALF3P2 sham,Fallon,3,2,Sham,Fall,Nabis,0
 FALF3P2 sham,Fallon,3,2,Sham,Fall,Geocoris,0
 FALF3P2 sham,Fallon,3,2,Sham,Fall,Anthocoridae,3
 FALF3P2 sham,Fallon,3,2,Sham,Fall,Coccinellidae,0
-FALF3P2 sham,Fallon,3,2,Sham,Fall,Ichneumonidae,1
+FALF3P2 sham,Fallon,3,2,Sham,Fall,Ichneumonoidea,1
 FALF3P2 sham,Fallon,3,2,Sham,Fall,Acyrthosiphon,34
 FALF3P2 sham,Fallon,3,2,Sham,Fall,Aphis,1
 FALF3P2 sham,Fallon,3,2,Sham,Fall,Therioaphis,4
@@ -2076,7 +2076,7 @@ FALF1P3 cont,Fallon,1,3,Control,Fall,Nabis,0
 FALF1P3 cont,Fallon,1,3,Control,Fall,Geocoris,0
 FALF1P3 cont,Fallon,1,3,Control,Fall,Anthocoridae,5
 FALF1P3 cont,Fallon,1,3,Control,Fall,Coccinellidae,0
-FALF1P3 cont,Fallon,1,3,Control,Fall,Ichneumonidae,5
+FALF1P3 cont,Fallon,1,3,Control,Fall,Ichneumonoidea,5
 FALF1P3 cont,Fallon,1,3,Control,Fall,Acyrthosiphon,167
 FALF1P3 cont,Fallon,1,3,Control,Fall,Aphis,7
 FALF1P3 cont,Fallon,1,3,Control,Fall,Therioaphis,5
@@ -2090,7 +2090,7 @@ FALF1P2 sham,Fallon,1,2,Sham,Fall,Nabis,1
 FALF1P2 sham,Fallon,1,2,Sham,Fall,Geocoris,0
 FALF1P2 sham,Fallon,1,2,Sham,Fall,Anthocoridae,2
 FALF1P2 sham,Fallon,1,2,Sham,Fall,Coccinellidae,0
-FALF1P2 sham,Fallon,1,2,Sham,Fall,Ichneumonidae,3
+FALF1P2 sham,Fallon,1,2,Sham,Fall,Ichneumonoidea,3
 FALF1P2 sham,Fallon,1,2,Sham,Fall,Acyrthosiphon,90
 FALF1P2 sham,Fallon,1,2,Sham,Fall,Aphis,0
 FALF1P2 sham,Fallon,1,2,Sham,Fall,Therioaphis,0
@@ -2104,7 +2104,7 @@ FALF1P1 cont,Fallon,1,1,Control,Fall,Nabis,2
 FALF1P1 cont,Fallon,1,1,Control,Fall,Geocoris,0
 FALF1P1 cont,Fallon,1,1,Control,Fall,Anthocoridae,8
 FALF1P1 cont,Fallon,1,1,Control,Fall,Coccinellidae,0
-FALF1P1 cont,Fallon,1,1,Control,Fall,Ichneumonidae,2
+FALF1P1 cont,Fallon,1,1,Control,Fall,Ichneumonoidea,2
 FALF1P1 cont,Fallon,1,1,Control,Fall,Acyrthosiphon,102
 FALF1P1 cont,Fallon,1,1,Control,Fall,Aphis,0
 FALF1P1 cont,Fallon,1,1,Control,Fall,Therioaphis,0
@@ -2118,7 +2118,7 @@ FALF1P2 cont,Fallon,1,2,Control,Fall,Nabis,0
 FALF1P2 cont,Fallon,1,2,Control,Fall,Geocoris,0
 FALF1P2 cont,Fallon,1,2,Control,Fall,Anthocoridae,7
 FALF1P2 cont,Fallon,1,2,Control,Fall,Coccinellidae,1
-FALF1P2 cont,Fallon,1,2,Control,Fall,Ichneumonidae,4
+FALF1P2 cont,Fallon,1,2,Control,Fall,Ichneumonoidea,4
 FALF1P2 cont,Fallon,1,2,Control,Fall,Acyrthosiphon,139
 FALF1P2 cont,Fallon,1,2,Control,Fall,Aphis,0
 FALF1P2 cont,Fallon,1,2,Control,Fall,Therioaphis,3
@@ -2132,7 +2132,7 @@ FALF1P1 sham,Fallon,1,1,Sham,Fall,Nabis,1
 FALF1P1 sham,Fallon,1,1,Sham,Fall,Geocoris,0
 FALF1P1 sham,Fallon,1,1,Sham,Fall,Anthocoridae,3
 FALF1P1 sham,Fallon,1,1,Sham,Fall,Coccinellidae,0
-FALF1P1 sham,Fallon,1,1,Sham,Fall,Ichneumonidae,4
+FALF1P1 sham,Fallon,1,1,Sham,Fall,Ichneumonoidea,4
 FALF1P1 sham,Fallon,1,1,Sham,Fall,Acyrthosiphon,96
 FALF1P1 sham,Fallon,1,1,Sham,Fall,Aphis,8
 FALF1P1 sham,Fallon,1,1,Sham,Fall,Therioaphis,1
@@ -2146,7 +2146,7 @@ FALF4P2 sham,Fallon,2,2,Sham,Fall,Nabis,0
 FALF4P2 sham,Fallon,2,2,Sham,Fall,Geocoris,0
 FALF4P2 sham,Fallon,2,2,Sham,Fall,Anthocoridae,1
 FALF4P2 sham,Fallon,2,2,Sham,Fall,Coccinellidae,0
-FALF4P2 sham,Fallon,2,2,Sham,Fall,Ichneumonidae,2
+FALF4P2 sham,Fallon,2,2,Sham,Fall,Ichneumonoidea,2
 FALF4P2 sham,Fallon,2,2,Sham,Fall,Acyrthosiphon,108
 FALF4P2 sham,Fallon,2,2,Sham,Fall,Aphis,0
 FALF4P2 sham,Fallon,2,2,Sham,Fall,Therioaphis,8
@@ -2160,7 +2160,7 @@ L3P3 cont,Lovelock,3,3,Control,Fall,Nabis,0
 L3P3 cont,Lovelock,3,3,Control,Fall,Geocoris,2
 L3P3 cont,Lovelock,3,3,Control,Fall,Anthocoridae,2
 L3P3 cont,Lovelock,3,3,Control,Fall,Coccinellidae,3
-L3P3 cont,Lovelock,3,3,Control,Fall,Ichneumonidae,2
+L3P3 cont,Lovelock,3,3,Control,Fall,Ichneumonoidea,2
 L3P3 cont,Lovelock,3,3,Control,Fall,Acyrthosiphon,18
 L3P3 cont,Lovelock,3,3,Control,Fall,Aphis,1
 L3P3 cont,Lovelock,3,3,Control,Fall,Therioaphis,0
@@ -2174,7 +2174,7 @@ FALF1P3,Fallon,1,3,Pre-,Fall,Nabis,3
 FALF1P3,Fallon,1,3,Pre-,Fall,Geocoris,0
 FALF1P3,Fallon,1,3,Pre-,Fall,Anthocoridae,14
 FALF1P3,Fallon,1,3,Pre-,Fall,Coccinellidae,1
-FALF1P3,Fallon,1,3,Pre-,Fall,Ichneumonidae,6
+FALF1P3,Fallon,1,3,Pre-,Fall,Ichneumonoidea,6
 FALF1P3,Fallon,1,3,Pre-,Fall,Acyrthosiphon,45
 FALF1P3,Fallon,1,3,Pre-,Fall,Aphis,0
 FALF1P3,Fallon,1,3,Pre-,Fall,Therioaphis,0
@@ -2188,7 +2188,7 @@ FALF4P3,Fallon,2,3,Pre-,Fall,Nabis,0
 FALF4P3,Fallon,2,3,Pre-,Fall,Geocoris,0
 FALF4P3,Fallon,2,3,Pre-,Fall,Anthocoridae,2
 FALF4P3,Fallon,2,3,Pre-,Fall,Coccinellidae,0
-FALF4P3,Fallon,2,3,Pre-,Fall,Ichneumonidae,1
+FALF4P3,Fallon,2,3,Pre-,Fall,Ichneumonoidea,1
 FALF4P3,Fallon,2,3,Pre-,Fall,Acyrthosiphon,73
 FALF4P3,Fallon,2,3,Pre-,Fall,Aphis,0
 FALF4P3,Fallon,2,3,Pre-,Fall,Therioaphis,4
@@ -2202,7 +2202,7 @@ FALF4P1,Fallon,2,1,Pre-,Fall,Nabis,0
 FALF4P1,Fallon,2,1,Pre-,Fall,Geocoris,0
 FALF4P1,Fallon,2,1,Pre-,Fall,Anthocoridae,1
 FALF4P1,Fallon,2,1,Pre-,Fall,Coccinellidae,0
-FALF4P1,Fallon,2,1,Pre-,Fall,Ichneumonidae,3
+FALF4P1,Fallon,2,1,Pre-,Fall,Ichneumonoidea,3
 FALF4P1,Fallon,2,1,Pre-,Fall,Acyrthosiphon,45
 FALF4P1,Fallon,2,1,Pre-,Fall,Aphis,0
 FALF4P1,Fallon,2,1,Pre-,Fall,Therioaphis,6
@@ -2216,7 +2216,7 @@ FALF1P2,Fallon,1,2,Pre-,Fall,Nabis,0
 FALF1P2,Fallon,1,2,Pre-,Fall,Geocoris,0
 FALF1P2,Fallon,1,2,Pre-,Fall,Anthocoridae,9
 FALF1P2,Fallon,1,2,Pre-,Fall,Coccinellidae,0
-FALF1P2,Fallon,1,2,Pre-,Fall,Ichneumonidae,9
+FALF1P2,Fallon,1,2,Pre-,Fall,Ichneumonoidea,9
 FALF1P2,Fallon,1,2,Pre-,Fall,Acyrthosiphon,47
 FALF1P2,Fallon,1,2,Pre-,Fall,Aphis,0
 FALF1P2,Fallon,1,2,Pre-,Fall,Therioaphis,3
@@ -2230,7 +2230,7 @@ YF1P1 cont,Yerington,1,1,Control,Fall,Nabis,3
 YF1P1 cont,Yerington,1,1,Control,Fall,Geocoris,0
 YF1P1 cont,Yerington,1,1,Control,Fall,Anthocoridae,2
 YF1P1 cont,Yerington,1,1,Control,Fall,Coccinellidae,0
-YF1P1 cont,Yerington,1,1,Control,Fall,Ichneumonidae,3
+YF1P1 cont,Yerington,1,1,Control,Fall,Ichneumonoidea,3
 YF1P1 cont,Yerington,1,1,Control,Fall,Acyrthosiphon,57
 YF1P1 cont,Yerington,1,1,Control,Fall,Aphis,4
 YF1P1 cont,Yerington,1,1,Control,Fall,Therioaphis,73
@@ -2244,7 +2244,7 @@ FALF1P1,Fallon,1,1,Pre-,Fall,Nabis,2
 FALF1P1,Fallon,1,1,Pre-,Fall,Geocoris,0
 FALF1P1,Fallon,1,1,Pre-,Fall,Anthocoridae,11
 FALF1P1,Fallon,1,1,Pre-,Fall,Coccinellidae,0
-FALF1P1,Fallon,1,1,Pre-,Fall,Ichneumonidae,4
+FALF1P1,Fallon,1,1,Pre-,Fall,Ichneumonoidea,4
 FALF1P1,Fallon,1,1,Pre-,Fall,Acyrthosiphon,63
 FALF1P1,Fallon,1,1,Pre-,Fall,Aphis,0
 FALF1P1,Fallon,1,1,Pre-,Fall,Therioaphis,3
@@ -2258,7 +2258,7 @@ FALF3P1,Fallon,3,1,Pre-,Fall,Nabis,0
 FALF3P1,Fallon,3,1,Pre-,Fall,Geocoris,0
 FALF3P1,Fallon,3,1,Pre-,Fall,Anthocoridae,8
 FALF3P1,Fallon,3,1,Pre-,Fall,Coccinellidae,0
-FALF3P1,Fallon,3,1,Pre-,Fall,Ichneumonidae,1
+FALF3P1,Fallon,3,1,Pre-,Fall,Ichneumonoidea,1
 FALF3P1,Fallon,3,1,Pre-,Fall,Acyrthosiphon,9
 FALF3P1,Fallon,3,1,Pre-,Fall,Aphis,6
 FALF3P1,Fallon,3,1,Pre-,Fall,Therioaphis,2
@@ -2272,7 +2272,7 @@ FALF3P2,Fallon,3,2,Pre-,Fall,Nabis,0
 FALF3P2,Fallon,3,2,Pre-,Fall,Geocoris,0
 FALF3P2,Fallon,3,2,Pre-,Fall,Anthocoridae,0
 FALF3P2,Fallon,3,2,Pre-,Fall,Coccinellidae,0
-FALF3P2,Fallon,3,2,Pre-,Fall,Ichneumonidae,0
+FALF3P2,Fallon,3,2,Pre-,Fall,Ichneumonoidea,0
 FALF3P2,Fallon,3,2,Pre-,Fall,Acyrthosiphon,0
 FALF3P2,Fallon,3,2,Pre-,Fall,Aphis,0
 FALF3P2,Fallon,3,2,Pre-,Fall,Therioaphis,1
@@ -2286,7 +2286,7 @@ FALF3P3,Fallon,3,3,Pre-,Fall,Nabis,0
 FALF3P3,Fallon,3,3,Pre-,Fall,Geocoris,0
 FALF3P3,Fallon,3,3,Pre-,Fall,Anthocoridae,4
 FALF3P3,Fallon,3,3,Pre-,Fall,Coccinellidae,1
-FALF3P3,Fallon,3,3,Pre-,Fall,Ichneumonidae,1
+FALF3P3,Fallon,3,3,Pre-,Fall,Ichneumonoidea,1
 FALF3P3,Fallon,3,3,Pre-,Fall,Acyrthosiphon,9
 FALF3P3,Fallon,3,3,Pre-,Fall,Aphis,3
 FALF3P3,Fallon,3,3,Pre-,Fall,Therioaphis,0
@@ -2300,7 +2300,7 @@ L1P3 cont,Lovelock,1,3,Control,Fall,Nabis,0
 L1P3 cont,Lovelock,1,3,Control,Fall,Geocoris,0
 L1P3 cont,Lovelock,1,3,Control,Fall,Anthocoridae,2
 L1P3 cont,Lovelock,1,3,Control,Fall,Coccinellidae,0
-L1P3 cont,Lovelock,1,3,Control,Fall,Ichneumonidae,18
+L1P3 cont,Lovelock,1,3,Control,Fall,Ichneumonoidea,18
 L1P3 cont,Lovelock,1,3,Control,Fall,Acyrthosiphon,385
 L1P3 cont,Lovelock,1,3,Control,Fall,Aphis,95
 L1P3 cont,Lovelock,1,3,Control,Fall,Therioaphis,26
@@ -2314,7 +2314,7 @@ YF3P2 cont,Yerington,3,2,Control,Fall,Nabis,0
 YF3P2 cont,Yerington,3,2,Control,Fall,Geocoris,0
 YF3P2 cont,Yerington,3,2,Control,Fall,Anthocoridae,9
 YF3P2 cont,Yerington,3,2,Control,Fall,Coccinellidae,0
-YF3P2 cont,Yerington,3,2,Control,Fall,Ichneumonidae,23
+YF3P2 cont,Yerington,3,2,Control,Fall,Ichneumonoidea,23
 YF3P2 cont,Yerington,3,2,Control,Fall,Acyrthosiphon,1225
 YF3P2 cont,Yerington,3,2,Control,Fall,Aphis,99
 YF3P2 cont,Yerington,3,2,Control,Fall,Therioaphis,247
@@ -2328,7 +2328,7 @@ L2P2 sham,Lovelock,2,2,Sham,Fall,Nabis,0
 L2P2 sham,Lovelock,2,2,Sham,Fall,Geocoris,0
 L2P2 sham,Lovelock,2,2,Sham,Fall,Anthocoridae,1
 L2P2 sham,Lovelock,2,2,Sham,Fall,Coccinellidae,1
-L2P2 sham,Lovelock,2,2,Sham,Fall,Ichneumonidae,3
+L2P2 sham,Lovelock,2,2,Sham,Fall,Ichneumonoidea,3
 L2P2 sham,Lovelock,2,2,Sham,Fall,Acyrthosiphon,1988
 L2P2 sham,Lovelock,2,2,Sham,Fall,Aphis,1809
 L2P2 sham,Lovelock,2,2,Sham,Fall,Therioaphis,676
@@ -2342,7 +2342,7 @@ L2P2 cont,Lovelock,2,2,Control,Fall,Nabis,0
 L2P2 cont,Lovelock,2,2,Control,Fall,Geocoris,1
 L2P2 cont,Lovelock,2,2,Control,Fall,Anthocoridae,0
 L2P2 cont,Lovelock,2,2,Control,Fall,Coccinellidae,0
-L2P2 cont,Lovelock,2,2,Control,Fall,Ichneumonidae,12
+L2P2 cont,Lovelock,2,2,Control,Fall,Ichneumonoidea,12
 L2P2 cont,Lovelock,2,2,Control,Fall,Acyrthosiphon,701
 L2P2 cont,Lovelock,2,2,Control,Fall,Aphis,419
 L2P2 cont,Lovelock,2,2,Control,Fall,Therioaphis,346
@@ -2356,7 +2356,7 @@ L1P3 sham,Lovelock,1,3,Sham,Fall,Nabis,0
 L1P3 sham,Lovelock,1,3,Sham,Fall,Geocoris,0
 L1P3 sham,Lovelock,1,3,Sham,Fall,Anthocoridae,1
 L1P3 sham,Lovelock,1,3,Sham,Fall,Coccinellidae,0
-L1P3 sham,Lovelock,1,3,Sham,Fall,Ichneumonidae,33
+L1P3 sham,Lovelock,1,3,Sham,Fall,Ichneumonoidea,33
 L1P3 sham,Lovelock,1,3,Sham,Fall,Acyrthosiphon,2061
 L1P3 sham,Lovelock,1,3,Sham,Fall,Aphis,76
 L1P3 sham,Lovelock,1,3,Sham,Fall,Therioaphis,19
@@ -2370,7 +2370,7 @@ L2P3 cont,Lovelock,2,3,Control,Fall,Nabis,0
 L2P3 cont,Lovelock,2,3,Control,Fall,Geocoris,0
 L2P3 cont,Lovelock,2,3,Control,Fall,Anthocoridae,1
 L2P3 cont,Lovelock,2,3,Control,Fall,Coccinellidae,0
-L2P3 cont,Lovelock,2,3,Control,Fall,Ichneumonidae,6
+L2P3 cont,Lovelock,2,3,Control,Fall,Ichneumonoidea,6
 L2P3 cont,Lovelock,2,3,Control,Fall,Acyrthosiphon,2154
 L2P3 cont,Lovelock,2,3,Control,Fall,Aphis,2570
 L2P3 cont,Lovelock,2,3,Control,Fall,Therioaphis,1298
@@ -2384,7 +2384,7 @@ L2P3 sham,Lovelock,2,3,Sham,Fall,Nabis,1
 L2P3 sham,Lovelock,2,3,Sham,Fall,Geocoris,0
 L2P3 sham,Lovelock,2,3,Sham,Fall,Anthocoridae,3
 L2P3 sham,Lovelock,2,3,Sham,Fall,Coccinellidae,0
-L2P3 sham,Lovelock,2,3,Sham,Fall,Ichneumonidae,8
+L2P3 sham,Lovelock,2,3,Sham,Fall,Ichneumonoidea,8
 L2P3 sham,Lovelock,2,3,Sham,Fall,Acyrthosiphon,2488
 L2P3 sham,Lovelock,2,3,Sham,Fall,Aphis,2432
 L2P3 sham,Lovelock,2,3,Sham,Fall,Therioaphis,909
@@ -2398,7 +2398,7 @@ YF1P1,Yerington,1,1,Pre-,Fall,Nabis,0
 YF1P1,Yerington,1,1,Pre-,Fall,Geocoris,1
 YF1P1,Yerington,1,1,Pre-,Fall,Anthocoridae,5
 YF1P1,Yerington,1,1,Pre-,Fall,Coccinellidae,0
-YF1P1,Yerington,1,1,Pre-,Fall,Ichneumonidae,2
+YF1P1,Yerington,1,1,Pre-,Fall,Ichneumonoidea,2
 YF1P1,Yerington,1,1,Pre-,Fall,Acyrthosiphon,39
 YF1P1,Yerington,1,1,Pre-,Fall,Aphis,1
 YF1P1,Yerington,1,1,Pre-,Fall,Therioaphis,200
@@ -2412,7 +2412,7 @@ YF1P2,Yerington,1,2,Pre-,Fall,Nabis,0
 YF1P2,Yerington,1,2,Pre-,Fall,Geocoris,0
 YF1P2,Yerington,1,2,Pre-,Fall,Anthocoridae,2
 YF1P2,Yerington,1,2,Pre-,Fall,Coccinellidae,0
-YF1P2,Yerington,1,2,Pre-,Fall,Ichneumonidae,4
+YF1P2,Yerington,1,2,Pre-,Fall,Ichneumonoidea,4
 YF1P2,Yerington,1,2,Pre-,Fall,Acyrthosiphon,13
 YF1P2,Yerington,1,2,Pre-,Fall,Aphis,0
 YF1P2,Yerington,1,2,Pre-,Fall,Therioaphis,135
@@ -2426,7 +2426,7 @@ YF1P3,Yerington,1,3,Pre-,Fall,Nabis,1
 YF1P3,Yerington,1,3,Pre-,Fall,Geocoris,3
 YF1P3,Yerington,1,3,Pre-,Fall,Anthocoridae,5
 YF1P3,Yerington,1,3,Pre-,Fall,Coccinellidae,0
-YF1P3,Yerington,1,3,Pre-,Fall,Ichneumonidae,6
+YF1P3,Yerington,1,3,Pre-,Fall,Ichneumonoidea,6
 YF1P3,Yerington,1,3,Pre-,Fall,Acyrthosiphon,26
 YF1P3,Yerington,1,3,Pre-,Fall,Aphis,0
 YF1P3,Yerington,1,3,Pre-,Fall,Therioaphis,170
@@ -2440,7 +2440,7 @@ YF3P3,Yerington,3,3,Pre-,Fall,Nabis,1
 YF3P3,Yerington,3,3,Pre-,Fall,Geocoris,1
 YF3P3,Yerington,3,3,Pre-,Fall,Anthocoridae,4
 YF3P3,Yerington,3,3,Pre-,Fall,Coccinellidae,0
-YF3P3,Yerington,3,3,Pre-,Fall,Ichneumonidae,48
+YF3P3,Yerington,3,3,Pre-,Fall,Ichneumonoidea,48
 YF3P3,Yerington,3,3,Pre-,Fall,Acyrthosiphon,192
 YF3P3,Yerington,3,3,Pre-,Fall,Aphis,3
 YF3P3,Yerington,3,3,Pre-,Fall,Therioaphis,139
@@ -2454,7 +2454,7 @@ YF3P1,Yerington,3,1,Pre-,Fall,Nabis,0
 YF3P1,Yerington,3,1,Pre-,Fall,Geocoris,1
 YF3P1,Yerington,3,1,Pre-,Fall,Anthocoridae,3
 YF3P1,Yerington,3,1,Pre-,Fall,Coccinellidae,0
-YF3P1,Yerington,3,1,Pre-,Fall,Ichneumonidae,12
+YF3P1,Yerington,3,1,Pre-,Fall,Ichneumonoidea,12
 YF3P1,Yerington,3,1,Pre-,Fall,Acyrthosiphon,96
 YF3P1,Yerington,3,1,Pre-,Fall,Aphis,0
 YF3P1,Yerington,3,1,Pre-,Fall,Therioaphis,118
@@ -2468,7 +2468,7 @@ YF2P1,Yerington,2,1,Pre-,Fall,Nabis,0
 YF2P1,Yerington,2,1,Pre-,Fall,Geocoris,2
 YF2P1,Yerington,2,1,Pre-,Fall,Anthocoridae,6
 YF2P1,Yerington,2,1,Pre-,Fall,Coccinellidae,2
-YF2P1,Yerington,2,1,Pre-,Fall,Ichneumonidae,4
+YF2P1,Yerington,2,1,Pre-,Fall,Ichneumonoidea,4
 YF2P1,Yerington,2,1,Pre-,Fall,Acyrthosiphon,18
 YF2P1,Yerington,2,1,Pre-,Fall,Aphis,1
 YF2P1,Yerington,2,1,Pre-,Fall,Therioaphis,8
@@ -2482,7 +2482,7 @@ YF2P2,Yerington,2,2,Pre-,Fall,Nabis,0
 YF2P2,Yerington,2,2,Pre-,Fall,Geocoris,2
 YF2P2,Yerington,2,2,Pre-,Fall,Anthocoridae,3
 YF2P2,Yerington,2,2,Pre-,Fall,Coccinellidae,0
-YF2P2,Yerington,2,2,Pre-,Fall,Ichneumonidae,40
+YF2P2,Yerington,2,2,Pre-,Fall,Ichneumonoidea,40
 YF2P2,Yerington,2,2,Pre-,Fall,Acyrthosiphon,44
 YF2P2,Yerington,2,2,Pre-,Fall,Aphis,0
 YF2P2,Yerington,2,2,Pre-,Fall,Therioaphis,58
@@ -2496,7 +2496,7 @@ YF2P3,Yerington,2,3,Pre-,Fall,Nabis,1
 YF2P3,Yerington,2,3,Pre-,Fall,Geocoris,3
 YF2P3,Yerington,2,3,Pre-,Fall,Anthocoridae,10
 YF2P3,Yerington,2,3,Pre-,Fall,Coccinellidae,1
-YF2P3,Yerington,2,3,Pre-,Fall,Ichneumonidae,24
+YF2P3,Yerington,2,3,Pre-,Fall,Ichneumonoidea,24
 YF2P3,Yerington,2,3,Pre-,Fall,Acyrthosiphon,53
 YF2P3,Yerington,2,3,Pre-,Fall,Aphis,0
 YF2P3,Yerington,2,3,Pre-,Fall,Therioaphis,84
@@ -2510,7 +2510,7 @@ YF3P2,Yerington,3,2,Pre-,Fall,Nabis,0
 YF3P2,Yerington,3,2,Pre-,Fall,Geocoris,2
 YF3P2,Yerington,3,2,Pre-,Fall,Anthocoridae,9
 YF3P2,Yerington,3,2,Pre-,Fall,Coccinellidae,0
-YF3P2,Yerington,3,2,Pre-,Fall,Ichneumonidae,45
+YF3P2,Yerington,3,2,Pre-,Fall,Ichneumonoidea,45
 YF3P2,Yerington,3,2,Pre-,Fall,Acyrthosiphon,134
 YF3P2,Yerington,3,2,Pre-,Fall,Aphis,0
 YF3P2,Yerington,3,2,Pre-,Fall,Therioaphis,134
@@ -2524,7 +2524,7 @@ LF1P1,Lovelock,1,1,Pre-,Fall,Nabis,0
 LF1P1,Lovelock,1,1,Pre-,Fall,Geocoris,1
 LF1P1,Lovelock,1,1,Pre-,Fall,Anthocoridae,4
 LF1P1,Lovelock,1,1,Pre-,Fall,Coccinellidae,1
-LF1P1,Lovelock,1,1,Pre-,Fall,Ichneumonidae,3
+LF1P1,Lovelock,1,1,Pre-,Fall,Ichneumonoidea,3
 LF1P1,Lovelock,1,1,Pre-,Fall,Acyrthosiphon,183
 LF1P1,Lovelock,1,1,Pre-,Fall,Aphis,27
 LF1P1,Lovelock,1,1,Pre-,Fall,Therioaphis,12
@@ -2538,7 +2538,7 @@ LF1P2,Lovelock,1,2,Pre-,Fall,Nabis,0
 LF1P2,Lovelock,1,2,Pre-,Fall,Geocoris,0
 LF1P2,Lovelock,1,2,Pre-,Fall,Anthocoridae,3
 LF1P2,Lovelock,1,2,Pre-,Fall,Coccinellidae,1
-LF1P2,Lovelock,1,2,Pre-,Fall,Ichneumonidae,3
+LF1P2,Lovelock,1,2,Pre-,Fall,Ichneumonoidea,3
 LF1P2,Lovelock,1,2,Pre-,Fall,Acyrthosiphon,33
 LF1P2,Lovelock,1,2,Pre-,Fall,Aphis,8
 LF1P2,Lovelock,1,2,Pre-,Fall,Therioaphis,6
@@ -2552,7 +2552,7 @@ LF1P3,Lovelock,1,3,Pre-,Fall,Nabis,0
 LF1P3,Lovelock,1,3,Pre-,Fall,Geocoris,0
 LF1P3,Lovelock,1,3,Pre-,Fall,Anthocoridae,3
 LF1P3,Lovelock,1,3,Pre-,Fall,Coccinellidae,1
-LF1P3,Lovelock,1,3,Pre-,Fall,Ichneumonidae,1
+LF1P3,Lovelock,1,3,Pre-,Fall,Ichneumonoidea,1
 LF1P3,Lovelock,1,3,Pre-,Fall,Acyrthosiphon,231
 LF1P3,Lovelock,1,3,Pre-,Fall,Aphis,7
 LF1P3,Lovelock,1,3,Pre-,Fall,Therioaphis,4
@@ -2566,7 +2566,7 @@ LF2P1,Lovelock,2,1,Pre-,Fall,Nabis,0
 LF2P1,Lovelock,2,1,Pre-,Fall,Geocoris,0
 LF2P1,Lovelock,2,1,Pre-,Fall,Anthocoridae,0
 LF2P1,Lovelock,2,1,Pre-,Fall,Coccinellidae,1
-LF2P1,Lovelock,2,1,Pre-,Fall,Ichneumonidae,0
+LF2P1,Lovelock,2,1,Pre-,Fall,Ichneumonoidea,0
 LF2P1,Lovelock,2,1,Pre-,Fall,Acyrthosiphon,41
 LF2P1,Lovelock,2,1,Pre-,Fall,Aphis,22
 LF2P1,Lovelock,2,1,Pre-,Fall,Therioaphis,34
@@ -2580,7 +2580,7 @@ LF2P2,Lovelock,2,2,Pre-,Fall,Nabis,0
 LF2P2,Lovelock,2,2,Pre-,Fall,Geocoris,0
 LF2P2,Lovelock,2,2,Pre-,Fall,Anthocoridae,0
 LF2P2,Lovelock,2,2,Pre-,Fall,Coccinellidae,2
-LF2P2,Lovelock,2,2,Pre-,Fall,Ichneumonidae,0
+LF2P2,Lovelock,2,2,Pre-,Fall,Ichneumonoidea,0
 LF2P2,Lovelock,2,2,Pre-,Fall,Acyrthosiphon,121
 LF2P2,Lovelock,2,2,Pre-,Fall,Aphis,16
 LF2P2,Lovelock,2,2,Pre-,Fall,Therioaphis,62
@@ -2594,7 +2594,7 @@ LF2P3,Lovelock,2,3,Pre-,Fall,Nabis,0
 LF2P3,Lovelock,2,3,Pre-,Fall,Geocoris,0
 LF2P3,Lovelock,2,3,Pre-,Fall,Anthocoridae,2
 LF2P3,Lovelock,2,3,Pre-,Fall,Coccinellidae,0
-LF2P3,Lovelock,2,3,Pre-,Fall,Ichneumonidae,7
+LF2P3,Lovelock,2,3,Pre-,Fall,Ichneumonoidea,7
 LF2P3,Lovelock,2,3,Pre-,Fall,Acyrthosiphon,321
 LF2P3,Lovelock,2,3,Pre-,Fall,Aphis,95
 LF2P3,Lovelock,2,3,Pre-,Fall,Therioaphis,67
@@ -2608,7 +2608,7 @@ LF3P1,Lovelock,3,1,Pre-,Fall,Nabis,0
 LF3P1,Lovelock,3,1,Pre-,Fall,Geocoris,3
 LF3P1,Lovelock,3,1,Pre-,Fall,Anthocoridae,7
 LF3P1,Lovelock,3,1,Pre-,Fall,Coccinellidae,3
-LF3P1,Lovelock,3,1,Pre-,Fall,Ichneumonidae,4
+LF3P1,Lovelock,3,1,Pre-,Fall,Ichneumonoidea,4
 LF3P1,Lovelock,3,1,Pre-,Fall,Acyrthosiphon,29
 LF3P1,Lovelock,3,1,Pre-,Fall,Aphis,7
 LF3P1,Lovelock,3,1,Pre-,Fall,Therioaphis,134
@@ -2622,7 +2622,7 @@ LF3P2,Lovelock,3,2,Pre-,Fall,Nabis,0
 LF3P2,Lovelock,3,2,Pre-,Fall,Geocoris,0
 LF3P2,Lovelock,3,2,Pre-,Fall,Anthocoridae,5
 LF3P2,Lovelock,3,2,Pre-,Fall,Coccinellidae,1
-LF3P2,Lovelock,3,2,Pre-,Fall,Ichneumonidae,2
+LF3P2,Lovelock,3,2,Pre-,Fall,Ichneumonoidea,2
 LF3P2,Lovelock,3,2,Pre-,Fall,Acyrthosiphon,5
 LF3P2,Lovelock,3,2,Pre-,Fall,Aphis,4
 LF3P2,Lovelock,3,2,Pre-,Fall,Therioaphis,25
@@ -2636,7 +2636,7 @@ LF3P3,Lovelock,3,3,Pre-,Fall,Nabis,0
 LF3P3,Lovelock,3,3,Pre-,Fall,Geocoris,2
 LF3P3,Lovelock,3,3,Pre-,Fall,Anthocoridae,2
 LF3P3,Lovelock,3,3,Pre-,Fall,Coccinellidae,0
-LF3P3,Lovelock,3,3,Pre-,Fall,Ichneumonidae,1
+LF3P3,Lovelock,3,3,Pre-,Fall,Ichneumonoidea,1
 LF3P3,Lovelock,3,3,Pre-,Fall,Acyrthosiphon,3
 LF3P3,Lovelock,3,3,Pre-,Fall,Aphis,1
 LF3P3,Lovelock,3,3,Pre-,Fall,Therioaphis,50

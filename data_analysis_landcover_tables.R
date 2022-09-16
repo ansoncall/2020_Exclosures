@@ -23,9 +23,8 @@ library(tidyverse) # R packages for data science
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
 landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
-# Raw fixed landcover data is outdated.
-# landcoverFixed <- read_csv('tidy_data/landcover_fixed.csv', #######################
-#                       col_types = 'ffffdddddddddddd')
+landcoverFixed <- read_csv('tidy_data/landcover_fixed.csv',
+                      col_types = 'ffffdddddddddddd')
 vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
@@ -55,453 +54,154 @@ predlist <- c('Arachnida','Coccinellidae','Ichneumonidae',
               'Nabis', 'Geocoris', 'Anthocoridae')
 aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis', 'AllAph', 'NonAcy')
 
-# Arthropod data summary ####
-## Aphid histograms ####
-aph_data <- data_long %>%
+# prepare landcover data ####
+mean_density_field <- data_long %>%
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
-  filter(Taxa %in% aphlist) %>%
-  mutate(LogDensity = log(Density+1))
+  unite(id, Site, Field, Season, Taxa, remove = FALSE) %>%
+  group_by(id) %>%
+  summarize(Mean_Density = mean(Density)) %>%
+  separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
+  pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
+  mutate(id = paste0(Site, 0, Field), .before = Site)
 
-# define varlist
+# make list of input landcover data tables
+lcList <- list(landcover, landcoverFixed)
+names(lcList) <- c('landcover', 'landcoverFixed')
+# list to hold outputs
+lcListOut <- list()
+# must include 7-class and 8-class version for each input
+# 7 class = weedy+wet combined; 8 class = weedy+wet separate
+# define varlists
 # 7 class
 varList7 <- c('alfalfa', ##################################################
-             'naturalArid',
-             'dirt',
-             'ag',
-             'impermeable',
-             'weedyWet',
-             'water')
+              'naturalArid',
+              'dirt',
+              'ag',
+              'impermeable',
+              'weedyWet',
+              'water')
 # 8 class
 varList8 <- c('alfalfa', ##################################################
-             'naturalArid',
-             'dirt',
-             'ag',
-             'impermeable',
-             'weedy',
-             'wet',
-             'water')
+              'naturalArid',
+              'dirt',
+              'ag',
+              'impermeable',
+              'weedy',
+              'wet',
+              'water')
+# make list of varLists
+varLists <- list(varList7, varList8)
+names(varLists) <- c('varList7', 'varList8')
 
+# loop over landcover inputs
+for (i in 1:length(lcList)) {
+  print(names(lcList[i]))
 
-# Collapse classes ########################################################
-landcover7 %<>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedyWet = class5 + class8,
-         water = class11
-  ) %>%
-  select(-(class0:class11)) %>%
-  mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
-levels(landcover$distanceWeight)
+  landcover <- lcList[[i]]
 
-landcover8 %<>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedy =  class5,
-         wet = class8,
-         water = class11
-  ) %>%
-  select(-(class0:class11)) %>%
-  mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
-levels(landcover$distanceWeight)
+  landcover7 <- landcover %>%
+    mutate(alfalfa = class6,
+           naturalArid = class10,
+           dirt = class2 + class2 + class7,
+           ag = class0 + class3,
+           impermeable = class4 + class9,
+           weedyWet = class5 + class8,
+           water = class11
+    ) %>%
+    select(-(class0:class11)) %>%
+    mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
+  levels(landcover$distanceWeight)
 
+  landcover8 <- landcover %>%
+    mutate(alfalfa = class6,
+           naturalArid = class10,
+           dirt = class2 + class2 + class7,
+           ag = class0 + class3,
+           impermeable = class4 + class9,
+           weedy =  class5,
+           wet = class8,
+           water = class11
+    ) %>%
+    select(-(class0:class11)) %>%
+    mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
+  levels(landcover$distanceWeight)
 
-# Raw fixed landcover table is outdated
-# landcoverFixed %<>%
-#   mutate(alfalfa = class6,
-#          naturalArid = class10,
-#          dirt = class2 + class2 + class7,
-#          ag = class0 + class3,
-#          impermeable = class4 + class9,
-#          weedyWet = class5 + class8,
-#          water = class11
-#   ) %>%
-#   select(-(class0:class11)) %>%
-#   mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
-# levels(landcover$distanceWeight)
+  # collect 7-class and 8-class data into a list
+  lcClassList <- list(landcover7, landcover8)
+  lcClassListOut <- list()
+  # loop over 7-class and 8-class data
+  for (j in 1:length(lcClassList)) {
 
+    landcover <- lcClassList[[j]]
+    # reshape
+    # lengthen
+    landcover_long <- landcover %>%
+      pivot_longer(alfalfa:water,
+                   names_to = 'class',
+                   values_to = 'areaScore') %>%
+      select(siteId, distanceWeight, site, field, class, areaScore)
+    # widen
+    landcover_wide <- landcover %>%
+      pivot_wider(id_cols = c(site, field),
+                  names_from = distanceWeight,
+                  values_from = alfalfa:water) %>%
+      mutate(id = paste0(site, field), .before = site)
 
-# lengthen
-landcover_long7 <- landcover7 %>%
-  pivot_longer(alfalfa:water,
-               names_to = 'class',
-               values_to = 'areaScore') %>%
-  select(siteId, distanceWeight, site, field, class, areaScore)
+    # join landcover data to arthropod data
+    field_data <- left_join(mean_density_field, landcover_wide)
 
-landcover_long8 <- landcover8 %>%
-  pivot_longer(alfalfa:water,
-               names_to = 'class',
-               values_to = 'areaScore') %>%
-  select(siteId, distanceWeight, site, field, class, areaScore)
-
-# # fixed class data outdated
-# landcover_longFixed <- landcoverFixed %>%
-#   pivot_longer(alfalfa:water,
-#                names_to = 'class',
-#                values_to = 'areaScore') %>%
-#   select(siteId, distanceWeight, site, field, class, areaScore)
-
-
-mean_density_field <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  unite(id, Site, Field, Season, Taxa, remove = FALSE) %>%
-  group_by(id) %>%
-  summarize(Mean_Density = mean(Density)) %>%
-  separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
-  pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
-  mutate(id = paste0(Site, 0, Field), .before = Site)
-
-
-# Reshape landcover data
-landcover_wide <- landcover %>%
-  pivot_wider(id_cols = c(site, field),
-              names_from = distanceWeight,
-              values_from = alfalfa:water) %>%
-  mutate(id = paste0(site, field), .before = site)
-
-landcover_wideFixed <- landcoverFixed %>%
-  pivot_wider(id_cols = c(site, field),
-              names_from = distanceWeight,
-              values_from = alfalfa:water) %>%
-  mutate(id = paste0(site, field), .before = site)
-# join landcover data
-field_data <- left_join(mean_density_field, landcover_wide)
-field_dataFixed <- left_join(mean_density_field, landcover_wideFixed)
-
-
-### spring data only ####
-
-# Subset data for modeling with landcover classes.
-fD_spring <- field_data %>%
-  filter(Season == 'Spring') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-fD_springFixed <- field_dataFixed %>%
-  filter(Season == 'Spring') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-# Subset data for modeling with landcover classes and margin data.
-fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
-fD_spring_subFixed <- fD_springFixed %>% filter(Site != 'Yerington')
-
-### fall data only ####
-
-fD_fall <- field_data %>%
-  filter(Season == 'Fall') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-fD_fallFixed <- field_dataFixed %>%
-  filter(Season == 'Fall') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-# Subset data for modeling with landcover classes and margin data.
-fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
-fD_fall_subFixed <- fD_fallFixed %>% filter(Site != 'Yerington')
-
-# functions ####
-buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
-  # taxon='NonAcy'
-  # data=fD_fall
-
-  distList <- c('_no ',
-                '_const ',
-                '_sig1 ',
-                '_sig2 ',
-                '_sig3 ',
-                '_sig4 ',
-                '_sig5 ')
-
-  cand_mod_tabs <- list()
-
-  if (taxon == 'empty' | !is_tibble(data)) {
-    stop(red("Please specify taxon and data \n"), call. = FALSE)
+    lcClassListOut[[j]] <- field_data
   }
-
-  # print inputs
-  cat(yellow('Taxon:'),
-      green(taxon),
-      yellow('Data:'),
-      green(deparse(substitute(data))),
-      '\n')
-
-  # get dfname
-  dfname <- as.name(deparse(substitute(data)))
-  # Build models
-  for (i in 1:length(distList)) {
-    # i=2
-
-    # incase full model fails to fit, try 'tricking' dredge
-    message(blue('fitting', distList[[i]],'models'))
-    # fit reduced model
-    fmod.red <- lmer(as.formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ (1|Site)'
-      )),
-      data = data,
-      REML = FALSE,
-      na.action = 'na.fail')
-    # define full model formula
-    form <-formula(
-      paste0('log(',
-             taxon,
-             ' + 1) ~ ',
-             paste0(varList, distList[[i]], '+ ', collapse = ''),
-             '(1|Site)'
-      ))
-    # Replace reduced model formula with full global model formula.
-    attr(fmod.red@frame, "formula") <- form
-    # Run dredge() with m.max parameter to avoid convergence failures.
-    fmod.red@call$data <- dfname
-
-    cand_mod_tabs[[i]] <-  # superassign?
-      model.sel(lapply(
-        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
-        eval))
-
-    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
-
-  }
-  # Rbind the elements of the list together. This forces recalculation of AICc
-  mod_table <- rbind(cand_mod_tabs[[1]],
-                     cand_mod_tabs[[2]],
-                     cand_mod_tabs[[3]],
-                     cand_mod_tabs[[4]],
-                     cand_mod_tabs[[5]],
-                     cand_mod_tabs[[6]],
-                     cand_mod_tabs[[7]])
-
-  return(mod_table)
+  lcListOut[[i]] <- lcClassListOut
 }
 
+# flatten lists and add names
+landCoverList <- unlist(lcListOut, recursive=FALSE)
+names(landCoverList) <- c('regular7', 'regular8', 'fixed7', 'fixed8')
 
+rm(lcClassList, lcClassListOut, lcList, lcListOut)
 
-# list of taxa to build tables for
-taxa <- c('Acyrthosiphon', 'NonAcy', 'AllAph', 'Arachnida', 'Coccinellidae',
-          'Geocoris', 'Ichneumonidae')
-
-
-
-# spring List
-springNonFix <- list()
-springItemNames <- paste(taxa, 'spring_7class', sep = "_")
-springFix <- list()
-springFixItemNames <- paste(taxa, 'spring_7class_fixed', sep = "_")
-# build spring non fixed tabs
-for (i in 1:length(taxa)) {
-
-  springNonFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_spring, 3)
-
+# scale all landcover vars in all inputs
+landCoverScaled <- list()
+for (i in 1:length(landCoverList)) {
+  landCoverScaled[[i]] <- landCoverList[[i]] %>%
+    mutate(across(contains('_'), ~ as.vector(scale(.))))
 }
 
-
-# build spring fixed tabs
-for (i in 1:length(taxa)) {
-
-  springFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_springFixed, 3)
+# create '_sub' (no Yerington) datasets
+landCoverScaledSub <- list()
+for (i in 1:length(landCoverScaled)) {
+  landCoverScaledSub[[i]] <-
+    landCoverScaled[[i]] %>% filter(Site != 'Yerington')
 }
 
-# fall List
-fallNonFix <- list()
-fallItemNames <- paste(taxa, 'fall_7class', sep = "_")
-fallFix <- list()
-fallFixItemNames <- paste(taxa, 'fall_7class_fixed', sep = "_")
-# build fall non fixed tabs
-for (i in 1:length(taxa)) {
+# join 'Scaled' and 'ScaledSub'
+allScaled <- c(landCoverScaled, landCoverScaledSub)
+# name all elements
+names(allScaled) <- paste0(rep(names(landCoverList), 2),
+                        c(rep('_full', 4), rep('_sub', 4)))
+# # check
+# View(allScaled)
 
-  fallNonFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_fall, 3)
-
+# split into spring and fall data
+allScaledSpring <- list()
+for (i in 1:length(allScaled)) {
+  allScaledSpring[[i]] <- allScaled[[i]] %>%
+    filter(Season == 'Spring')
 }
 
-
-# build fall fixed tabs
-for (i in 1:length(taxa)) {
-
-  fallFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_fallFixed, 3)
-
+allScaledFall <- list()
+for (i in 1:length(allScaled)) {
+  allScaledFall[[i]] <- allScaled[[i]] %>%
+    filter(Season == 'Fall')
 }
 
-tabsList <- c(springNonFix, springFix, fallNonFix, fallFix)
-namesList <- c(springItemNames, springFixItemNames, fallItemNames, fallFixItemNames)
-# currently: 7 class
- ################################
-
-
-for (i in 1:length(namesList)) {
-
-  saveRDS(tabsList[[i]], paste0('modTabs-distFixed/',namesList[[i]]))
-
-}
-
-
-
-  # 8 class here ####
-# read in data ####
-data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
-data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
-landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
-landcoverFixed <- read_csv('tidy_data/landcover_fixed.csv', #######################
-                           col_types = 'ffffdddddddddddd')
-vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
-vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
-
-
-# make df of total abundance across treatments
-mean_density <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>%
-  group_by(id) %>%
-  summarize(Mean_Density = mean(Density)) %>%
-  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
-  pivot_wider(names_from = Taxa, values_from = Mean_Density)
-
-mean_density <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>%
-  group_by(id) %>%
-  summarize(Mean_Density = mean(Density)) %>%
-  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
-  pivot_wider(names_from = Taxa, values_from = Mean_Density)
-
-# define varlist
-varList <- c('alfalfa', ##################################################
-             'naturalArid',
-             'dirt',
-             'ag',
-             'impermeable',
-             'weedy',
-             'wet',
-             'water')
-
-
-# Collapse classes ########################################################
-landcover %<>%
-  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
-  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
-                                    distanceWeight == 'sig2' ~ 'sig1',
-                                    distanceWeight == 'no' ~ 'no',
-                                    distanceWeight == 'const' ~ 'const',
-                                    distanceWeight == 'sig3' ~ 'sig3',
-                                    distanceWeight == 'sig4' ~ 'sig4',
-                                    distanceWeight == 'sig5' ~ 'sig5')) %>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedy = class5,
-         wet = class8,
-         water = class11
-  ) %>%
-  select(-(class0:class11)) %>%
-  mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
-levels(landcover$distanceWeight)
-
-landcoverFixed %<>%
-  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
-  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
-                                    distanceWeight == 'sig2' ~ 'sig1',
-                                    distanceWeight == 'no' ~ 'no',
-                                    distanceWeight == 'const' ~ 'const',
-                                    distanceWeight == 'sig3' ~ 'sig3',
-                                    distanceWeight == 'sig4' ~ 'sig4',
-                                    distanceWeight == 'sig5' ~ 'sig5')) %>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedy = class5,
-         wet = class8,
-         water = class11
-  ) %>%
-  select(-(class0:class11)) %>%
-  mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
-levels(landcover$distanceWeight)
-
-
-# lengthen
-landcover_long <- landcover %>%
-  pivot_longer(alfalfa:water,
-               names_to = 'class',
-               values_to = 'areaScore') %>%
-  select(siteId, distanceWeight, site, field, class, areaScore)
-
-landcover_longFixed <- landcoverFixed %>%
-  pivot_longer(alfalfa:water,
-               names_to = 'class',
-               values_to = 'areaScore') %>%
-  select(siteId, distanceWeight, site, field, class, areaScore)
-
-
-mean_density_field <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  unite(id, Site, Field, Season, Taxa, remove = FALSE) %>%
-  group_by(id) %>%
-  summarize(Mean_Density = mean(Density)) %>%
-  separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
-  pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
-  mutate(id = paste0(Site, 0, Field), .before = Site)
-
-
-# Reshape landcover data
-landcover_wide <- landcover %>%
-  pivot_wider(id_cols = c(site, field),
-              names_from = distanceWeight,
-              values_from = alfalfa:water) %>%
-  mutate(id = paste0(site, field), .before = site)
-
-landcover_wideFixed <- landcoverFixed %>%
-  pivot_wider(id_cols = c(site, field),
-              names_from = distanceWeight,
-              values_from = alfalfa:water) %>%
-  mutate(id = paste0(site, field), .before = site)
-# join landcover data
-field_data <- left_join(mean_density_field, landcover_wide)
-field_dataFixed <- left_join(mean_density_field, landcover_wideFixed)
-
-
-### spring data only ####
-
-# Subset data for modeling with landcover classes.
-fD_spring <- field_data %>%
-  filter(Season == 'Spring') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-fD_springFixed <- field_dataFixed %>%
-  filter(Season == 'Spring') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-# Subset data for modeling with landcover classes and margin data.
-fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
-fD_spring_subFixed <- fD_springFixed %>% filter(Site != 'Yerington')
-
-### fall data only ####
-
-fD_fall <- field_data %>%
-  filter(Season == 'Fall') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-fD_fallFixed <- field_dataFixed %>%
-  filter(Season == 'Fall') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-#2022-08-10T15:48:14Z
-## ERROR ####
-# surface water class not scaled here??? not fixed yet!!
-
-# Subset data for modeling with landcover classes and margin data.
-fD_fall_sub <- fD_fall %>% filter(Site != 'Yerington')
-fD_fall_subFixed <- fD_fallFixed %>% filter(Site != 'Yerington')
+allLandCover <- c(allScaledSpring, allScaledFall)
+names(allLandCover) <- paste0(rep(names(allScaled), 2),
+                              c(rep('_spring', 8), rep('_fall', 8)))
+# # check
+# View(allLandCover)
 
 # functions ####
 buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){

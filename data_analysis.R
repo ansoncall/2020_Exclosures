@@ -196,14 +196,6 @@ varList <- c('alfalfa',
 
 # Collapse classes
 landcover %<>%
-  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
-  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
-                                distanceWeight == 'sig2' ~ 'sig1',
-                                distanceWeight == 'no' ~ 'no',
-                                distanceWeight == 'const' ~ 'const',
-                                distanceWeight == 'sig3' ~ 'sig3',
-                                distanceWeight == 'sig4' ~ 'sig4',
-                                distanceWeight == 'sig5' ~ 'sig5')) %>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,

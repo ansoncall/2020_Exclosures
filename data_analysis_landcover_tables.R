@@ -23,8 +23,9 @@ library(tidyverse) # R packages for data science
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
 landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
-landcoverFixed <- read_csv('tidy_data/landcover_fixed.csv', #######################
-                      col_types = 'ffffdddddddddddd')
+# Raw fixed landcover data is outdated.
+# landcoverFixed <- read_csv('tidy_data/landcover_fixed.csv', #######################
+#                       col_types = 'ffffdddddddddddd')
 vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
@@ -63,17 +64,27 @@ aph_data <- data_long %>%
   mutate(LogDensity = log(Density+1))
 
 # define varlist
-varList <- c('alfalfa', ##################################################
+# 7 class
+varList7 <- c('alfalfa', ##################################################
              'naturalArid',
              'dirt',
              'ag',
              'impermeable',
              'weedyWet',
              'water')
+# 8 class
+varList8 <- c('alfalfa', ##################################################
+             'naturalArid',
+             'dirt',
+             'ag',
+             'impermeable',
+             'weedy',
+             'wet',
+             'water')
 
 
 # Collapse classes ########################################################
-landcover %<>%
+landcover7 %<>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,
@@ -86,40 +97,55 @@ landcover %<>%
   mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
 levels(landcover$distanceWeight)
 
-landcoverFixed %<>%
-  # 2022-08-03T20:15:27Z Fix error: distWeights 1 and 2 mixed up
-  mutate(distanceWeight = case_when(distanceWeight == 'sig1' ~ 'sig2',
-                                    distanceWeight == 'sig2' ~ 'sig1',
-                                    distanceWeight == 'no' ~ 'no',
-                                    distanceWeight == 'const' ~ 'const',
-                                    distanceWeight == 'sig3' ~ 'sig3',
-                                    distanceWeight == 'sig4' ~ 'sig4',
-                                    distanceWeight == 'sig5' ~ 'sig5')) %>%
+landcover8 %<>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,
          ag = class0 + class3,
          impermeable = class4 + class9,
-         weedyWet = class5 + class8,
+         weedy =  class5,
+         wet = class8,
          water = class11
   ) %>%
   select(-(class0:class11)) %>%
   mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
 levels(landcover$distanceWeight)
+
+
+# Raw fixed landcover table is outdated
+# landcoverFixed %<>%
+#   mutate(alfalfa = class6,
+#          naturalArid = class10,
+#          dirt = class2 + class2 + class7,
+#          ag = class0 + class3,
+#          impermeable = class4 + class9,
+#          weedyWet = class5 + class8,
+#          water = class11
+#   ) %>%
+#   select(-(class0:class11)) %>%
+#   mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
+# levels(landcover$distanceWeight)
 
 
 # lengthen
-landcover_long <- landcover %>%
+landcover_long7 <- landcover7 %>%
   pivot_longer(alfalfa:water,
                names_to = 'class',
                values_to = 'areaScore') %>%
   select(siteId, distanceWeight, site, field, class, areaScore)
 
-landcover_longFixed <- landcoverFixed %>%
+landcover_long8 <- landcover8 %>%
   pivot_longer(alfalfa:water,
                names_to = 'class',
                values_to = 'areaScore') %>%
   select(siteId, distanceWeight, site, field, class, areaScore)
+
+# # fixed class data outdated
+# landcover_longFixed <- landcoverFixed %>%
+#   pivot_longer(alfalfa:water,
+#                names_to = 'class',
+#                values_to = 'areaScore') %>%
+#   select(siteId, distanceWeight, site, field, class, areaScore)
 
 
 mean_density_field <- data_long %>%

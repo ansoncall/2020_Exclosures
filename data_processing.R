@@ -59,16 +59,13 @@ veg_survey_classes <- read_csv('raw_data/vegSurveyClasses.csv',
 
 
 ## landcover data ####
-# now only 1 csv (supervised classification, 8 classes)
-# import csv files
-# landcover <-
-#   read_csv(
-#     'raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv'
-#   )
-# 2022.09.15 NOTE: fixedClass areaScore data is probably outdated.
-#
-# if you want target fields according to classifier instead of fixed class:
-# this is up to date 2022.09.15
+# include 'fixed class' data and regular data
+# 'fixed class' has all target alfalfa fields manually classified as
+# klass = 6 = alfalfa
+landcoverFixed <-
+  read_csv(
+    'raw_data/superDoveSupervisedClassification_areaScore_fixedClass.csv'
+  )
 landcover <-
   read_csv('raw_data/superDoveSupervisedClassification_areaScore.csv',
            col_types = 'c')
@@ -825,96 +822,119 @@ sitename
 # ee exports are sorted "naturally" eg 0, 1, 10, 11, 2, 3
 # updates sitename to correct for this
 sitename <- c(sitename[1:2], sitename[11:12], sitename[3:10])
-# tidy
-tidyLandcover <- landcover %>%
-  # split cols
-  separate(col = dataSeries,
-           into = testnames,
-           sep = ",") %>%
-  # add siteId
-  mutate(siteId = unlist(sitename), .before = everything()) %>%
-  # begin to transpose
-  pivot_longer(-siteId, 'var') %>%
-  # parse cells
-  separate(col = 'value',
-           into = c('class', 'value'),
-           sep = '=') %>%
-  rowwise %>%
-  mutate(class = paste0('class', str_extract(class, '[:digit:]+')),
-         distanceWeight = str_extract(var, '[:alpha:]+[:digit:]?'),
-         value = parse_number(map_chr(str_extract_all(value,
-                                                      '[:digit:]+|\\.|-|E'),
-                                      ~ str_c(.x, collapse = '')))) %>%
-  # finish transpose
-  pivot_wider(c(siteId, distanceWeight), names_from = class) %>%
-  # make site and field id
-  separate(col = siteId,
-           into = c('site', 'field'),
-           sep = -2,
-           remove = FALSE)
-View(tidyLandcover)
-summary(tidyLandcover)
 
-# completeness/accuracy check: check areaScore * class (should be equal within
-# image sets and decay functions)
+# use for loop to tidy and check 'fixed' and regular data
+lcList <- list(landcoverFixed, landcover)
+# give the list items some names
+names(lcList) <- c('fixed class data', 'regular data')
+# make an empty list to hold outputs
+lcOutList <- list()
+for (i in 1:length(lcList)) {
+  # print the name of the dataset that is being wrangled/checked
+  print(names(lcList[i]))
+  # assign the proper dataset to the 'landcover' variable
+  landcover <- lcList[[i]]
 
-# get sum of area scores for all classes
-df <- tidyLandcover %>%
-  mutate(sumScore = sum(across(where(is.double)))) %>%
-  group_by(site, distanceWeight) %>%
-  summarize(totalSum = sum(sumScore), .groups = 'keep')
-# filter to a specific decay function
-no <- df %>%
-  filter(distanceWeight == 'no') %>%
-  arrange(desc(totalSum))
-# divide largest area by smallest area
-noRatio <- head(no$totalSum, n = 1)/tail(no$totalSum, n = 1)
+  # tidy
+  tidyLandcover <- landcover %>%
+    # split cols
+    separate(col = dataSeries,
+             into = testnames,
+             sep = ",") %>%
+    # add siteId
+    mutate(siteId = unlist(sitename), .before = everything()) %>%
+    # begin to transpose
+    pivot_longer(-siteId, 'var') %>%
+    # parse cells
+    separate(col = 'value',
+             into = c('class', 'value'),
+             sep = '=') %>%
+    rowwise %>%
+    mutate(class = paste0('class', str_extract(class, '[:digit:]+')),
+           distanceWeight = str_extract(var, '[:alpha:]+[:digit:]?'),
+           value = parse_number(map_chr(str_extract_all(value,
+                                                        '[:digit:]+|\\.|-|E'),
+                                        ~ str_c(.x, collapse = '')))) %>%
+    # finish transpose
+    pivot_wider(c(siteId, distanceWeight), names_from = class) %>%
+    # make site and field id
+    separate(col = siteId,
+             into = c('site', 'field'),
+             sep = -2,
+             remove = FALSE)
+  # check outputs
+  View(tidyLandcover)
+  summary(tidyLandcover)
 
-const <- df %>%
-  filter(distanceWeight == 'const') %>%
-  arrange(desc(totalSum))
+  # completeness/accuracy check: check areaScore * class (should be equal within
+  # image sets and decay functions)
 
-constRatio <- head(const$totalSum, n = 1)/tail(const$totalSum, n = 1)
+  # get sum of area scores for all classes
+  df <- tidyLandcover %>%
+    mutate(sumScore = sum(across(where(is.double)))) %>%
+    group_by(site, distanceWeight) %>%
+    summarize(totalSum = sum(sumScore), .groups = 'keep')
+  # filter to a specific decay function
+  no <- df %>%
+    filter(distanceWeight == 'no') %>%
+    arrange(desc(totalSum))
+  # divide largest area by smallest area
+  noRatio <- head(no$totalSum, n = 1)/tail(no$totalSum, n = 1)
 
-sig1 <- df %>%
-  filter(distanceWeight == 'sig1') %>%
-  arrange(desc(totalSum))
+  const <- df %>%
+    filter(distanceWeight == 'const') %>%
+    arrange(desc(totalSum))
 
-sig1Ratio <- head(sig1$totalSum, n = 1)/tail(sig1$totalSum, n = 1)
+  constRatio <- head(const$totalSum, n = 1)/tail(const$totalSum, n = 1)
 
-sig2 <- df %>%
-  filter(distanceWeight == 'sig2') %>%
-  arrange(desc(totalSum))
+  sig1 <- df %>%
+    filter(distanceWeight == 'sig1') %>%
+    arrange(desc(totalSum))
 
-sig2Ratio <- head(sig2$totalSum, n = 1)/tail(sig2$totalSum, n = 1)
+  sig1Ratio <- head(sig1$totalSum, n = 1)/tail(sig1$totalSum, n = 1)
 
-sig3 <- df %>%
-  filter(distanceWeight == 'sig3') %>%
-  arrange(desc(totalSum))
+  sig2 <- df %>%
+    filter(distanceWeight == 'sig2') %>%
+    arrange(desc(totalSum))
 
-sig3Ratio <- head(sig3$totalSum, n = 1)/tail(sig3$totalSum, n = 1)
+  sig2Ratio <- head(sig2$totalSum, n = 1)/tail(sig2$totalSum, n = 1)
 
-sig4 <- df %>%
-  filter(distanceWeight == 'sig4') %>%
-  arrange(desc(totalSum))
+  sig3 <- df %>%
+    filter(distanceWeight == 'sig3') %>%
+    arrange(desc(totalSum))
 
-sig4Ratio <- head(sig4$totalSum, n = 1)/tail(sig4$totalSum, n = 1)
+  sig3Ratio <- head(sig3$totalSum, n = 1)/tail(sig3$totalSum, n = 1)
 
-sig5 <- df %>%
-  filter(distanceWeight == 'sig5') %>%
-  arrange(desc(totalSum))
+  sig4 <- df %>%
+    filter(distanceWeight == 'sig4') %>%
+    arrange(desc(totalSum))
 
-sig5Ratio <- head(sig5$totalSum, n = 1)/tail(sig5$totalSum, n = 1)
+  sig4Ratio <- head(sig4$totalSum, n = 1)/tail(sig4$totalSum, n = 1)
 
-out <- c(noRatio, constRatio, sig1Ratio, sig2Ratio,
-         sig3Ratio, sig4Ratio, sig5Ratio)
+  sig5 <- df %>%
+    filter(distanceWeight == 'sig5') %>%
+    arrange(desc(totalSum))
 
-out # perfection!!!
+  sig5Ratio <- head(sig5$totalSum, n = 1)/tail(sig5$totalSum, n = 1)
 
-# remove misc error-checking vars from env
-rm(df, no, const, sig1, sig2, sig3, sig4, sig5,
-   noRatio, constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio,
-   distanceWeight, out, field, site)
+  out <- c(noRatio, constRatio, sig1Ratio, sig2Ratio,
+           sig3Ratio, sig4Ratio, sig5Ratio)
+
+  print(out) # perfection!!!
+
+  # assign tidied and checked data to output list
+
+  lcOutList[[i]] <- tidyLandcover
+
+  # remove misc error-checking vars from env
+  rm(df, no, const, sig1, sig2, sig3, sig4, sig5,
+     noRatio, constRatio, sig1Ratio, sig2Ratio, sig3Ratio, sig4Ratio, sig5Ratio,
+     out)
+
+}
+
+# remove other error-checking vars
+rm(lcList, distanceWeight, field, site)
 
 ## calculate veg data metrics ####
 # these metrics are all based on cover, since this is the more complete data
@@ -1009,14 +1029,24 @@ data_long %<>% filter(Treatment != 'Full')
 data # main table of insect count data
 data_long # insect data in long format
 tidyLandcover # landcover areaScores for each field
-# for fixed class
-# tidyLandcover_fixed <- tidyLandcover
+lcOutList[[1]] # 'fixed class' landcover areaScores for each field
+lcOutList[[2]] # regular landcover areaScores for each field
 vegPlots # final plot-level veg data from surveys
 vegSites # final site-level veg data from surveys
 
 # export tidy data ####
 # build list of data to export
-tidy_data <- list(data, data_long, tidyLandcover, vegPlots, vegSites)
-data_names <- list('data', 'data_long', 'landcover', 'vegPlots', 'vegSites')
+tidy_data <- list(data,
+                  data_long,
+                  lcOutList[[1]],
+                  lcOutList[[2]],
+                  vegPlots,
+                  vegSites)
+data_names <- list('data',
+                   'data_long',
+                   'landcover_fixed',
+                   'landcover',
+                   'vegPlots',
+                   'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data/', .y, ".csv")))

@@ -56,9 +56,6 @@ rawlocs <- read_csv('raw_data/vegSurvey_fieldJoin.csv',
 veg_survey_classes <- read_csv('raw_data/vegSurveyClasses.csv',
                                col_types = 'ffff')
 
-## landcover class data
-veg_survey_cover <- read_csv('raw_data/vegData_coverJoin.csv',
-                             col_types = 'fffffffffffffffffffffffffcc')
 
 ## landcover data ####
 # now only 1 csv (supervised classification, 8 classes)
@@ -703,11 +700,6 @@ rawlocs %>% group_by(site, CID) %>% count
 # uneven weights are expected
 # everything looks ok
 
-# check veg plots cover data
-veg_survey_cover %>% group_by(site) %>% count
-# uneven weights are expected
-# not really much else to check
-
 ## check raw cover data ####
 # checked after wrangling
 
@@ -754,13 +746,10 @@ locs <- rawlocs %>%
               mutate(id = paste0(site, plotnum)), # join veg_survey_classes from ee data
             by = 'id') %>%
   select(-name) %>%  # drop 'name' col
-  relocate(id, site, plotnum, type, lat, long, field_id) %>%  # reorder cols
-  left_join(veg_survey_cover %>% # tidy up veg_survey_cover before joining
-              unite(id, site, plotnum, sep = '') %>%
-              select(id, K3LSfall:XsentSummer), by = 'id')
+  relocate(id, site, plotnum, type, lat, long, field_id) # reorder cols
 
 # rm 'rawlocs,' 'veg_survey_classes'
-rm(rawlocs, veg_survey_classes, veg_survey_cover)
+rm(rawlocs, veg_survey_classes)
 
 ## veg data #####
 # make season and site ID column

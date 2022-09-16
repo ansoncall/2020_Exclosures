@@ -203,10 +203,18 @@ names(allLandCover) <- paste0(rep(names(allScaled), 2),
 # # check
 # View(allLandCover)
 
+# remove helper lists
+rm(allScaled, allScaledFall, allScaledSpring,
+   landCoverList, landCoverScaled, landCoverScaledSub,
+   landcover7, landcover8, landcover_long, landcover_wide,
+   landcover, mean_density, mean_density_field)
+i = 1
+rm(taxon,data,m.max,i)
 # functions ####
 buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
   # taxon='NonAcy'
-  # data=fD_fall
+  # data=allLandCover[[i]]
+  # m.max=3
 
   distList <- c('_no ',
                 '_const ',
@@ -215,6 +223,11 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
                 '_sig3 ',
                 '_sig4 ',
                 '_sig5 ')
+
+  varList <- data %>%
+    select(contains('_')) %>%
+    names() %>% str_extract('[:alpha:]+') %>%
+    unique()
 
   cand_mod_tabs <- list()
 
@@ -282,60 +295,49 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
 
 # list of taxa to build tables for
 taxa <- c('Acyrthosiphon', 'NonAcy', 'AllAph', 'Arachnida', 'Coccinellidae',
-          'Geocoris', 'Ichneumonidae')
+          'Geocoris', 'Ichneumonoidea')
 
 
+modLoop <- list()
+for (i in 1:length(allLandCover)) {
 
-# spring List
-springNonFix <- list()
-springItemNames <- paste(taxa, 'spring_8class', sep = "_")
-springFix <- list()
-springFixItemNames <- paste(taxa, 'spring_8class_fixed', sep = "_")
-# build spring non fixed tabs
-for (i in 1:length(taxa)) {
+  innerModLoop <- list()
+  data <- allLandCover[[i]]
+  for (j in 1:length(taxa)) {
 
-  springNonFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_spring, 3)
+    innerModLoop[[j]] <- buildLandcoverModTab(taxa[[j]], data, 3)
+
+  }
+
+  modLoop[[i]] <- innerModLoop
+}
+
+# get the names right!
+names(modLoop) <- names(allLandCover)
+
+for (i in 1:length(modLoop)) {
+
+  names(modLoop[[i]]) <- taxa
 
 }
 
+View(modLoop)
 
-# # build spring fixed tabs
-# for (i in 1:length(taxa)) {
-#
-#   springFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_springFixed, 3)
-#
-# }
+# export RDS
+for (i in 1:length(modLoop)) {
 
-# fall List
-fallNonFix <- list()
-fallItemNames <- paste(taxa, 'fall_8class', sep = "_")
-fallFix <- list()
-fallFixItemNames <- paste(taxa, 'fall_8class_fixed', sep = "_")
-# build fall non fixed tabs
-for (i in 1:length(taxa)) {
+  dataset <- names(modLoop[i])
 
-  fallNonFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_fall, 3)
+  for (j in 1:length(modLoop[[i]])) {
 
-}
+    modTabList <- modLoop[[i]]
+    response <- names(modTabList[j])
 
+    saveRDS(modTabList[[j]], paste0('modTabs/',
+                                    response,
+                                    '_',
+                                    dataset))
 
-# # build fall fixed tabs
-# for (i in 1:length(taxa)) {
-#
-#   fallFix[[i]] <- buildLandcoverModTab(taxa[[i]], fD_fallFixed, 3)
-#
-# }
-#
-# tabsList <- c(springNonFix, springFix, fallNonFix, fallFix)
-tabsList <- c(springNonFix, fallNonFix)
-# namesList <- c(springItemNames, springFixItemNames, fallItemNames, fallFixItemNames)
-namesList <- c(springItemNames, fallItemNames)
-# # currently: 8 class
-# ################################
-#
-#
-for (i in 1:length(namesList)) {
-
-  saveRDS(tabsList[[i]], paste0('modTabs/',namesList[[i]]))
+  }
 
 }

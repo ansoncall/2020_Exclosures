@@ -1,3 +1,7 @@
+# this is the main analysis script. it depends on the data_processing script for
+# tidy data inputs, and the data_analysis_landcover_tables script for
+# pre-generated AICc tables of arthropod~landcover models.
+
 # Load packages ####
 library(car) # for Anova() on lmer model objects
 library(corrr) # for correlation plots of landcover vars
@@ -51,151 +55,86 @@ rpaste0 <- function (x,y) {
   paste0(y,x)
 }
 
-# read in data ####
+# import data ####
+## read in tidy csvs ####
+# arthropod data by plot, taxa in separate cols
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
+# arthropod data by plot, all taxa in one col
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
-## CHECK #####
-## make sure you are using the correct landcover table!
+# landcover class by field, regular classification
 landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
+# landcover class by field, target alfalfa fields identified manually
+landcoverFixed <-
+  read_csv('tidy_data/landcover_fixed.csv', col_types = 'ffffdddddddddddd')
+# vegetation survey data by survey plot
 vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
+# vegetation survey data by site (farm)
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
-
-# make df of total abundance across treatments
-mean_density <- data_long %>%
+## wrangle ####
+# make df of log(total abundance) across treatments
+mean_density_long <- data_long %>%
+  # divide 'Pre-' values by 3 to account for unequal sampling area
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
+  # create unique id for each location and sampling time
   unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>%
+  # using the new id col, group treatments together
+  # note: 'Full' treatment has already been removed.
+  # only Pre-, Control, and Sham remain.
   group_by(id) %>%
+  # summarize using the mean
   summarize(Mean_Density = mean(Density)) %>%
-  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
+  # log+1 transform all values
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
+  # separate id column to restore original columns
+  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa'))
+
+# make wide version of same df
+mean_density_wide <- mean_density_long %>%
+  # create separate columns for each taxon
   pivot_wider(names_from = Taxa, values_from = Mean_Density)
 
-# define convenience identifiers ####
-# define lists of predator and aphid taxa
-predlist <- c('Arachnida','Coccinellidae','Ichneumonidae',
-              'Nabis', 'Geocoris', 'Anthocoridae')
-aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis', 'AllAph', 'NonAcy')
-
-# Arthropod data summary ####
-## Aphid histograms ####
-aph_data <- data_long %>%
+# summarize mean_density across fields
+mean_density_field <- data_long %>%
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
-  filter(Taxa %in% aphlist) %>%
-  mutate(LogDensity = log(Density+1)) %>%
-  filter(Taxa %in% c('Acyrthosiphon', 'NonAcy'))
+  unite(id, Site, Field, Season, Taxa, remove = FALSE) %>%
+  group_by(id) %>%
+  summarize(Mean_Density = mean(Density)) %>%
+  # log+1 transform all values
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
+  separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
+  pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
+  mutate(id = paste0(Site, 0, Field), .before = Site)
 
-# build density plot
-ggplot(data = aph_data, aes(y = Taxa, x = LogDensity, fill = Taxa)) +
-  geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Aphids, Log+1 Transformation',
-       x = 'log(Density)',
-       y = 'Taxon') +
-  theme(legend.position = 'none') +
-  facet_wrap(~ Season, nrow = 2) +
-  xlim(-1, 10)
-ggsave('aph-abund.png', width = 12.5, height = 6, units = 'in')
-# barchart for slideshow
-# spring
-ggplot(data = aph_data %>%
-         filter(Season == 'Spring',
-                Taxa %in% c('Acyrthosiphon', 'NonAcy')),
-       aes(x = LogDensity, y = Taxa, fill = Taxa)) +
-  geom_boxplot() +
-  xlim(c(0, 8.5)) +
-  scale_fill_manual(values = c('#548235', '#3b3838'),
-                    guide = 'none') +
-  labs(y = '', x = 'log(Density)')+
-  coord_flip() +
-  theme(text = element_text(size = 20)) +
-  scale_y_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids","Other taxa"))
+# create margin data
+field_margins <- vegPlots %>% filter(type == 'Margin') %>%
+  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
+  group_by(field_id, season) %>%
+  summarize(shan = mean(shan),
+            rich = mean(rich),
+            total_cover = mean(total_cover),
+            .groups = 'keep') %>%
+  # make join key
+  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
+  ungroup() %>%
+  select(-field_id, -season)
 
 
-ggsave('spring_aphid_density.jpg', width = 7, height = 5)
-# fall
-ggplot(data = aph_data %>%
-         filter(Season == 'Fall',
-                Taxa %in% c('Acyrthosiphon', 'Aphis', 'Therioaphis')),
-       aes(x = LogDensity, y = Taxa, fill = Taxa)) +
-  geom_boxplot() +
-  xlim(c(0, 8.5)) +
-  scale_fill_manual(values = c('#548235', '#3b3838', '#c78f00'),
-                    guide = 'none') +
-  labs(y = 'Aphid genus', x = 'log(Density)') +
-  coord_flip() +
-  theme(text = element_text(size = 20))
-# ggsave('fall_aphid_density.jpg', width = 7, height = 5)
+## prepare landcover data ####
+# landcover data - 4 versions: (7- vs 8-class) * (regular vs fixed)
+landcover7 <- landcover %>%
+  mutate(alfalfa = class6,
+         naturalArid = class10,
+         dirt = class2 + class2 + class7,
+         ag = class0 + class3,
+         impermeable = class4 + class9,
+         weedyWet = class5 + class8,
+         water = class11
+  )
 
-# total
-ggplot(data = aph_data %>%
-         filter(Taxa == 'AllAph'),
-       aes(x = LogDensity, y = Season, fill = Season)) +
-  geom_boxplot() +
-  xlim(c(0, 8.5)) +
-  scale_fill_manual(values = c('#008000','#993300'),
-                    guide = 'none') +
-  labs(y = 'Aphid genus', x = 'log(Density)') +
-  coord_flip() +
-  theme(text = element_text(size = 20),
-        axis.text.x=element_text(angle=30,hjust=0.9)) +
-  labs(x = element_blank(), y = element_blank())
-# ggsave('total_aphid_density.jpg', width = 1.5, height = 4.5)
-
-## Predator histogram ####
-pred_data <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  filter(Taxa %in% predlist) %>%
-  mutate(LogDensity = log(Density+1), Taxa = fct_relevel(Taxa, sort))
-
-# build density plot
-ggplot(data = pred_data, aes(y = Taxa, x = LogDensity, fill = Taxa)) +
-  geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Predators, Log+1 Transformation') +
-  theme(legend.position = 'none') +
-  facet_wrap(~ Season, nrow = 2) +
-  xlim(-1, 6)
-
-# barchart (density*season) for slideshow
-ggplot(data = pred_data,
-       aes(x = LogDensity, y = Taxa, fill = Season)) +
-  geom_boxplot() +
-  coord_flip() +
-  xlim(c(0, 6)) +
-  labs(y = 'Predator taxon', x = 'log(Density)') +
-  scale_fill_manual(values = c('#008000','#993300')) +
-  theme(text = element_text(size = 20),
-        axis.text.x=element_text(angle=30,hjust=0.9))
-# ggsave('spring_pred_density.jpg', width = 10, height = 5)
-
-# demo figure for field effect on density
-ggplot(data = pred_data %>%
-         filter(Taxa == 'Coccinellidae',
-                Site == 'Minden',
-                Field %in% c(1, 2)),
-       aes(x = LogDensity, y = Field, fill = Taxa)) +
-  geom_boxplot() +
-  coord_flip() +
-  guides(fill = 'none') +
-  labs(y = 'Field', x = 'log(Density)', title = 'Ladybug density') +
-  theme(text = element_text(size = 20))
-# ggsave('example_field_effect.jpg', width = 4, height = 5)
-
-# Landcover data summary ####
-
-# define varlist
-varList <- c('alfalfa',
-             'naturalArid',
-             'dirt',
-             'ag',
-             'impermeable',
-             'weedy',
-             'wet',
-             'water')
-
-# Collapse classes
-landcover %<>%
+landcover8 <- landcover %>%
   mutate(alfalfa = class6,
          naturalArid = class10,
          dirt = class2 + class2 + class7,
@@ -204,17 +143,169 @@ landcover %<>%
          weedy = class5,
          wet =  class8,
          water = class11
-         ) %>%
-  select(-(class0:class11)) %>%
-  mutate(distanceWeight = fct_relevel(distanceWeight, 'no', after = Inf))
-levels(landcover$distanceWeight)
-# lengthen
-landcover_long <- landcover %>%
-  pivot_longer(alfalfa:water,
-               names_to = 'class',
-               values_to = 'areaScore') %>%
-  select(siteId, distanceWeight, site, field, class, areaScore)
+  )
 
+landcover7Fixed <- landcoverFixed %>%
+  mutate(alfalfa = class6,
+         naturalArid = class10,
+         dirt = class2 + class2 + class7,
+         ag = class0 + class3,
+         impermeable = class4 + class9,
+         weedyWet = class5 + class8,
+         water = class11
+  )
+
+landcover8Fixed <- landcoverFixed %>%
+  mutate(alfalfa = class6,
+         naturalArid = class10,
+         dirt = class2 + class2 + class7,
+         ag = class0 + class3,
+         impermeable = class4 + class9,
+         weedy = class5,
+         wet =  class8,
+         water = class11
+  )
+
+# make list of landcover tables to prepare for joins
+lcIn <- list(landcover7, landcover8, landcover7Fixed, landcover8Fixed)
+# make empty list to hold outputs
+landCoverTabs <- list()
+
+# for each version of the landcover tables, join the arthropod counts and
+# veg survey data.
+for (i in 1:length(lcIn)) {
+
+  # Reshape landcover data
+  landcover_wide <- lcIn[[i]] %>%
+    # finish tidying cols after collapsing klasses
+    select(-(class0:class11)) %>%
+    # relevel distanceWeights
+    mutate(distanceWeight = fct_relevel(distanceWeight,
+                                        c('const', 'no'),
+                                        after = Inf)) %>%
+    # widen
+    pivot_wider(id_cols = c(site, field),
+                names_from = distanceWeight,
+                values_from = alfalfa:water) %>%
+    mutate(id = paste0(site, field), .before = site)
+
+  # join landcover data to arthropod density data
+  field_data <- left_join(mean_density_field, landcover_wide) %>%
+    # join margin data
+    left_join(field_margins) %>%
+    # tidy: remove extra 'site' and 'field' cols
+    select(-site, -field)
+
+  # add to output list
+  landCoverTabs[[i]] <- field_data
+
+}
+
+# name list elements
+names(landCoverTabs) <- c('landcover7', 'landcover8',
+                          'landcover7Fixed', 'landcover8Fixed')
+
+# clean up env
+rm(landcover7, landcover8, landcover7Fixed, landcover8Fixed,
+   mean_density_field, lcIn)
+
+
+# define color palette ####
+# Acyrthosiphon aphids: #548235
+# Non-Acyrthosiphon aphids: #3B3838
+# Spring: #76db91
+# Fall: #9e3c21
+
+
+# Arthropod data summary ####
+## Aphid histograms ####
+# density plot
+PLOT_aphid_density <- mean_density_long %>%
+  # focus on aphids only
+  filter(Taxa %in% c('Acyrthosiphon', 'NonAcy')) %>%
+  # relevel factors
+  mutate(Taxa = fct_relevel(Taxa, 'Acyrthosiphon'),
+         Season = fct_relevel(Season, 'Spring')) %>%
+  ggplot(aes(y = Taxa, x = Mean_Density, fill = Taxa)) +
+  geom_density_ridges(alpha = 0.6) +
+  labs(title = 'Aphids, Log+1 Transformation',
+       x = 'log(Density + 1)',
+       y = 'Taxon') +
+  theme(legend.position = 'none') +
+  facet_wrap(~ Season, nrow = 2) +
+  xlim(-1, 10) +
+  scale_y_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids",
+                            "Other taxa")) +
+  scale_fill_manual(values = c('#548235', '#3b3838'),
+                    guide = 'none')
+# plot
+PLOT_aphid_density
+
+# boxplot
+PLOT_aphid_boxplot <- mean_density_long %>%
+  # focus on aphids only
+  filter(Taxa %in% c('Acyrthosiphon', 'NonAcy')) %>%
+  # relevel factors
+  mutate(Taxa = fct_relevel(Taxa, 'Acyrthosiphon'),
+         Season = fct_relevel(Season, 'Spring')) %>%
+  ggplot(aes(x = Taxa, y = Mean_Density, fill = Taxa)) +
+  geom_boxplot() +
+  labs(title = 'Aphids, Log+1 Transformation',
+       y = 'log(Density + 1)',
+       x = 'Taxon') +
+  ylim(c(0, 9)) +
+  theme(legend.position = 'none') +
+  facet_wrap(~ Season, ncol = 2) +
+  scale_x_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids",
+                            "Other taxa")) +
+  scale_fill_manual(values = c('#548235', '#3B3838'),
+                    guide = 'none')
+# plot
+PLOT_aphid_boxplot
+
+# boxplot, all aphids combined, spring vs fall
+PLOT_aphidsBySeason_boxplot <- mean_density_long %>%
+  # focus on aphids only
+  filter(Taxa == 'AllAph') %>%
+  # relevel factors
+  mutate(Season = fct_relevel(Season, 'Spring')) %>%
+  ggplot(aes(x = Season, y = Mean_Density, fill = Season)) +
+  geom_boxplot() +
+  labs(title = 'Aphids, Log+1 Transformation',
+       subtitle = 'Pooled across taxa and split by season',
+       x = 'Season',
+       y = 'log(Density + 1)') +
+  ylim(c(0, 9)) +
+  theme(legend.position = 'none') +
+  scale_fill_manual(values = c('#76db91', '#9e3c21'),
+                    guide = 'none')
+# plot
+PLOT_aphidsBySeason_boxplot
+
+## Predator histogram ####
+# define list of predators
+predlist <- c('Arachnida', 'Anthocoridae', 'Nabis', 'Coccinellidae',
+              'Geocoris', 'Ichneumonoidea')
+# build density plot
+# density plot + boxplot
+PLOT_predator_density <- mean_density_long %>%
+  # focus on aphids only
+  filter(Taxa %in% predlist) %>%
+  # relevel factors
+  mutate(Season = fct_relevel(Season, 'Spring')) %>%
+  ggplot(aes(y = Season, x = Mean_Density, fill = Taxa)) +
+  geom_density_ridges(alpha = 0.6) +
+  labs(title = 'Predators, Log+1 Transformation',
+       x = 'log(Density + 1)',
+       y = 'Taxon * Season') +
+  theme(legend.position = 'none') +
+  facet_wrap(~ Taxa, ncol = 1) +
+  scale_fill_brewer(palette = 'Spectral')
+# plot
+PLOT_predator_density
+
+
+# Landcover data summary ####
 ggplot(landcover_long,
        # aes - limit x axis to 4 characters
        aes(x = sub(class, pattern = "(\\w{4}).*", replacement = "\\1."),

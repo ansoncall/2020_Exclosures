@@ -205,16 +205,20 @@ for (i in 1:length(lcIn)) {
 names(landCoverTabs) <- c('landcover7', 'landcover8',
                           'landcover7Fixed', 'landcover8Fixed')
 
+names(lcIn) <- c('landcover7', 'landcover8',
+                 'landcover7Fixed', 'landcover8Fixed')
+
+
 # clean up env
 rm(landcover7, landcover8, landcover7Fixed, landcover8Fixed,
-   mean_density_field, lcIn)
-
+   mean_density_field)
 
 # define color palette ####
 # Acyrthosiphon aphids: #548235
 # Non-Acyrthosiphon aphids: #3B3838
 # Spring: #76db91
 # Fall: #9e3c21
+# Predators: 'Spectral'
 
 
 # Arthropod data summary ####
@@ -306,26 +310,174 @@ PLOT_predator_density
 
 
 # Landcover data summary ####
-ggplot(landcover_long,
-       # aes - limit x axis to 4 characters
-       aes(x = sub(class, pattern = "(\\w{4}).*", replacement = "\\1."),
-           y = areaScore,
-           fill = class)) +
-  geom_bar( stat = "identity") +
-  facet_wrap(ncol = 7, ~site*distanceWeight, scales = 'free') +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-# ggsave(filename = 'lc.jpg', width = 9, height = 7, units = 'in')
+## Alfalfa reclassification effect ####
 
+# make a single large data frame for comparisons
+# empty list to hold modified data frames
+lcCompares <- list()
 
-ggplot(landcover_long %>% filter(site == 'Lovelock'),
-       # aes - limit x axis to 4 characters
-       aes(x = sub(class, pattern = "(\\w{4}).*", replacement = "\\1."),
-           y = areaScore,
-           fill = class)) +
-  geom_bar( stat = "identity") +
-  facet_wrap(ncol = 7, ~field*distanceWeight, scales = 'free') +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-# ggsave(filename = 'lc.jpg', width = 9, height = 7, units = 'in')
+for (i in 1:length(lcIn)) {
+
+  lcCompares[[i]] <- lcIn[[i]] %>%
+    # lengthen
+    pivot_longer(alfalfa:water,
+                 names_to = 'klass',
+                 values_to = 'weightedArea') %>%
+    # drop unused cols
+    select(!starts_with('class')) %>%
+    # make id col
+    unite(id, siteId, distanceWeight, klass, remove = FALSE)
+
+}
+# add names
+names(lcCompares) <- c('landcover7', 'landcover8',
+                 'landcover7Fixed', 'landcover8Fixed')
+# join tables with the same number of klasses
+sevenClass <- lcCompares$landcover7Fixed %>%
+  rename(weightedAreaFixedKlass = weightedArea) %>%
+  left_join(lcCompares$landcover7) %>%
+  mutate(areaDifference = (weightedArea-weightedAreaFixedKlass)/weightedArea)
+
+eightClass <- lcCompares$landcover8Fixed %>%
+  rename(weightedAreaFixedKlass = weightedArea) %>%
+  left_join(lcCompares$landcover8)%>%
+  mutate(areaDifference = (weightedArea-weightedAreaFixedKlass)/weightedArea)
+# put the two versions in a list and add names
+klassCompares <- list(sevenClass, eightClass)
+names(klassCompares) <- c('sevenClass', 'eightClass')
+
+# plot the change in areas by field
+install.packages('tidytext')
+library(tidytext)
+PLOTS_klassCompares <- list()
+for (i in 1:length(klassCompares)) {
+
+  # increase in alfalfa due to manual classification
+  p <- klassCompares[[i]] %>%
+    filter(klass == 'alfalfa') %>%
+    mutate(distanceWeight =
+             fct_relevel(distanceWeight,
+                         c('sig1', 'sig2', 'sig3',
+                           'sig4', 'sig5', 'const', 'no')),
+           FieldID = reorder_within(siteId,
+                                    desc(areaDifference),
+                                    distanceWeight,
+                                    sep = '_')) %>%
+  ggplot(aes(x = FieldID,
+               y = areaDifference*-1,
+               fill = site)) +
+    geom_col() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(title = 'Increase in alfalfa area score due to manual classification',
+         x = 'Field',
+         y = 'Area Score change, % increase') +
+    facet_wrap(~ distanceWeight, scales = 'free') +
+    scale_fill_brewer(palette = 'Set1') +
+    # scale_y_reordered() +
+    scale_x_discrete(label = function(x) str_extract(x, '[:alnum:]+'))
+
+  # decrease in weedy or weedyWet klass due to manual classification
+  q <- klassCompares[[i]] %>%
+    filter(klass %in% c('weedy', 'weedyWet')) %>%
+    mutate(distanceWeight =
+             fct_relevel(distanceWeight,
+                         c('sig1', 'sig2', 'sig3',
+                           'sig4', 'sig5', 'const', 'no')),
+           FieldID = reorder_within(siteId,
+                                    areaDifference,
+                                    distanceWeight,
+                                    sep = '_')) %>%
+    ggplot(aes(x = FieldID,
+               y = areaDifference*-1,
+               fill = site)) +
+    geom_col() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    labs(title = 'Decrease in weedy or weedyWet area score
+         due to manual classification',
+         x = 'Field',
+         y = 'Area Score change, % decrease') +
+    facet_wrap(~ distanceWeight * klass, scales = 'free') +
+    scale_fill_brewer(palette = 'Set1') +
+    # scale_y_reordered() +
+    scale_x_discrete(label = function(x) str_extract(x, '[:alnum:]+'))
+
+  PLOTS_klassCompares[[i]] <- list(p, q)
+
+}
+
+names(PLOTS_klassCompares) <- c('sevenClass', 'eightClass')
+# note: alfalfa plots for 7- and 8- class are the same, because the effect of
+# moving area TO alfalfa is the same, regardless of what class the area is
+# moving FROM
+PLOTS_klassCompares$sevenClass[1]
+PLOTS_klassCompares$sevenClass[2]
+PLOTS_klassCompares$eightClass[2]
+
+# in summary, manual classification seems to change Yerington the most
+
+## weedy/wet binning effect ####
+install.packages('ggpmisc')
+library(ggpmisc)
+# what is the correlation between weedy and wet cover?
+lcIn$landcover8 %>%
+  ggplot(aes(x = weedy, y = wet)) +
+  stat_poly_line() +
+  stat_poly_eq() +
+  geom_smooth(method = 'lm') +
+  facet_wrap(~ distanceWeight, scales = 'free') +
+  labs(title = 'Correlation between "weedy" and "wet" classes',
+       subtitle = 'across all distance weights') +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank())
+
+# generally poor correlation between these two classes
+# bin these because they are biologically similar, not because they are
+# correlated
+
+# wet and water correlation
+lcIn$landcover8 %>%
+  ggplot(aes(x = wet, y = water)) +
+  geom_point() +
+  stat_poly_line() +
+  stat_poly_eq() +
+  facet_wrap(~ distanceWeight, scales = 'free') +
+  labs(title = 'Correlation between "wet" and "water" classes',
+       subtitle = 'across all distance weights') +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank())
+# moderate correlation here. this breaks down when using weedyWet (7-class)
+lcIn$landcover7 %>%
+  ggplot(aes(x = weedyWet, y = water)) +
+  geom_point() +
+  stat_poly_line() +
+  stat_poly_eq() +
+  facet_wrap(~ distanceWeight, scales = 'free') +
+  labs(title = 'Correlation between "weedyWet" and "water" classes',
+       subtitle = 'across all distance weights') +
+  theme(axis.ticks = element_blank(),
+        axis.text = element_blank())
+
+## general distinctiveness using pca? ####
+install.packages('ggfortify')
+library(ggfortify)
+weightList <- c('sig1', 'sig2', 'sig3', 'sig4', 'sig5', 'const', 'no')
+
+for (i in 1:length(weightList)) {
+
+  df <- lcIn$landcover7 %>%
+    filter(distanceWeight == weightList[[i]])
+
+  comps <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
+                    weedyWet+water, data = df, scale. = TRUE)
+
+  autoplot(comps, data = df, colour = 'site',
+           loadings = TRUE, loadings.label = TRUE) +
+    scale_colour_brewer(palette = 'Set1') +
+    labs(title = weightList[[i]])
+
+}
+# prcomp
+
 
 ## Notes #### Obviously this can't work. Need a way to succinctly show how
 ## distance weighting affects the areaScores. Also, color, class names, etc.

@@ -9,6 +9,7 @@ library(crayon) # for colored terminal outputs
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
 library(gridExtra) # create multi-panel plots
+library(ggfortify) # create PCA plots
 library(ggridges) # for ggridges plots
 library(gtools) # for mixedsort() to arrange factor levels in vegdata tibble
 library(hardhat) # for get_levels to extract factor levels in a tidy way
@@ -21,6 +22,7 @@ library(mvabund) # for building multivariate mods of insect density
 library(piecewiseSEM) # for structural equation modeling
 library(plotly) # interactive plots with plotly()
 library(sjPlot) # create effects plots on lmer objects
+library(tidytext) # sort ggcols after faceting
 library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
 library(vegan) # for diversity indices in vegdata
@@ -347,8 +349,6 @@ klassCompares <- list(sevenClass, eightClass)
 names(klassCompares) <- c('sevenClass', 'eightClass')
 
 # plot the change in areas by field
-install.packages('tidytext')
-library(tidytext)
 PLOTS_klassCompares <- list()
 for (i in 1:length(klassCompares)) {
 
@@ -457,31 +457,62 @@ lcIn$landcover7 %>%
   theme(axis.ticks = element_blank(),
         axis.text = element_blank())
 
-## general distinctiveness using pca? ####
-install.packages('ggfortify')
-library(ggfortify)
+## pca ####
+# define list of distance weights
 weightList <- c('sig1', 'sig2', 'sig3', 'sig4', 'sig5', 'const', 'no')
-
+# list to hold PCA outputs
+pcaOut <- list()
+# for each distance weight, make 4 pcas (one for each dataset)
 for (i in 1:length(weightList)) {
 
-  df <- lcIn$landcover7 %>%
-    filter(distanceWeight == weightList[[i]])
+  # list to hold filtered dataset
+  df <- list()
+  # filter each dataset
+  for (j in 1:length(lcIn)){
 
-  comps <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
-                    weedyWet+water, data = df, scale. = TRUE)
+    df[[j]] <- lcIn[[j]] %>%
+      filter(distanceWeight == weightList[[i]])
 
-  autoplot(comps, data = df, colour = 'site',
+  }
+  # list to hold principal components
+  comps <- list()
+  # 7-class and 8-class need different predictors, so can't for-loop here.
+  comps[[1]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
+                    weedyWet+water, data = df[[1]], scale. = TRUE)
+  comps[[2]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
+                         weedy+wet+water, data = df[[2]], scale. = TRUE)
+  comps[[3]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
+                         weedyWet+water, data = df[[3]], scale. = TRUE)
+  comps[[4]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
+                         weedy+wet+water, data = df[[4]], scale. = TRUE)
+
+  # holds pcas for each dataset
+  pcas <- list()
+  # list of dataset names for plot titles
+  dfNames <- c('7class', '8class',
+               '7class, alfalfa fixed', '8class, alfalfa fixed')
+  # plot the pca for each dataset
+  for(k in 1:length(comps)){
+
+  pcas[[k]] <- autoplot(comps[[k]], data = df[[k]], colour = 'site',
            loadings = TRUE, loadings.label = TRUE) +
     scale_colour_brewer(palette = 'Set1') +
-    labs(title = weightList[[i]])
+    labs(title = paste0(weightList[[i]], ' ', dfNames[[k]]))
+
+  }
+  # save the series of pca plots to the pcaOut list
+  pcaOut[[i]] <- pcas
 
 }
-# prcomp
 
+# print the the pca plots, four at a time (one distance weight at a time)
+for (i in 1:length(pcaOut)){
 
-## Notes #### Obviously this can't work. Need a way to succinctly show how
-## distance weighting affects the areaScores. Also, color, class names, etc.
-## need to be fixed. Messaged Beth for advice.
+  do.call('grid.arrange', c(unlist(pcaOut[i], recursive = FALSE), ncol = 2))
+
+}
+# # print all the pca plots at once (hard to read)
+# do.call('grid.arrange', c(unlist(pcaOut, recursive = FALSE), ncol = 4))
 
 # Margin data summary ####
 ## Across sites ####

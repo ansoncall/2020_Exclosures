@@ -6,6 +6,7 @@
 library(car) # for Anova() on lmer model objects
 library(corrr) # for correlation plots of landcover vars
 library(crayon) # for colored terminal outputs
+library(data.table) # for rbindlist() to rbind a list of tables and make id col
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
 library(gridExtra) # create multi-panel plots
@@ -521,20 +522,23 @@ ggplot(data = vegPlots %>% filter(type == 'Margin'),
        aes(x = site, y = shan, fill = season)) +
   geom_boxplot() +
   labs(title = 'Shannon diversity index',
-       x = 'Site', y = 'Diversity')
+       x = 'Site', y = 'Diversity') +
+  scale_fill_manual(values = c('#76db91', '#9e3c21'))
 # Plant species richness
 ggplot(data = vegPlots %>% filter(type == 'Margin'),
        aes(x = site, y = rich, fill = season)) +
   geom_boxplot() +
   labs(title = 'Plant species richness',
-       x = 'Site', y = 'Richness')
+       x = 'Site', y = 'Richness') +
+  scale_fill_manual(values = c('#76db91', '#9e3c21'))
 # Total plant cover
 ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
          mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)),
        aes(x = site, y = total_cover, fill = season)) +
   geom_boxplot() +
   labs(title = 'Plant cover %',
-       x = 'Site', y = '%')
+       x = 'Site', y = '%') +
+  scale_fill_manual(values = c('#76db91', '#9e3c21'))
 ### Notes ####
 ## Not seeing much variation here. May want to shaw by field.
 ## Remember, Yerington will always be missing. Need to fix colors, factor order,
@@ -549,21 +553,20 @@ short_aphlist <- c('Acyrthosiphon',
              'Aphis',
              'Therioaphis', 'NonAcy')
 
-# create empty lists
+# create empty list to hold dredges
 dredges <- list()
-
+# for each aphid taxon, make a global model and dredge through all predators
 for (i in 1:length(short_aphlist)) {
 
   taxon <- short_aphlist[[i]]
-  formula <-  paste0('log(',
-                     taxon,
-                     ' + 1) ~ log(Arachnida + 1) + log(Coccinellidae + 1) + ',
-                     'log(Ichneumonidae + 1) + log(Nabis + 1) + log(Geocoris + 1) +',
-                     'log(Anthocoridae + 1) + (1|Site) + (1|Field)')
-  mGlobal <- mean_density %>%
+  # note: mean_density_wide already has log-transformed arthropod data
+  formula <-  paste0(taxon, '~ Arachnida + Coccinellidae + ',
+                     'Ichneumonoidea + Nabis + Geocoris + ',
+                     'Anthocoridae + (1|Site) + (1|Field)')
+  mGlobal <- mean_density_wide %>%
     filter(Season=='Spring') %$%
     lmer(formula(formula),
-         na.action = 'na.fail', # can't replicate previous error?
+         na.action = 'na.fail',
          REML = FALSE)
 
   dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
@@ -576,13 +579,7 @@ importance_tab <- lapply(dredges, function (x) {
   sw(x) %>%
     tibble(names = names(.),
            .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-    mutate(ExpVars = fct_recode(names,
-                                Anthocoridae = 'log(Anthocoridae + 1)',
-                                Arachnida = 'log(Arachnida + 1)',
-                                Coccinellidae = 'log(Coccinellidae + 1)',
-                                Geocoris = 'log(Geocoris + 1)',
-                                Ichneumonoidea = 'log(Ichneumonidae + 1)',
-                                Nabis = 'log(Nabis + 1)'),
+    mutate(ExpVars = names,
            VarWeights = sw,
            .keep = 'none') %>%
     arrange(ExpVars)
@@ -599,10 +596,8 @@ names(springTabs) <- short_aphlist
 best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
 # must remake to plot effects.
-best.acy.mod.sp <- lmer(log(Acyrthosiphon + 1) ~ log(Coccinellidae + 1) +
-                                                     (1|Site) +
-                                                     (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'),
+best.acy.mod.sp <- lmer(Acyrthosiphon ~ Coccinellidae + (1|Site) + (1|Field),
+                        data = mean_density_wide %>% filter(Season == 'Spring'),
                      REML = FALSE, na.action = 'na.omit')
 summary(best.acy.mod.sp)
 # Note: no data seems to be missing here.
@@ -615,66 +610,41 @@ summary(best.acy.mod.sp)
 #     res = 300)
 plot(allEffects(best.acy.mod.sp, residuals = TRUE),
      main = 'Acyrthosiphon, Spring',
-     id = list(n = 36, labels = mean_density %>%
+     id = list(n = 36, labels = mean_density_wide %>%
                  filter(Season == 'Spring') %>%
                  unite('id', Site, Field, Plot, sep = '.') %>%
                  pull(id)))
 # dev.off()
 
 ## better plot
-bmod <- lmer(Acyrthosiphon ~ Coccinellidae +
-         (1|Site)+(1|Field),
-       na.action = 'na.omit',
-       REML = FALSE,
-       data = mean_density %>%
-         filter(Season=='Spring') %>%
-         mutate(Coccinellidae = log(Coccinellidae+1),
-                Acyrthosiphon = log(Acyrthosiphon+1)))
-
-summary(bmod)
-
-dfb <-mean_density %>%
-  filter(Season=='Spring') %>%
-  mutate(Coccinellidae = log(Coccinellidae+1),
-         Acyrthosiphon = log(Acyrthosiphon+1))
-trellis.device()
-trellis.par.get()
-
-
-png('lattice.png', height = 6, width = 6, units = 'in', res = 300)
+# png('lattice.png', height = 6, width = 6, units = 'in', res = 300)
 trellis.par.set(list(par.xlab.text = list(cex=2),
                      par.ylab.text = list(cex=2),
                      par.main.text = list(col = "blue", cex=0.5)))
-plot(effect('Coccinellidae',bmod,
+plot(effect('Coccinellidae',best.acy.mod.sp,
                 residuals = T),
      partial.residuals = list(smooth=F),
      axes = list(x = list(Coccinellidae = list(lab = 'Log(Ladybug density)')),
                  y = list(lab = 'Log(Aphid density)')),
      main = NULL,
      lattice=list(key.args=list(axis.text = list(cex=10))))
+# dev.off()
 
-dev.off()
-dfb %>%
-  ggplot(aes(Coccinellidae, Acyrthosiphon))+
-  geom_point()
-
-
-library(ggeffects)
-b <- ggemmeans(bmod, terms = 'Coccinellidae')
-
-ggplot(b, aes(x, predicted)) +
-  geom_point()+
-  geom_line() +
-  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1)
+# # not run:
+# library(ggeffects)
+# b <- ggemmeans(bmod, terms = 'Coccinellidae')
+#
+# ggplot(b, aes(x, predicted)) +
+#   geom_point()+
+#   geom_line() +
+#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1)
 
 # extract and examine the top Aphis model.
 best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
 summary(best.aphis.mod)
 # Must remake to plot effects.
-best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Ichneumonidae + 1) +
-                         (1|Site) +
-                         (1|Field),
-                       data = mean_density %>% filter(Season == 'Spring'),
+best.aphis.mod <- lmer(Aphis ~ Ichneumonoidea + (1|Site) + (1|Field),
+                       data = mean_density_wide %>% filter(Season == 'Spring'),
                        REML = FALSE)
 # make plot
 # png('spring_aphis_effect.jpg',
@@ -684,7 +654,7 @@ best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Ichneumonidae + 1) +
 #     res = 300)
 plot(allEffects(best.aphis.mod, residuals = TRUE),
      main = 'Aphis, Spring',
-     id = list(n = 36, labels = mean_density %>%
+     id = list(n = 36, labels = mean_density_wide %>%
                  filter(Season == 'Spring') %>%
                  unite('id', Site, Field, Plot, sep = '.') %>%
                  pull(id)))
@@ -694,10 +664,8 @@ plot(allEffects(best.aphis.mod, residuals = TRUE),
 best.therio.mod <- get.models(springTabs[[3]], subset = 1)[[1]]
 summary(best.therio.mod)
 # Must remake to plot effects.
-best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Geocoris + 1) +
-                          (1|Site) +
-                          (1|Field),
-                        data = mean_density %>% filter(Season == 'Spring'),
+best.therio.mod <- lmer(Therioaphis ~ Geocoris + (1|Site) + (1|Field),
+                        data = mean_density_wide %>% filter(Season == 'Spring'),
                         REML = FALSE)
 # make plot
 # png('spring_therio_effect.jpg',
@@ -707,170 +675,234 @@ best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Geocoris + 1) +
 #     res = 300)
 plot(allEffects(best.therio.mod, residuals = TRUE),
      main = 'Therioaphis, Spring',
-     id = list(n = 36, labels = mean_density %>%
+     id = list(n = 36, labels = mean_density_wide %>%
                  filter(Season == 'Spring') %>%
                  unite('id', Site, Field, Plot, sep = '.') %>%
                  pull(id)))
 # dev.off()
 
-# make variable importance heatmap
-p <- bind_rows(importance_tab, .id = 'Taxon') %>%
-  mutate(VarWeights = as.numeric(VarWeights),
-         ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
-         Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
-  # filter(ExpVars %in% c("Coccinellidae", "Geocoris", "Ichneumonoidea")) %>%
-  filter(Taxon %in% c("Acyrthosiphon")) %>%
-  ggplot(aes(x = reorder(ExpVars, desc(VarWeights)), y = VarWeights, fill = VarWeights)) +
-  geom_col() +
-  scale_fill_gradient('', low="blue", high="red", breaks = c(0.3,0.9), labels = c('low','high')) +
-  labs(x = '', y = 'Variable importance') +
-  theme_gray(base_size = 25)+
-  theme( legend.position = c(0.95,0.85)) +
-  scale_x_discrete(labels=c('Ladybugs', 'Spiders', 'Parasitoid\nwasps', 'Damsel\nbugs', 'Minute pirate\nbugs','Bigeyed\nbugs'))
-p
-ggsave('spring_aphid_varweights.jpg', width = 12.5, height = 7.5)
+# for each aphid taxon, make variable importance heatmap for all aphids
+aphPredVI <- list()
+for (i in 1:length(short_aphlist)){
+
+  p <- bind_rows(importance_tab, .id = 'Taxon') %>%
+    mutate(VarWeights = as.numeric(VarWeights),
+           ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
+           Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
+    filter(Taxon == short_aphlist[[i]]) %>%
+    ggplot(aes(x = reorder(ExpVars, desc(VarWeights)),
+               y = VarWeights,
+               fill = VarWeights)) +
+    geom_col() +
+    scale_fill_gradient('',
+                        low="blue",
+                        high="red",
+                        breaks = c(0.3,0.9),
+                        labels = c('low','high')) +
+    labs(title = short_aphlist[[i]], x = '', y = 'Variable importance') +
+    theme(legend.position = c(0.95,0.85))
+
+  aphPredVI[[i]] <- p
+
+}
+# print all plots
+for (i in 1:length(aphPredVI)) {
+
+  print(aphPredVI[[i]])
+
+}
+# make a larger heatmap that includes all aphid taxa in one figure
+
+# combine all importance tables into one
+aphVI <- rbindlist(importance_tab, idcol = TRUE) %>% as_tibble()
+# constuct heatmap
+PLOT_aphVI <- ggplot(data = aphVI,
+                     aes(x = .id, y = ExpVars, fill = VarWeights)) +
+  geom_tile() +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(angle = 45))+
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Variable importance, aphids ~ predators') +
+  coord_flip()
+# show it
+PLOT_aphVI
+
 
 ### fall data only ####
-
-# create empty lists
+# create empty list to hold dredges
 dredges <- list()
-
+# for each aphid taxon, make a global model and dredge through all predators
 for (i in 1:length(short_aphlist)) {
 
-  aph_density <- as.name(short_aphlist[[i]])
-  mGlobal <- mean_density %>%
+  taxon <- short_aphlist[[i]]
+  # note: mean_density_wide already has log-transformed arthropod data
+  formula <-  paste0(taxon, '~ Arachnida + Coccinellidae + ',
+                     'Ichneumonoidea + Nabis + Geocoris + ',
+                     'Anthocoridae + (1|Site) + (1|Field)')
+  mGlobal <- mean_density_wide %>%
     filter(Season=='Fall') %$%
-    lmer(log(eval(aph_density) + 1) ~ (log(Arachnida + 1) +
-                                         log(Coccinellidae + 1) +
-                                         log(Ichneumonidae + 1) +
-                                         log(Nabis + 1) +
-                                         log(Geocoris + 1) +
-                                         log(Anthocoridae + 1) +
-                                         (1|Site) +
-                                         (1|Field)),
+    lmer(formula(formula),
          na.action = 'na.fail',
          REML = FALSE)
+
   dredges[[i]] <- dredge(mGlobal) # dredge and store output in list
 
 }
 names(dredges) <- short_aphlist
 
+# check data sources
 importance_tab <- lapply(dredges, function (x) {
   sw(x) %>%
     tibble(names = names(.),
            .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
-    mutate(ExpVars = fct_recode(names,
-                                Anthocoridae = 'log(Anthocoridae + 1)',
-                                Arachnida = 'log(Arachnida + 1)',
-                                Coccinellidae = 'log(Coccinellidae + 1)',
-                                Geocoris = 'log(Geocoris + 1)',
-                                Ichneumonoidea = 'log(Ichneumonidae + 1)',
-                                Nabis = 'log(Nabis + 1)'),
+    mutate(ExpVars = names,
            VarWeights = sw,
            .keep = 'none') %>%
     arrange(ExpVars)
 })
+
 names(importance_tab) <- short_aphlist
 # make tables of model selection results
-fallTabs <- lapply(dredges, slice_head, n = 5)
-names(fallTabs) <- short_aphlist
+FallTabs <- lapply(dredges, slice_head, n = 5)
+names(FallTabs) <- short_aphlist
 # show tables
-# fallTabs
-# Extract and examine the top Acyrthosiphon model.
-best.acy.mod <- get.models(fallTabs[[1]], subset = 1)[[1]]
+# View(FallTabs)
+
+# extract and examine the top Acyrthosiphon model.
+best.acy.mod <- get.models(FallTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
-# Must remake to plot effects.
-best.acy.mod <- lmer(log(Acyrthosiphon + 1) ~ log(Anthocoridae + 1) +
-                       log(Ichneumonidae + 1) +
-                       (1|Site) +
-                       (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'),
-                     REML = FALSE)
-# make plot
-# png('fall_acy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-plot(allEffects(best.acy.mod, residuals = TRUE), main = 'Acyrthosiphon, Fall')
+# must remake to plot effects.
+best.acy.mod.fa <- lmer(Acyrthosiphon ~ Anthocoridae + Ichneumonoidea +
+                          (1|Site) + (1|Field),
+                        data = mean_density_wide %>% filter(Season == 'Fall'),
+                        REML = FALSE, na.action = 'na.omit')
+summary(best.acy.mod.fa)
+
+## better plot
+# png('lattice.png', height = 6, width = 6, units = 'in', res = 300)
+trellis.par.set(list(par.xlab.text = list(cex=2),
+                     par.ylab.text = list(cex=2),
+                     par.main.text = list(col = "blue", cex=0.5)))
+plot(effect('Anthocoridae',best.acy.mod.fa,
+            residuals = T),
+     partial.residuals = list(smooth=F),
+     axes = list(x = list(Anthocoridae = list(lab = 'Log(Anthocorid density)')),
+                 y = list(lab = 'Log(Aphid density)')),
+     main = NULL,
+     lattice=list(key.args=list(axis.text = list(cex=10))))
+plot(effect('Ichneumonoidea',best.acy.mod.fa,
+            residuals = T),
+     partial.residuals = list(smooth=F),
+     axes = list(x = list(Ichneumonoidea = list(lab = 'Log(Ichneumonid density)')),
+                 y = list(lab = 'Log(Aphid density)')),
+     main = NULL,
+     lattice=list(key.args=list(axis.text = list(cex=10))))
 # dev.off()
 
-# Extract and examine the top Aphis model.
-best.aphis.mod <- get.models(fallTabs[[2]], subset = 1)[[1]]
+# extract and examine the top Aphis model.
+best.aphis.mod <- get.models(FallTabs[[2]], subset = 1)[[1]]
 summary(best.aphis.mod)
 # Must remake to plot effects.
-best.aphis.mod <- lmer(log(Aphis + 1) ~ log(Arachnida + 1) +
-                       log(Ichneumonidae + 1) +
-                       (1|Site) +
-                       (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'),
-                     REML = FALSE)
+best.aphis.mod <- lmer(Aphis ~ Arachnida + Ichneumonoidea + (1|Site) + (1|Field),
+                       data = mean_density_wide %>% filter(Season == 'Fall'),
+                       REML = FALSE)
 # make plot
-# png('fall_aphis_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-plot(allEffects(best.aphis.mod, residuals = TRUE), main = 'Aphis, Fall')
+# png('Fall_aphis_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.aphis.mod, residuals = TRUE),
+     main = 'Aphis, Fall',
+     id = list(n = 36, labels = mean_density_wide %>%
+                 filter(Season == 'Fall') %>%
+                 unite('id', Site, Field, Plot, sep = '.') %>%
+                 pull(id)))
 # dev.off()
 
-# Extract and examine the top Therioaphis model.
-best.therio.mod <- get.models(fallTabs[[3]], subset = 1)[[1]]
+# extract and examine the top Therioaphis model.
+best.therio.mod <- get.models(FallTabs[[3]], subset = 1)[[1]]
 summary(best.therio.mod)
 # Must remake to plot effects.
-best.therio.mod <- lmer(log(Therioaphis + 1) ~ log(Arachnida + 1) +
-                       (1|Site) +
-                       (1|Field),
-                     data = mean_density %>% filter(Season == 'Spring'),
-                     REML = FALSE)
-# make plot
-# png('fall_therio_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-plot(allEffects(best.therio.mod,
-                residuals = TRUE),
-     main = 'Therioaphis, Fall')
-# dev.off()
-
-# Nonacy
-# Extract and examine the top NonAcy model.
-best.nonacy.mod <- get.models(fallTabs[[4]], subset = 1)[[1]]
-summary(best.nonacy.mod)
-# Must remake to plot effects.
-best.nonacy.mod <- lmer(log(NonAcy + 1) ~ log(Arachnida + 1) +
-                          (1|Site) +
-                          (1|Field),
-                        data = mean_density %>% filter(Season == 'Spring'),
+best.therio.mod <- lmer(Therioaphis ~ Arachnida + (1|Site) + (1|Field),
+                        data = mean_density_wide %>% filter(Season == 'Fall'),
                         REML = FALSE)
 # make plot
-# png('fall_nonacy_effect.jpg', width = 14, height = 5, units = 'in', res = 300)
-plot(allEffects(best.nonacy.mod,
-                residuals = TRUE),
-     main = 'NonAcy, Fall')
+# png('Fall_therio_effect.jpg',
+#     width = 7,
+#     height = 5,
+#     units = 'in',
+#     res = 300)
+plot(allEffects(best.therio.mod, residuals = TRUE),
+     main = 'Therioaphis, Fall',
+     id = list(n = 36, labels = mean_density_wide %>%
+                 filter(Season == 'Fall') %>%
+                 unite('id', Site, Field, Plot, sep = '.') %>%
+                 pull(id)))
+# dev.off()
 
-# ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
-#   geom_tile() +
-#   theme(axis.text.x=element_text(angle = 45, hjust = 0),
-#         axis.text.y = element_text(angle = 45)) +
-#   scale_fill_gradient(low="blue", high="red") +
-#   labs(x = 'Landcover class',
-#        y = 'Distance weighting algorithm',
-#        title = paste0('log(', getPred[2], ')',
-#                       ' Variable importance, ',
-#                       season)
-#   )
+# for each aphid taxon, make variable importance heatmap for all aphids
+aphPredVIFall <- list()
+for (i in 1:length(short_aphlist)){
 
-# make plot
-p <- bind_rows(importance_tab, .id = 'Taxon') %>%
-  mutate(VarWeights = as.numeric(VarWeights),
-         ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
-         Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
-  filter(ExpVars %in% c("Arachnida", "Geocoris", "Ichneumonoidea", "Anthocoridae")) %>%
-  ggplot(aes(x = ExpVars, y = Taxon, fill = VarWeights)) +
+  p <- bind_rows(importance_tab, .id = 'Taxon') %>%
+    mutate(VarWeights = as.numeric(VarWeights),
+           ExpVars = fct_reorder(ExpVars, VarWeights, mean, .desc = TRUE),
+           Taxon = fct_reorder(Taxon, .x = VarWeights, .fun = mean)) %>%
+    filter(Taxon == short_aphlist[[i]]) %>%
+    ggplot(aes(x = reorder(ExpVars, desc(VarWeights)),
+               y = VarWeights,
+               fill = VarWeights)) +
+    geom_col() +
+    scale_fill_gradient('',
+                        low="blue",
+                        high="red",
+                        breaks = c(0.3,0.9),
+                        labels = c('low','high')) +
+    labs(title = short_aphlist[[i]], x = '', y = 'Variable importance') +
+    theme(legend.position = c(0.95,0.85))
+
+  aphPredVIFall[[i]] <- p
+
+}
+# print all plots
+for (i in 1:length(aphPredVIFall)) {
+
+  print(aphPredVIFall[[i]])
+
+}
+# make a larger heatmap that includes all aphid taxa in one figure
+
+# combine all importance tables into one
+aphVIFall <- rbindlist(importance_tab, idcol = TRUE) %>% as_tibble()
+# constuct heatmap
+PLOT_aphVIFall <- ggplot(data = aphVIFall,
+                     aes(x = .id, y = ExpVars, fill = VarWeights)) +
   geom_tile() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 0),
-        legend.title = element_text('Variable Importance')) +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(angle = 45))+
   scale_fill_gradient(low="blue", high="red") +
-  labs(x = '\"Beneficial\" taxon', y = 'Aphid genus', title = 'Fall') +
-  theme(text = element_text(size = 15),
-        axis.text.x=element_text(angle=30,hjust=0.9))
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Variable importance, aphids ~ predators') +
+  coord_flip()
+# show it
+PLOT_aphVIFall
 
-p
-ggsave('fall_aphid_varweights.jpg', width = 6, height = 4)
+
+
+
+
+
+
 
 # clean environment
 rm(dredges, fallTabs,
-   importance_tab, mGlobal, springTabs, aph_density)
+   importance_tab, mGlobal, springTabs, FallTabs, aph_density)
 
 # Predators ~ ####
 ### Prepare data ####

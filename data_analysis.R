@@ -23,6 +23,7 @@ library(mvabund) # for building multivariate mods of insect density
 library(piecewiseSEM) # for structural equation modeling
 library(plotly) # interactive plots with plotly()
 library(sjPlot) # create effects plots on lmer objects
+library(tidyselect) # for peek()
 library(tidytext) # sort ggcols after faceting
 library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
@@ -222,6 +223,7 @@ rm(landcover7, landcover8, landcover7Fixed, landcover8Fixed,
 # Spring: #76db91
 # Fall: #9e3c21
 # Predators: 'Spectral'
+# Sites: 'Set1'
 
 
 # Arthropod data summary ####
@@ -771,8 +773,7 @@ names(FallTabs) <- short_aphlist
 # show tables
 # View(FallTabs)
 
-# extract and examine the top Acyrthosiphon model..
-best.acy.mod <- get.models(FallTabs[[1]], subset = 1)[[1]]
+# extract and examine the top Acyrthosiphon model.best.acy.mod <- get.models(FallTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
 # must remake to plot effects.
 best.acy.mod.fa <- lmer(Acyrthosiphon ~ Anthocoridae + Ichneumonoidea +
@@ -901,51 +902,14 @@ PLOT_aphVIFall
 
 
 # clean environment
-rm(dredges, fallTabs,
-   importance_tab, mGlobal, springTabs, FallTabs, aph_density)
+rm(dredges, importance_tab, mGlobal, springTabs, FallTabs)
 
 # Predators ~ ####
 ### Prepare data ####
-# summarize mean_density across fields
-mean_density_field <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  unite(id, Site, Field, Season, Taxa, remove = FALSE) %>%
-  group_by(id) %>%
-  summarize(Mean_Density = mean(Density)) %>%
-  separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
-  pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
-  mutate(id = paste0(Site, 0, Field), .before = Site)
-# Reshape landcover data
-landcover_wide <- landcover %>%
-  pivot_wider(id_cols = c(site, field),
-              names_from = distanceWeight,
-              values_from = alfalfa:water) %>%
-  mutate(id = paste0(site, field), .before = site)
-# join landcover data
-field_data <- left_join(mean_density_field, landcover_wide)
+# already done. see:
+landCoverTabs
 
-# create margin data
-field_margins <- vegPlots %>% filter(type == 'Margin') %>%
-  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
-  group_by(field_id, season) %>%
-  summarize(shan = mean(shan),
-            rich = mean(rich),
-            total_cover = mean(total_cover),
-            .groups = 'keep') %>%
-  # make join key
-  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
-  ungroup() %>%
-  select(-field_id, -season)
-
-# join margin data
-field_data <- left_join(field_data, field_margins)
-
-# clean environment
-rm(field_margins)
-
-#### formulas ####
-
+#### functions ####
 # extract and examine models by rank
 buildBestLandcoverMod <- function(mod_table, rank, season = 'unknown') {
 
@@ -1225,86 +1189,90 @@ buildFinalLandcoverMod <- function(no_margin_tab, global_tab, rank = 1){
 }
 
 
-
-
-### spring data only ####
-
-# Subset data for modeling with landcover classes.
-fD_spring <- field_data %>%
-  filter(Season == 'Spring') %>%
-  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-
-# Subset data for modeling with landcover classes and margin data.
-fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
-
-
 ### Correlation of landcover factors ####
-distList <- c('_sig1',
-              '_sig2',
-              '_sig3',
-              '_sig4',
-              '_sig5',
-              '_const',
-              'no')
-
-distList2 <- c('Very Aggressive',
+# list of distance weights (already made)
+weightList
+# new names for distance weights
+distList <- c('Very Aggressive',
               'Aggressive',
               'Moderately aggressive',
               'Moderate',
               'Slight',
               'Constant',
               'None')
+# make list to hold ....
+dVarList <- list()
+# for each dataset ...
+for (i in 1:length(landCoverTabs)){
 
-dVarList <- c()
-library(tidyselect)
-for (i in 1:length(distList)) {
+  # for each distance weight...
+  tabList <- list()
+  for (j in 1:length(distList)) {
 
-  dVarList[[i]] <- fD_spring %>%
-    select(ends_with(distList[[i]])) %>%
-    rename_with(~ str_remove(.x, "_.+")) %>%
-    rename('Agricultural' = ag,
-           'Alfalfa' = alfalfa,
-           'Bare soil +\n dirt road' = dirt,
-           'Impermeable' = impermeable,
-           'Natural' = naturalArid,
-           'Surface\nwater' = water,
-           'Weedy' = weedy,
-           'Riparian' = wet) %>%
-    relocate(sort(peek_vars())) %>%
-    correlate %>%
-    shave
+    # build correlation tables
+    if (i %% 2 == 0){ # if landcover tab is 8 class:
+    tabList[[j]] <- landCoverTabs[[i]] %>%
+      select(ends_with(weightList[[j]])) %>%
+      rename_with(~ str_remove(.x, "_.+")) %>%
+      rename('Agricultural' = ag,
+             'Alfalfa' = alfalfa,
+             'Bare soil +\n dirt road' = dirt,
+             'Impermeable' = impermeable,
+             'Natural' = naturalArid,
+             'Surface\nwater' = water,
+             'Weedy' = weedy,
+             'Riparian' = wet) %>%
+      relocate(sort(peek_vars())) %>%
+      correlate %>%
+      shave
+    } else { # if landcover tab is 7 class:
+      tabList[[j]] <- landCoverTabs[[i]] %>%
+        select(ends_with(weightList[[j]])) %>%
+        rename_with(~ str_remove(.x, "_.+")) %>%
+        rename('Agricultural' = ag,
+               'Alfalfa' = alfalfa,
+               'Bare soil +\n dirt road' = dirt,
+               'Impermeable' = impermeable,
+               'Natural' = naturalArid,
+               'Surface\nwater' = water,
+               'WeedyRiparian' = weedyWet) %>%
+        relocate(sort(peek_vars())) %>%
+        correlate %>%
+        shave
 
+    }
 
+  }
+  names(tabList) <- distList
+  dVarList[[i]] <- tabList
 }
+names(dVarList) <- names(landCoverTabs)
+# # check
+# dVarList
 
-dVarList
-for (i in 1:length(distList)) {
+# build correlation plots
+# for each data set...
+for (i in 1:length(dVarList)) {
 
-  print(rplot(dVarList[[i]], print_cor = TRUE, legend = FALSE, .order = 'alphabet') +
-          theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
-          labs(title = paste(distList2[[i]]))
-  )
-  ggsave(paste0('corr', distList[[i]], '.png'),
-         width = 4,
-         height = 4,
-         units = 'in')
+  # for each distance weight...
+  for (j in 1:length(distList)) {
+    print(rplot(dVarList[[i]][[j]],
+                print_cor = TRUE,
+                legend = FALSE,
+                .order = 'alphabet') +
+            theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
+            labs(title = paste(names(dVarList[i]),distList[[j]])))
+    # ggsave(paste0('corr', distList[[i]], '.png'),
+    #        width = 4,
+    #        height = 4,
+    #        units = 'in')
 
+
+  }
 }
-
-fD_spring %>%
-  select(ends_with('sig3'), id) %>%
-  rename_with(~ str_remove(.x, "_.+")) %>%
-  ggplot(aes(wet, dirt)) +
-  geom_point() +
-  geom_text(aes(label = id), hjust = 0, vjust = 0)+
-  labs(x = 'Riparian, moderate weighting',
-       y = 'Bare soil + dirt road,\nmoderate weighting')+
-  coord_cartesian(xlim = c(-1.2, 2.4))
-
-ggsave('dirtByWet_sig3.png', width = 7, height = 5, units = 'in')
 
 ### Flooded vs sprinklers ####
-
+# make df of watering methods
 wateringMethod <- c(
   'Flooding',
   'Flooding',
@@ -1319,124 +1287,134 @@ wateringMethod <- c(
   'Flooding',
   'Flooding'
 )
+idList <- landCoverTabs[[1]] %>% filter(Season == 'Spring') %>%
+  pull(id)
+wM <- tibble(wateringMethod, idList)
+wM
+# join this new df to the arthropod data
+withWM <- mean_density_wide %>%
+  mutate(idList = paste0(Site, '0', Field)) %>%
+  left_join(wM, by = c('idList' = 'idList'))
 
-fD_spring_flood <- cbind(fD_spring, wateringMethod)
-
-floodMod <- lmer(log(Acyrthosiphon+1)~wateringMethod+(1|site),
-                 data = fD_spring_flood)
+# model
+floodMod <- lmer(Acyrthosiphon ~ wateringMethod + (1|Site),
+                 data = withWM)
 floodMod
 summary(floodMod)
 
 plot(allEffects(floodMod))
 
-floodMod2 <- lm(log(Acyrthosiphon+1)~wateringMethod, data = fD_spring_flood)
-floodMod2
-summary(floodMod2)
-
-plot(allEffects(floodMod2))
-
-p=ggplot(fD_spring_flood,
+# some plots
+p <- ggplot(withWM,
        aes(x = wateringMethod,
-           y = log(Acyrthosiphon + 1))) +
+           y = Acyrthosiphon)) +
   # geom_boxplot() +
   # geom_jitter() +
   # geom_violin()
-  geom_jitter(aes(color = Site), size = 6, width = 0.06) +
+  geom_jitter(aes(color = Site), width = 0.06) +
   # geom_smooth(method = 'lm') +
   stat_summary(fun.data = 'mean_cl_boot') +
   labs(title = 'mean_cl_boot',
-       subtitle = 'basic nonparametric bootstrap for obtaining confidence limits')
+       subtitle = paste0('basic nonparametric bootstrap for ',
+         'obtaining confidence limits')) +
+  scale_color_brewer(palette = 'Set1')
 
-q=ggplot(fD_spring_flood,
+p
+q=ggplot(withWM,
        aes(x = wateringMethod,
-           y = log(Acyrthosiphon + 1))) +
+           y = Acyrthosiphon)) +
   # geom_boxplot() +
   # geom_jitter() +
   # geom_violin()
-  geom_jitter(aes(color = Site), size = 6, width = 0.06) +
+  geom_jitter(aes(color = Site), width = 0.06) +
   # geom_smooth(method = 'lm') +
   stat_summary(fun.data = 'mean_cl_normal') +
   labs(title = 'mean_cl_normal',
-       subtitle = 'lower and upper Gaussian confidence limits based on the t-distribution')
+       subtitle = paste0('lower and upper Gaussian confidence limits ',
+         'based on the t-distribution')) +
+  scale_color_brewer(palette = 'Set1')
+q
 
-r=ggplot(fD_spring_flood,
+r=ggplot(withWM,
        aes(x = wateringMethod,
-           y = log(Acyrthosiphon + 1))) +
+           y = Acyrthosiphon)) +
   geom_boxplot() +
   # geom_jitter() +
   # geom_violin()
-  geom_jitter(aes(color = Site), size = 6, width = 0.06) +
+  geom_jitter(aes(color = Site), width = 0.06) +
   # geom_smooth(method = 'lm') +
   # stat_summary(fun.data = 'mean_cl_normal') +
   labs(title = 'boxplot',
-       subtitle = 'a normal boxplot')
-
+       subtitle = 'a normal boxplot') +
+  scale_color_brewer(palette = 'Set1')
+r
 grid.arrange(p,q,r, nrow =1)
 
-
-flooded <- fD_spring_flood %>% filter(wateringMethod=='Flooded') %>%
-  mutate(Acyrthosiphon = log(Acyrthosiphon+1)) %>%
+# t tests
+flooded <- withWM %>%
+  filter(wateringMethod=='Flooding') %>%
   select(Acyrthosiphon)
-sprinklers <- fD_spring_flood %>% filter(wateringMethod=='Sprinklers') %>%
-  mutate(Acyrthosiphon = log(Acyrthosiphon+1)) %>%
+sprinklers <- withWM %>%
+  filter(wateringMethod=='Sprinklers') %>%
   select(Acyrthosiphon)
 
 t.test(flooded, sprinklers, var.equal = TRUE)
 t.test(flooded, sprinklers)
 
-final_fig <- ggplot(fD_spring_flood,
+final_fig <- ggplot(withWM,
                     aes(x = wateringMethod,
-                        y = log(Acyrthosiphon + 1))) +
-  geom_jitter(aes(color = Site), size = 6, width = 0.1) +
+                        y = Acyrthosiphon)) +
+  geom_jitter(aes(color = Site), width = 0.1) +
   stat_summary(fun.data = 'mean_cl_boot', geom="errorbar", width = 0.3)+
   labs(
        y = 'log(Acyrthosiphon density)',
        x = 'Irrigation method')+
-  theme_classic(base_size = 20) +
-  scale_color_brewer(type = 'qual', palette = 2)
+  # theme_classic(base_size = 20) +
+  scale_color_brewer(palette = 'Set1')
 final_fig
-ggsave('watering.png', width = 5.5, height = 6.5)
+# ggsave('watering.png', width = 5.5, height = 6.5)
 
 
 
-### sum of nat ####
-sums <- field_data %>%
-  filter(Season == 'Spring') %>% # must not use scaled data
-  mutate(sum_no = rowSums(across(ends_with('no')))) %>%
-  mutate(sum_sig4 = rowSums(across(ends_with('sig4')))) %>%
-  mutate(sum_sig2 = rowSums(across(ends_with('sig2')))) %>%
-  select(id, ends_with('no'), ends_with('sig4'), ends_with('sig2')) %>%
-  select(id, starts_with('naturalArid'), starts_with('sum')) %>%
-  mutate(ratio_no = (naturalArid_no/sum_no)*100,
-         ratio_sig4 = (naturalArid_sig4/sum_sig4)*100,
-         ratio_sig2 = (naturalArid_sig2/sum_sig2)*100) %>%
-  select(id, starts_with('ratio')) %>%
-  filter(id == 'Minden02')
-
-
-sums
-ratios<-sums %>% select(-id)
-percentile <- ratios$ratio_no
-ggplot() +
-  geom_col(aes("", 100)) +
-  geom_col(aes("", percentile), fill = "#CF3FFF") +
-  coord_flip() +
-  theme_void()
-ggsave('naNo.png', width = 3, height = 0.5, units = 'in')
-percentile <- ratios$ratio_sig4
-ggplot() +
-  geom_col(aes("", 100)) +
-  geom_col(aes("", percentile), fill = "#CF3FFF") +
-  coord_flip() +
-  theme_void()
-ggsave('sig4No.png', width = 3, height = 0.5, units = 'in')
-percentile <- ratios$ratio_sig2
-ggplot() +
-  geom_col(aes("", 100)) +
-  geom_col(aes("", percentile), fill = "#CF3FFF") +
-  coord_flip() +
-  theme_void()
-ggsave('sig2No.png', width = 3, height = 0.5, units = 'in')
+# ### sum of nat ####
+# # note: this code is for a demo figure in the ESA presentation
+# sums <- field_data %>%
+#   filter(Season == 'Spring') %>% # must not use scaled data
+#   mutate(sum_no = rowSums(across(ends_with('no')))) %>%
+#   mutate(sum_sig4 = rowSums(across(ends_with('sig4')))) %>%
+#   mutate(sum_sig2 = rowSums(across(ends_with('sig2')))) %>%
+#   select(id, ends_with('no'), ends_with('sig4'), ends_with('sig2')) %>%
+#   select(id, starts_with('naturalArid'), starts_with('sum')) %>%
+#   mutate(ratio_no = (naturalArid_no/sum_no)*100,
+#          ratio_sig4 = (naturalArid_sig4/sum_sig4)*100,
+#          ratio_sig2 = (naturalArid_sig2/sum_sig2)*100) %>%
+#   select(id, starts_with('ratio')) %>%
+#   filter(id == 'Minden02')
+#
+#
+# sums
+# ratios<-sums %>% select(-id)
+# percentile <- ratios$ratio_no
+# ggplot() +
+#   geom_col(aes("", 100)) +
+#   geom_col(aes("", percentile), fill = "#CF3FFF") +
+#   coord_flip() +
+#   theme_void()
+# ggsave('naNo.png', width = 3, height = 0.5, units = 'in')
+# percentile <- ratios$ratio_sig4
+# ggplot() +
+#   geom_col(aes("", 100)) +
+#   geom_col(aes("", percentile), fill = "#CF3FFF") +
+#   coord_flip() +
+#   theme_void()
+# ggsave('sig4No.png', width = 3, height = 0.5, units = 'in')
+# percentile <- ratios$ratio_sig2
+# ggplot() +
+#   geom_col(aes("", 100)) +
+#   geom_col(aes("", percentile), fill = "#CF3FFF") +
+#   coord_flip() +
+#   theme_void()
+# ggsave('sig2No.png', width = 3, height = 0.5, units = 'in')
 
 
 #### General figs ####
@@ -1449,11 +1427,26 @@ taxaList <- c('Arachnida',
 
 # read in tabs
 tabList <- c()
+
+# RDS filename format:
+# Geocoris_fixed8_sub_fall
+# taxaList_dataset_yeringtonIncluded?_season
 for (i in 1:length(taxaList)) {
 
   tabList[[i]] <- readRDS(paste0('modTabs/', taxaList[[i]], '_spring_8class'))
 
 }
+
+### spring data only ####
+
+# # Subset data for modeling with landcover classes.
+# fD_spring <- landCoverTabs[[1]] %>%
+#   filter(Season == 'Spring') %>%
+#   mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
+#
+# # Subset data for modeling with landcover classes and margin data.
+# fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
+
 # generate vi heatmaps ####
 viList <- c()
 for (i in 1:length(taxaList)) {

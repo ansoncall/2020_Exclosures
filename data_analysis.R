@@ -771,7 +771,7 @@ names(FallTabs) <- short_aphlist
 # show tables
 # View(FallTabs)
 
-# extract and examine the top Acyrthosiphon model.
+# extract and examine the top Acyrthosiphon model..
 best.acy.mod <- get.models(FallTabs[[1]], subset = 1)[[1]]
 summary(best.acy.mod)
 # must remake to plot effects.

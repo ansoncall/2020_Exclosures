@@ -1418,25 +1418,38 @@ final_fig
 
 
 #### General figs ####
-# define list of taxa of interest
+# make list of all rds files
+# RDS filename format:
+# Geocoris_fixed8_sub_fall
+# taxaList_dataset_yeringtonIncluded?_season
+
+# make list of RDS filenames
 taxaList <- c('Arachnida',
            'Coccinellidae',
            'Geocoris',
            'Ichneumonidae',
            'Acyrthosiphon')
+datasetList <- c('regular7', 'regular8', 'fixed7', 'fixed8')
+fS <- c('full', 'sub')
+ssn <- c('spring', 'fall')
+rdsList <- expand.grid(taxaList, datasetList, fS, ssn) %>%
+  tibble %>%
+  unite(rdsName)
+# rdsList
+# str(rdsList$rdsName)
 
 # read in tabs
+# note: this uses CRAZY ram
 tabList <- c()
+for (i in 1:length(rdsList$rdsName)) {
 
-# RDS filename format:
-# Geocoris_fixed8_sub_fall
-# taxaList_dataset_yeringtonIncluded?_season
-for (i in 1:length(taxaList)) {
-
-  tabList[[i]] <- readRDS(paste0('modTabs/', taxaList[[i]], '_spring_8class'))
+  tabList[[i]] <- readRDS(paste0('modTabs/',rdsList$rdsName[[1]]))
 
 }
+names(tabList) <- rdsList$rdsName
 
+# example grep filtering of modTabs
+tabList[grep("spring", names(tabList))]
 ### spring data only ####
 
 # # Subset data for modeling with landcover classes.
@@ -1448,10 +1461,17 @@ for (i in 1:length(taxaList)) {
 # fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 
 # generate vi heatmaps ####
-viList <- c()
-for (i in 1:length(taxaList)) {
 
-  viList[[i]] <- plotVarImportance(tabList[[i]], 'Spring')
+
+springList <- tabList[grep("spring", names(tabList))]
+springTaxaList <- springList[grep(paste(taxaList,collapse='|'),
+                                  names(springList))]
+
+grep()
+viList <- c()
+for (i in 1:length(springTaxaList)) {
+
+  viList[[i]] <- plotVarImportance(springTaxaList[[i]], 'Spring')
 
 }
 viList[[5]]

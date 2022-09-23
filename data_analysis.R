@@ -925,20 +925,27 @@ buildBestLandcoverMod <- function(mod_table, rank, season = 'unknown') {
   }
   getPred <- best.mod@call$formula[[2]]
   cat(green('Summary for model',  'rank =', rank, '\n'))
-  plot(allEffects(best.mod, residuals = TRUE),
-       main = paste(paste(getPred, collapse = ''),
-                    'landcover model rank',
-                    as.character(rank),
-                    'Season:', season),
-       id = list(n = length(get(best.mod@call$data)$id),
-                 labels = get(best.mod@call$data)$id))
+  # plot(allEffects(best.mod, residuals = TRUE),
+  #      main = paste(paste(getPred, collapse = ''),
+  #                   'landcover model rank',
+  #                   as.character(rank),
+  #                   'Season:', season),
+  #      id = list(n = length(get(best.mod@call$data)$id),
+  #                labels = get(best.mod@call$data)$id))
   summary(best.mod)
 }
 
 # plot the variable importance
 plotVarImportance <- function (mod_table, season = 'unknown season'){
 
+  # get mod tab name
+  dataset <- (names(mod_table))
+  print(dataset)
+  mod_table <- mod_table[[1]]
+  # identify the response var
   getPred <- get.models(mod_table, subset = 1)[[1]]@call$formula[[2]]
+
+
   importance_tab <- sw(mod_table) %>% #tibble(names = names(.))
     tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
     arrange(names) %>%
@@ -965,7 +972,6 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
 
   p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
     geom_tile() +
-    theme_gray(base_size = 20)+
     theme(
       axis.text.x=element_text(angle = 45, hjust = 0),
       axis.text.y = element_text(angle = 45))+
@@ -986,7 +992,6 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
   q <- ggplot(data = group_importance,
               aes(x = '', y = distWeight, fill = weight)) +
     geom_tile() +
-    theme_gray(base_size = 20) +
     theme(axis.text = element_blank(),
           axis.ticks = element_blank()) +
     scale_fill_gradient(low="blue", high="red") +
@@ -995,8 +1000,8 @@ plotVarImportance <- function (mod_table, season = 'unknown season'){
          fill = '')
 
   qq <- ggplotly(q, tooltip = 'weight')
-  subplot(pp, qq, widths = c(7/8, 1/8))
-
+  subplot(pp, qq, widths = c(7/8, 1/8)) %>%
+    layout(title = dataset)
 
 }
 
@@ -1427,7 +1432,7 @@ final_fig
 taxaList <- c('Arachnida',
            'Coccinellidae',
            'Geocoris',
-           'Ichneumonidae',
+           'Ichneumonoidea',
            'Acyrthosiphon')
 datasetList <- c('regular7', 'regular8', 'fixed7', 'fixed8')
 fS <- c('full', 'sub')
@@ -1443,14 +1448,16 @@ rdsList <- expand.grid(taxaList, datasetList, fS, ssn) %>%
 tabList <- c()
 for (i in 1:length(rdsList$rdsName)) {
 
-  tabList[[i]] <- readRDS(paste0('modTabs/',rdsList$rdsName[[1]]))
+  tabList[[i]] <- readRDS(paste0('modTabs/',rdsList$rdsName[[i]]))
 
 }
 names(tabList) <- rdsList$rdsName
 
-# example grep filtering of modTabs
-tabList[grep("spring", names(tabList))]
-### spring data only ####
+# # example grep filtering of modTabs
+# tabList[grep("spring", names(tabList))]
+
+# old
+### spring data only
 
 # # Subset data for modeling with landcover classes.
 # fD_spring <- landCoverTabs[[1]] %>%
@@ -1461,33 +1468,138 @@ tabList[grep("spring", names(tabList))]
 # fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 
 # generate vi heatmaps ####
+# filter to focus on relevant taxa
+taxaTabList <- tabList[grep(paste(taxaList,collapse='|'),
+                                  names(tabList))]
+# split tablist by season
+springTabList <- taxaTabList[grep("spring", names(taxaTabList))]
+fallTabList <- taxaTabList[grep("fall", names(taxaTabList))]
+ssnList <- list(springTabList, fallTabList)
+names(ssnList) <- c('spring', 'fall')
+
+# make heatmaps
+PLOTS_heatmaps <- list()
+for (i in 1:length(ssnList)) {
+
+  tempList <- ssnList[[i]]
+  viList <- c()
+  for (j in 1:length(tempList)) {
+
+    viList[[j]] <- plotVarImportance(tempList[j], names(ssnList[1]))
+
+  }
+  names(viList) <- names(tempList)
+  PLOTS_heatmaps[[i]] <- viList
+}
+names(PLOTS_heatmaps) <- names(ssnList)
+
+# 4 relevant plots for each taxon, using only "full" data
+# group by taxon
+PLOTS_4byHeatmaps <- list()
+for (i in 1:length(PLOTS_heatmaps)) {
+
+  tempList <- PLOTS_heatmaps[[i]]
+  PLOTS_VI <- list()
+  for (j in 1:length(taxaList)) {
+
+    taxon <- taxaList[[j]]
+    all <- tempList[grep(taxon, names(tempList))]
+    onlyFull <- all[grep("full", names(all))]
+    PLOTS_VI[[j]] <- onlyFull
+
+  }
+  names(PLOTS_VI) <- taxaList
+  PLOTS_4byHeatmaps[[i]] <- PLOTS_VI
+}
+names(PLOTS_4byHeatmaps) <- names(ssnList)
+
+# ugly plots
+PLOTS_by4 <- list()
+for (i in 1:length(ssnList)) {
+
+  tempList <- PLOTS_4byHeatmaps[[i]]
+  PLOTS_VI4panel <- list()
+  for (j in 1:length(taxaList)) {
+
+    PLOTS_VI4panel[[j]] <- subplot(tempList[[j]], nrows = 2) %>%
+      layout(title = paste0(names(tempList[j]),
+                            names(ssnList[i]),
+                            ' <-7', # 7-class data on the left
+                            # reg (not fixed) alfalfa class on the top
+                            ' ^reg. classification'))
+
+  }
+  names(PLOTS_VI4panel) <- taxaList
+  PLOTS_by4[[i]] <- PLOTS_VI4panel
+}
+names(PLOTS_by4) <- names(ssnList)
 
 
-springList <- tabList[grep("spring", names(tabList))]
-springTaxaList <- springList[grep(paste(taxaList,collapse='|'),
-                                  names(springList))]
+PLOTS_VI4panel <- list()
+for (i in 1:length(taxaList)) {
 
-grep()
-viList <- c()
-for (i in 1:length(springTaxaList)) {
-
-  viList[[i]] <- plotVarImportance(springTaxaList[[i]], 'Spring')
+  PLOTS_springVI4panel[[i]] <- subplot(PLOTS_springVI[[i]], nrows = 2) %>%
+    layout(title = paste0(names(PLOTS_springVI[i]),
+                          ' spring,',
+                          ' <-7', # 7-class data on the left
+                          # reg (not fixed) alfalfa class on the top
+                          ' ^reg. classification'))
 
 }
-viList[[5]]
+names(PLOTS_springVI4panel) <- taxaList
+PLOTS_VI4panel
 
-ggsave('cocc_var_heatmap.png', width = 12.5, height = 7, units = 'in')
+# get best models ####
+PLOTS_springVI <- list()
+for (i in 1:length(taxaList)) {
+
+  taxon <- taxaList[[i]]
+  allSpr <- viList[grep(taxon, names(viList))]
+  onlyFull <- allSpr[grep("full", names(allSpr))]
+  PLOTS_springVI[[i]] <- onlyFull
+
+}
+names(PLOTS_springVI) <- taxaList
+
+### stop here ####
+
+## still need to add loop for seasons after this
+
+## pray i get this done by 3pm tomorrow
+
+
+bestMods <- list()
+for (i in 1:length(taxaList)) {
+
+  taxon <- taxaList[[i]]
+  all <- tabList[grep(taxon, names(tabList))]
+  allSpr <- all[grep('spring', names(all))]
+  modList <- list()
+  for (j in 1:length(allSpr)) {
+    modList[[j]] <- buildBestLandcoverMod(allSpr[[j]], 1)
+
+  }
+  names(modList) <- names(allSpr)
+  bestMods[[i]] <- modList
+
+}
+names(bestMods) <- taxaList
+
+bestMods[[1]]
 
 # view head of tabs
 heads <- c()
-for (i in 1:length(taxaList)) {
+for (i in 1:length(tabList)) {
 
   heads[[i]] <- head(tabList[[i]])
 
 }
-
+names(heads) <- names(tabList)
+heads[1]
 viList[[5]]
 View(tabList[[5]])
+
+# plot top mod effects ####
 
 # plot top mod effects (one at a time, manually)
 

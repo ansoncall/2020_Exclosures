@@ -373,7 +373,7 @@ for (i in 1:length(klassCompares)) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
     labs(title = 'Increase in alfalfa area score due to manual classification',
          x = 'Field',
-         y = 'Area Score change, % increase') +
+         y = 'Area Score change, proportion increase') +
     facet_wrap(~ distanceWeight, scales = 'free') +
     scale_fill_brewer(palette = 'Set1') +
     # scale_y_reordered() +
@@ -398,7 +398,7 @@ for (i in 1:length(klassCompares)) {
     labs(title = 'Decrease in weedy or weedyWet area score
          due to manual classification',
          x = 'Field',
-         y = 'Area Score change, % decrease') +
+         y = 'Area Score change, proportion decrease') +
     facet_wrap(~ distanceWeight * klass, scales = 'free') +
     scale_fill_brewer(palette = 'Set1') +
     # scale_y_reordered() +
@@ -512,6 +512,7 @@ for (i in 1:length(weightList)) {
 for (i in 1:length(pcaOut)){
 
   do.call('grid.arrange', c(unlist(pcaOut[i], recursive = FALSE), ncol = 2))
+  ggsave(paste0('pcaplot', i, '.png'), width = 12, height = 8, units = 'in')
 
 }
 # # print all the pca plots at once (hard to read)
@@ -1257,24 +1258,26 @@ names(dVarList) <- names(landCoverTabs)
 
 # build correlation plots
 # for each data set...
+PLOTS_corr <- list()
 for (i in 1:length(dVarList)) {
 
   # for each distance weight...
+  tempList <- list()
   for (j in 1:length(distList)) {
-    print(rplot(dVarList[[i]][[j]],
+    p <- rplot(dVarList[[i]][[j]],
                 print_cor = TRUE,
                 legend = FALSE,
                 .order = 'alphabet') +
             theme(axis.text.x=element_text(angle = 45, hjust = 1)) +
-            labs(title = paste(names(dVarList[i]),distList[[j]])))
-    # ggsave(paste0('corr', distList[[i]], '.png'),
-    #        width = 4,
-    #        height = 4,
-    #        units = 'in')
+            labs(title = paste(names(dVarList[i]),distList[[j]]))
+    tempList[[j]] <- p
 
 
   }
+  names(tempList)<-distList
+  PLOTS_corr[[i]] <- tempList
 }
+names(PLOTS_corr) <- names(landCoverTabs)
 
 ### Flooded vs sprinklers ####
 # make df of watering methods
@@ -1330,7 +1333,7 @@ q=ggplot(withWM,
            y = Acyrthosiphon)) +
   # geom_boxplot() +
   # geom_jitter() +
-  # geom_violin()
+  geom_violin() +
   geom_jitter(aes(color = Site), width = 0.06) +
   # geom_smooth(method = 'lm') +
   stat_summary(fun.data = 'mean_cl_normal') +
@@ -1535,57 +1538,37 @@ for (i in 1:length(ssnList)) {
 names(PLOTS_by4) <- names(ssnList)
 
 
-PLOTS_VI4panel <- list()
-for (i in 1:length(taxaList)) {
-
-  PLOTS_springVI4panel[[i]] <- subplot(PLOTS_springVI[[i]], nrows = 2) %>%
-    layout(title = paste0(names(PLOTS_springVI[i]),
-                          ' spring,',
-                          ' <-7', # 7-class data on the left
-                          # reg (not fixed) alfalfa class on the top
-                          ' ^reg. classification'))
-
-}
-names(PLOTS_springVI4panel) <- taxaList
-PLOTS_VI4panel
-
 # get best models ####
-PLOTS_springVI <- list()
-for (i in 1:length(taxaList)) {
+# collect best models from each modTable
+bestModsList <- list()
+# for each season:
+for (i in 1:length(ssnList)) {
+  # grab a set of modTabs
+  tempList <- ssnList[[i]]
+  # to hold best models for each taxon
+  bestMods <- list()
+  # for each taxon
+  for (j in 1:length(taxaList)) {
+    # get the taxon
+    taxon <- taxaList[[j]]
+    # get the modTabs for that taxon
+    all <- tempList[grep(taxon, names(tempList))]
+    # list to hold all versions of models for a given taxon and season
+    modList <- list()
+    for (k in 1:length(all)) {
+      # get the best non-null model
+      modList[[k]] <- buildBestLandcoverMod(all[[k]], 1)
 
-  taxon <- taxaList[[i]]
-  allSpr <- viList[grep(taxon, names(viList))]
-  onlyFull <- allSpr[grep("full", names(allSpr))]
-  PLOTS_springVI[[i]] <- onlyFull
-
-}
-names(PLOTS_springVI) <- taxaList
-
-### stop here ####
-
-## still need to add loop for seasons after this
-
-## pray i get this done by 3pm tomorrow
-
-
-bestMods <- list()
-for (i in 1:length(taxaList)) {
-
-  taxon <- taxaList[[i]]
-  all <- tabList[grep(taxon, names(tabList))]
-  allSpr <- all[grep('spring', names(all))]
-  modList <- list()
-  for (j in 1:length(allSpr)) {
-    modList[[j]] <- buildBestLandcoverMod(allSpr[[j]], 1)
+    }
+    names(modList) <- names(all)
+    bestMods[[j]] <- modList
 
   }
-  names(modList) <- names(allSpr)
-  bestMods[[i]] <- modList
-
+  names(bestMods) <- taxaList
+  bestModsList[[i]] <- bestMods
 }
-names(bestMods) <- taxaList
+names(bestModsList) <- names(ssnList)
 
-bestMods[[1]]
 
 # view head of tabs
 heads <- c()
@@ -1595,19 +1578,275 @@ for (i in 1:length(tabList)) {
 
 }
 names(heads) <- names(tabList)
-heads[1]
-viList[[5]]
-View(tabList[[5]])
+
+## ladybug spring summaries
+temp <- bestModsList$spring$Coccinellidae
+for (i in 1:4){
+  cat(red(names(temp)[i]))
+  print(summary(temp[[i]]))
+}
 
 # plot top mod effects ####
+# looping
+# won't work bc of the way mods were built
 
 # plot top mod effects (one at a time, manually)
+# spring ladybugs first
+temp <- ssnList$spring
+# reg 7
+reg7full <- temp$Coccinellidae_regular7_full_spring
+plotMod <- get.models(reg7full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover7 %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Coccinellidae ~ alfalfa_sig1 + dirt_sig1 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('reg7'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
 
-k =5
-  plotName <- paste0(taxaList[[k]], '_rank1_mod_effect.png')
-  plotMod <- get.models(tabList[[k]], 2)[[1]]
-  # plotMod <- get.models(acyG1, 4)[[1]]
-  summary(plotMod)
+# reg 8
+reg8full <- temp$Coccinellidae_regular8_full_spring
+plotMod <- get.models(reg8full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8 %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Coccinellidae ~ dirt_sig1 + weedy_sig1 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('reg8'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+
+# fix 7
+fix7full <- temp$Coccinellidae_fixed7_full_spring
+plotMod <- get.models(fix7full, 8)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover7Fixed %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Coccinellidae ~ alfalfa_no + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('fix7'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+# fix 8
+fix8full <- temp$Coccinellidae_fixed8_full_spring
+plotMod <- get.models(fix8full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8Fixed %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Coccinellidae ~ weedy_sig2 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('fix8'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+
+# acyrthosiphon
+reg7full <- temp$Acyrthosiphon_regular7_full_spring
+plotMod <- get.models(reg7full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover7 %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Acyrthosiphon ~ water_sig5 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('reg7'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+
+# reg 8
+reg8full <- temp$Acyrthosiphon_regular8_full_spring
+plotMod <- get.models(reg8full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8 %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Acyrthosiphon ~ dirt_sig1 + weedy_sig1 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('reg8'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+
+# fix 7
+fix7full <- temp$Acyrthosiphon_fixed7_full_spring
+plotMod <- get.models(fix7full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover7Fixed %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Acyrthosiphon ~ water_sig5 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('fix7'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+
+# fix 8
+fix8full <- temp$Acyrthosiphon_fixed8_full_spring
+plotMod <- get.models(fix8full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8Fixed %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Acyrthosiphon ~ water_sig5 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+cat(red('fix8'))
+summary(plotMod)
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+
+## acyrthosiphon full models ####
+# irrigation data
+wM
+# join to datasets
+lcTabsWater <- list()
+for (i in 1:length(landCoverTabs)){
+
+  lcTabsWater[[i]] <- left_join(landCoverTabs[[i]], wM, by=(c('id'='idList')))
+
+}
+names(lcTabsWater) <- names(landCoverTabs)
+# reg 7
+gmod <- lmer(Acyrthosiphon ~ Coccinellidae + water_sig5 + wateringMethod +
+               (1|Site),
+             data = lcTabsWater$landcover7,
+             REML = FALSE)
+dr <- dredge(gmod, m.max = 3)
+
+
+
+
+# check margin effects ####
+# ladybugs
+# reg 7
+reg7sub <- temp$Coccinellidae_regular7_sub_spring
+plotMod <- get.models(reg7sub, 8)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover7 %>% filter(Season == 'Spring',
+                                                Site != 'Yerington')
+# remake with local data for effects plots
+# using data from best "full" mod
+localPlotMod <- lmer(Coccinellidae ~ dirt_sig1 + alfalfa_sig1 +
+                       shan + rich + total_cover + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+margTab <- dredge(localPlotMod, m.max = 3)
+
+importance_tab <- sw(margTab) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names)
+
+ggplot(data = importance_tab, aes(x = reorder(names, sw), y = sw, fill = sw)) +
+  geom_col() +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Factor',
+       y = 'Weight')
+
+# reg 8
+reg8sub <- temp$Coccinellidae_regular8_sub_spring
+plotMod <- get.models(reg8sub, 8)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8 %>% filter(Season == 'Spring',
+                                                Site != 'Yerington')
+# remake with local data for effects plots
+# using data from best "full" mod
+localPlotMod <- lmer(Coccinellidae ~ dirt_sig1 + weedy_sig1 +
+                       shan + rich + total_cover + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+margTab <- dredge(localPlotMod, m.max = 3)
+
+importance_tab <- sw(margTab) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names)
+
+ggplot(data = importance_tab, aes(x = reorder(names, sw), y = sw, fill = sw)) +
+  geom_col() +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Factor',
+       y = 'Weight')
+
+# fix 7
+fix7sub <- temp$Coccinellidae_fixed7_sub_spring
+plotMod <- get.models(fix7sub, 8)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover7Fixed %>% filter(Season == 'Spring',
+                                                Site != 'Yerington')
+# remake with local data for effects plots
+# using data from best "full" mod
+localPlotMod <- lmer(Coccinellidae ~ alfalfa_no +
+                       shan + rich + total_cover + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+margTab <- dredge(localPlotMod, m.max = 3)
+
+importance_tab <- sw(margTab) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names)
+
+ggplot(data = importance_tab, aes(x = reorder(names, sw), y = sw, fill = sw)) +
+  geom_col() +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Factor',
+       y = 'Weight')
+
+# fix 8
+fix8sub <- temp$Coccinellidae_fixed8_sub_spring
+plotMod <- get.models(fix8sub, 8)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8Fixed %>% filter(Season == 'Spring',
+                                                     Site != 'Yerington')
+# remake with local data for effects plots
+# using data from best "full" mod
+localPlotMod <- lmer(Coccinellidae ~ weedy_sig2 +
+                       shan + rich + total_cover + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+margTab <- dredge(localPlotMod, m.max = 3)
+
+importance_tab <- sw(margTab) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names)
+
+ggplot(data = importance_tab, aes(x = reorder(names, sw), y = sw, fill = sw)) +
+  geom_col() +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Factor',
+       y = 'Weight')
+
+# quick ladybug plot
+landCoverTabs$landcover8 %>% filter(Season == 'Spring') %>%
+ggplot(aes(x = reorder(id, Acyrthosiphon), y = Acyrthosiphon, fill = Site)) +
+  geom_col() +
+  scale_fill_brewer(palette = 'Set1')
+
+
+
+
+
+# plotMod <- get.models(acyG1, 4)[[1]]
+summary(plotMod)
   nullMod <- lmer(log(Coccinellidae + 1)~(1|Site), data = fD_spring, REML = F)
   anova(plotMod, nullMod)
   png(paste0('fixeda',plotName),

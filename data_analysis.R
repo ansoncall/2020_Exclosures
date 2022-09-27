@@ -1371,11 +1371,11 @@ t.test(flooded, sprinklers)
 
 final_fig <- ggplot(withWM,
                     aes(x = wateringMethod,
-                        y = Acyrthosiphon)) +
+                        y = Coccinellidae)) +
   geom_jitter(aes(color = Site), width = 0.1) +
   stat_summary(fun.data = 'mean_cl_boot', geom="errorbar", width = 0.3)+
   labs(
-       y = 'log(Acyrthosiphon density)',
+       y = 'log(Ladybug density)',
        x = 'Irrigation method')+
   # theme_classic(base_size = 20) +
   scale_color_brewer(palette = 'Set1')
@@ -1712,23 +1712,192 @@ summary(plotMod)
 summary(localPlotMod)
 plot(allEffects(localPlotMod, residuals = TRUE))
 
-## acyrthosiphon full models ####
+## acyrthosiphon full models for spring ####
 # irrigation data
 wM
-# join to datasets
+# join to datasets and filter to spring only
 lcTabsWater <- list()
 for (i in 1:length(landCoverTabs)){
 
-  lcTabsWater[[i]] <- left_join(landCoverTabs[[i]], wM, by=(c('id'='idList')))
+  lcTabsWater[[i]] <- left_join(landCoverTabs[[i]],
+                                wM,
+                                by=(c('id'='idList'))) %>%
+    filter(Season == 'Spring')
 
 }
 names(lcTabsWater) <- names(landCoverTabs)
-# reg 7
-gmod <- lmer(Acyrthosiphon ~ Coccinellidae + water_sig5 + wateringMethod +
-               (1|Site),
-             data = lcTabsWater$landcover7,
-             REML = FALSE)
-dr <- dredge(gmod, m.max = 3)
+
+# new version of modTab builder specifically for Acyrthosiphon
+
+
+acySpTabs <- list()
+for (j in 1:length(lcTabsWater)){
+
+  data <- lcTabsWater[[j]]
+  taxon='Acyrthosiphon'
+  m.max=3
+
+  distList <- c('_no ',
+                '_const ',
+                '_sig1 ',
+                '_sig2 ',
+                '_sig3 ',
+                '_sig4 ',
+                '_sig5 ')
+
+  varList <- data %>%
+    select(contains('_')) %>%
+    select(-total_cover) %>% # must remove this or it breaks
+    names() %>% str_extract('[:alpha:]+') %>%
+    unique()
+
+
+
+  cand_mod_tabs <- list()
+
+  if (taxon == 'empty' | !is_tibble(data)) {
+    stop(red("Please specify taxon and data \n"), call. = FALSE)
+  }
+
+  # print inputs
+  cat(yellow('Taxon:'),
+      green(taxon),
+      yellow('Data:'),
+      green(deparse(substitute(data))),
+      '\n')
+
+  # get dfname
+  dfname <- as.name(deparse(substitute(data)))
+  # Build models
+  for (i in 1:length(distList)) {
+    # i=2
+
+    # incase full model fails to fit, try 'tricking' dredge
+    message(blue('fitting', distList[[i]],'models'))
+    # fit reduced model
+    fmod.red <- lmer(as.formula(
+      paste0(taxon, ' ~ (1|Site)')),
+      data = data,
+      REML = FALSE,
+      na.action = 'na.fail')
+    # define full model formula
+    form <-formula(
+      paste0(taxon, ' ~ ',
+             paste0(varList, distList[[i]], '+ ', collapse = ''),
+             'Coccinellidae + wateringMethod + (1|Site)'  # add predators and water
+      ))
+    # Replace reduced model formula with full global model formula.
+    attr(fmod.red@frame, "formula") <- form
+    # Run dredge() with m.max parameter to avoid convergence failures.
+    fmod.red@call$data <- dfname
+
+    cand_mod_tabs[[i]] <-  # superassign?
+      model.sel(lapply(
+        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
+        eval))
+
+    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
+
+  }
+  # Rbind the elements of the list together. This forces recalculation of AICc
+  mod_table <- rbind(cand_mod_tabs[[1]],
+                     cand_mod_tabs[[2]],
+                     cand_mod_tabs[[3]],
+                     cand_mod_tabs[[4]],
+                     cand_mod_tabs[[5]],
+                     cand_mod_tabs[[6]],
+                     cand_mod_tabs[[7]])
+
+  acySpTabs[[j]] <- mod_table
+}
+
+names(acySpTabs) <- names(lcTabsWater)
+print(acySpTabs[[1]])
+# acy spring specific heatmap func
+plotVarImportance2 <- function (mod_table,
+                                season = 'unknown season'){
+  # mod_table = acySpTabs[1]
+  season = 'Spring'
+  # get mod tab name
+  dataset <- (names(mod_table))
+  print(dataset)
+  mod_table <- mod_table[[1]]
+
+
+
+  # identify the response var
+  getPred <- 'Acyrthosiphon'
+
+
+  importance_tab <- sw(mod_table) %>% #tibble(names = names(.))
+    tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+    arrange(names) %>%
+    separate(names, c('class', 'distWeight'), sep = "_") %>%
+    mutate(distWeight = as_factor(recode(distWeight,
+                                         `sig1` = 'Very aggressive',
+                                         `sig2` = 'Aggressive',
+                                         `sig3` = 'Moderately aggressive',
+                                         `sig4` = 'Moderate',
+                                         `sig5` = 'Slight',
+                                         `sig6` = 'Minimal', # wtf did this come from
+                                         `const` = 'Constant',
+                                         `no` = 'None'))) %>%
+    mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+           class = recode(class,
+                          ag = 'Agricultural',
+                          alfalfa = 'Alfalfa',
+                          dirt = 'Bare soil +\n dirt road',
+                          impermeable = 'Impermeable',
+                          naturalArid = 'Natural',
+                          water = 'Surface\nwater',
+                          weedy = 'Weedy',
+                          wet = 'Riparian',
+                          weedyWet = 'Weedy +\n Riparian'))
+
+  p <- ggplot(data = importance_tab,
+              aes(x = fct_relevel(class, 'Coccinellidae', 'wateringMethod', after = Inf),
+                  y = distWeight,
+                  fill = sw)) +
+    geom_tile() +
+    theme(
+      axis.text.x=element_text(angle = 45, hjust = 0),
+      axis.text.y = element_text(angle = 45))+
+    scale_fill_gradient(low="blue", high="red") +
+    labs(x = 'Landcover class',
+         y = 'Distance weighting algorithm',
+         title = paste0('log(', getPred, ')',
+                        ' Variable importance, ',
+                        season)
+    )
+  p
+  pp <- ggplotly(p, tooltip = 'sw')
+
+  group_importance <- importance_tab %>%
+    group_by(distWeight) %>%
+    summarize(weight = sum(sw))
+
+  q <- ggplot(data = group_importance,
+              aes(x = '', y = distWeight, fill = weight)) +
+    geom_tile() +
+    theme(axis.text = element_blank(),
+          axis.ticks = element_blank()) +
+    scale_fill_gradient(low="blue", high="red") +
+    labs(x = 'Landcover class',
+         y = 'Distance weighting algorithm',
+         fill = '')
+
+  qq <- ggplotly(q, tooltip = 'weight')
+  subplot(pp, qq, widths = c(7/8, 1/8)) %>%
+    layout(title = dataset)
+
+}
+
+acyHeatMaps <- list()
+for (i in 1:4){
+acyHeatMaps[[i]]<-plotVarImportance2(acySpTabs[i], 'Spring')
+print(acyHeatMaps[[i]])
+}
+
 
 
 

@@ -582,7 +582,7 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 # define list of aphid taxa
 short_aphlist <- c('Acyrthosiphon',
              'Aphis',
-             'Therioaphis', 'NonAcy')
+             'Therioaphis', 'NonAcy', 'AllAph')
 
 # create empty list to hold dredges
 dredges <- list()
@@ -1072,27 +1072,74 @@ buildLandcoverModTab <- function(taxon = 'empty', data = 'empty',
 }
 
 # make full mod tabs for each taxon and version of the data (heavy!)
-predModTabs <- list()
+predModTabsSpring <- list()
 for (i in 1:length(allFacts)) {
   message(red('LC Version:', names(allFacts[i])))
-  data <- allFacts[[i]]
+  data <- allFacts[[i]] %>% filter(Season == 'Spring')
   lcVers <- list()
   for (j in 1:length(predlist)) {
-    message(red('LC Version', predlist[j]))
+    message(red('LC Version:', names(allFacts[i])),
+            blue('Response:', predlist[[j]]))
     lcVers[[j]] <- buildLandcoverModTab(predlist[[j]], data)
 
   }
   names(lcVers) <- names(predlist)
-  predModTabs[[i]] <- lcVers
+  predModTabsSpring[[i]] <- lcVers
 
 }
-names(predModTabs) <- names(allFacts)
 
-saveRDS(predModTabs, 'predModTabs')
+names(predModTabsSpring) <- names(allFacts)
 
+names(predModTabsSpring$landcover7) <- predlist
+names(predModTabsSpring$landcover8) <- predlist
+names(predModTabsSpring$landcover7Fixed) <- predlist
+names(predModTabsSpring$landcover8Fixed) <- predlist
 
+saveRDS(predModTabsSpring, 'predModTabsSpring')
 
+importance_tab <- sw(predModTabsSpring$landcover8$Coccinellidae) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names) %>%
+  separate(names, c('class', 'distWeight'), sep = "_") %>%
+  mutate(distWeight = as_factor(recode(distWeight,
+                                       `sig1` = 'Very aggressive',
+                                       `sig2` = 'Aggressive',
+                                       `sig3` = 'Moderately aggressive',
+                                       `sig4` = 'Moderate',
+                                       `sig5` = 'Slight',
+                                       `sig6` = 'Minimal',
+                                       `const` = 'Constant',
+                                       `no` = 'None'))) %>%
+  mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+         class = recode_factor(class,
+                        ag = 'Agricultural',
+                        alfalfa = 'Alfalfa',
+                        dirt = 'Bare soil +\n dirt road',
+                        impermeable = 'Impermeable',
+                        naturalArid = 'Natural',
+                        water = 'Surface\nwater',
+                        weedy = 'Weedy',
+                        wet = 'Riparian',
+                        AllAph = 'All aphids',
+                        Acyrthosiphon = 'Acyrthosiphon',
+                        NonAcy = 'Non-Acyrthosiphon',
+                        Aphis = 'Aphis',
+                        Therioaphis = 'Therioaphis',
+                        .ordered = TRUE))
 
+ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
+  geom_tile() +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 0),
+    axis.text.y = element_text(angle = 45))+
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Landcover class',
+       y = 'Distance weighting algorithm',
+       title = paste0('log(', ')',
+                      ' Variable importance')
+  )
+
+  ggplotly(p, tooltip = sw)
 
 
 ### fall data only ####

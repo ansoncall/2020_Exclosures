@@ -11,6 +11,7 @@ library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
 library(gridExtra) # create multi-panel plots
 library(ggfortify) # create PCA plots
+library(ggpmisc) # make ggplots that show R2 value with stat_poly_eq()
 library(ggridges) # for ggridges plots
 library(gtools) # for mixedsort() to arrange factor levels in vegdata tibble
 library(hardhat) # for get_levels to extract factor levels in a tidy way
@@ -92,14 +93,38 @@ mean_density_long <- data_long %>%
   # log+1 transform all values
   mutate(Mean_Density = log(Mean_Density + 1)) %>%
   # separate id column to restore original columns
-  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa'))
+  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
+  # create watering method column
+  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
+                                      'Flooding',
+                                    Site == 'Minden' ~
+                                      'Sprinklers',
+                                    Site == 'Yerington' & Field %in% c(2, 3) ~
+                                      'Flooding',
+                                    Site == 'Yerington' & Field == 1 ~
+                                      'Sprinklers'))
 
 # make wide version of same df
 mean_density_wide <- mean_density_long %>%
   # create separate columns for each taxon
   pivot_wider(names_from = Taxa, values_from = Mean_Density)
 
+# create margin data
+field_margins <- vegPlots %>% filter(type == 'Margin') %>%
+  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
+  group_by(field_id, season) %>%
+  summarize(shan = mean(shan),
+            rich = mean(rich),
+            totalCover = mean(total_cover),
+            .groups = 'keep') %>%
+  # make join key
+  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
+  ungroup() %>%
+  select(-field_id, -season)
+
 # summarize mean_density across fields
+# don't use mean_density_field here:
+# must average within fields BEFORE log transformation for greatest accuracy
 mean_density_field <- data_long %>%
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
                              Treatment !='Pre-' ~ Density)) %>%
@@ -110,21 +135,20 @@ mean_density_field <- data_long %>%
   mutate(Mean_Density = log(Mean_Density + 1)) %>%
   separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
   pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
-  mutate(id = paste0(Site, 0, Field), .before = Site)
-
-# create margin data
-field_margins <- vegPlots %>% filter(type == 'Margin') %>%
-  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
-  group_by(field_id, season) %>%
-  summarize(shan = mean(shan),
-            rich = mean(rich),
-            total_cover = mean(total_cover),
-            .groups = 'keep') %>%
-  # make join key
-  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
-  ungroup() %>%
-  select(-field_id, -season)
-
+  mutate(id = paste0(Site, 0, Field), .before = Site) %>%
+  # create watering method column
+  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
+                                      'Flooding',
+                                    Site == 'Minden' ~
+                                      'Sprinklers',
+                                    Site == 'Yerington' & Field %in% c(2, 3) ~
+                                      'Flooding',
+                                    Site == 'Yerington' & Field == 1 ~
+                                      'Sprinklers'), .after = Season) %>%
+  # join margin data
+  left_join(field_margins, by = c('id' = 'id', 'Season' = 'Season')) %>%
+  # relocate field margin data cols
+  relocate(shan, rich, totalCover, .after = wateringMethod)
 
 ## prepare landcover data ####
 # landcover data - 4 versions: (7- vs 8-class) * (regular vs fixed)
@@ -136,7 +160,12 @@ landcover7 <- landcover %>%
          impermeable = class4 + class9,
          weedyWet = class5 + class8,
          water = class11
-  )
+  ) %>%
+  # scale landcover factors here!
+  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
+
+
+#   mutate_at(21:69, ~ as.vector(scale(.)))
 
 landcover8 <- landcover %>%
   mutate(alfalfa = class6,
@@ -147,7 +176,9 @@ landcover8 <- landcover %>%
          weedy = class5,
          wet =  class8,
          water = class11
-  )
+  ) %>%
+  # scale landcover factors here!
+  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
 
 landcover7Fixed <- landcoverFixed %>%
   mutate(alfalfa = class6,
@@ -157,7 +188,9 @@ landcover7Fixed <- landcoverFixed %>%
          impermeable = class4 + class9,
          weedyWet = class5 + class8,
          water = class11
-  )
+  ) %>%
+  # scale landcover factors here!
+  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
 
 landcover8Fixed <- landcoverFixed %>%
   mutate(alfalfa = class6,
@@ -168,15 +201,19 @@ landcover8Fixed <- landcoverFixed %>%
          weedy = class5,
          wet =  class8,
          water = class11
-  )
+  ) %>%
+  # scale landcover factors here!
+  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
 
 # make list of landcover tables to prepare for joins
+# define list of names
+lcNames <- c('landcover7', 'landcover8', 'landcover7Fixed', 'landcover8Fixed')
 lcIn <- list(landcover7, landcover8, landcover7Fixed, landcover8Fixed)
+names(lcIn) <- lcNames
 # make empty list to hold outputs
 landCoverTabs <- list()
 
-# for each version of the landcover tables, join the arthropod counts and
-# veg survey data.
+# for each version of the landcover tables, join the mean_density_field table.
 for (i in 1:length(lcIn)) {
 
   # Reshape landcover data
@@ -195,8 +232,6 @@ for (i in 1:length(lcIn)) {
 
   # join landcover data to arthropod density data
   field_data <- left_join(mean_density_field, landcover_wide) %>%
-    # join margin data
-    left_join(field_margins) %>%
     # tidy: remove extra 'site' and 'field' cols
     select(-site, -field)
 
@@ -206,16 +241,11 @@ for (i in 1:length(lcIn)) {
 }
 
 # name list elements
-names(landCoverTabs) <- c('landcover7', 'landcover8',
-                          'landcover7Fixed', 'landcover8Fixed')
-
-names(lcIn) <- c('landcover7', 'landcover8',
-                 'landcover7Fixed', 'landcover8Fixed')
-
+names(landCoverTabs) <- lcNames
 
 # clean up env
-rm(landcover7, landcover8, landcover7Fixed, landcover8Fixed,
-   mean_density_field)
+rm(data, landcover, landcoverFixed, mean_density_field,
+   field_data, landcover7, landcover8, landcover7Fixed, landcover8Fixed)
 
 # define color palette ####
 # Acyrthosiphon aphids: #548235
@@ -419,8 +449,6 @@ PLOTS_klassCompares$eightClass[2]
 # in summary, manual classification seems to change Yerington the most
 
 ## weedy/wet binning effect ####
-install.packages('ggpmisc')
-library(ggpmisc)
 # what is the correlation between weedy and wet cover?
 lcIn$landcover8 %>%
   ggplot(aes(x = weedy, y = wet)) +
@@ -550,7 +578,7 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 # Model selection ####
 ## Aphids ~ predators ####
 ### spring data only ####
-
+#### summary tables ####
 # define list of aphid taxa
 short_aphlist <- c('Acyrthosiphon',
              'Aphis',
@@ -565,7 +593,7 @@ for (i in 1:length(short_aphlist)) {
   # note: mean_density_wide already has log-transformed arthropod data
   formula <-  paste0(taxon, '~ Arachnida + Coccinellidae + ',
                      'Ichneumonoidea + Nabis + Geocoris + ',
-                     'Anthocoridae + (1|Site) + (1|Field)')
+                     'Anthocoridae + (1|Site:Field)')
   mGlobal <- mean_density_wide %>%
     filter(Season=='Spring') %$%
     lmer(formula(formula),
@@ -595,95 +623,6 @@ names(springTabs) <- short_aphlist
 # show tables
 # View(springTabs)
 
-# extract and examine the top Acyrthosiphon model.
-best.acy.mod <- get.models(springTabs[[1]], subset = 1)[[1]]
-summary(best.acy.mod)
-# must remake to plot effects.
-best.acy.mod.sp <- lmer(Acyrthosiphon ~ Coccinellidae + (1|Site) + (1|Field),
-                        data = mean_density_wide %>% filter(Season == 'Spring'),
-                     REML = FALSE, na.action = 'na.omit')
-summary(best.acy.mod.sp)
-# Note: no data seems to be missing here.
-
-# make plot
-# png('spring_acy_effect.jpg',
-#     width = 7,
-#     height = 5,
-#     units = 'in',
-#     res = 300)
-plot(allEffects(best.acy.mod.sp, residuals = TRUE),
-     main = 'Acyrthosiphon, Spring',
-     id = list(n = 36, labels = mean_density_wide %>%
-                 filter(Season == 'Spring') %>%
-                 unite('id', Site, Field, Plot, sep = '.') %>%
-                 pull(id)))
-# dev.off()
-
-## better plot
-# png('lattice.png', height = 6, width = 6, units = 'in', res = 300)
-trellis.par.set(list(par.xlab.text = list(cex=2),
-                     par.ylab.text = list(cex=2),
-                     par.main.text = list(col = "blue", cex=0.5)))
-plot(effect('Coccinellidae',best.acy.mod.sp,
-                residuals = T),
-     partial.residuals = list(smooth=F),
-     axes = list(x = list(Coccinellidae = list(lab = 'Log(Ladybug density)')),
-                 y = list(lab = 'Log(Aphid density)')),
-     main = NULL,
-     lattice=list(key.args=list(axis.text = list(cex=10))))
-# dev.off()
-
-# # not run:
-# library(ggeffects)
-# b <- ggemmeans(bmod, terms = 'Coccinellidae')
-#
-# ggplot(b, aes(x, predicted)) +
-#   geom_point()+
-#   geom_line() +
-#   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1)
-
-# extract and examine the top Aphis model.
-best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
-summary(best.aphis.mod)
-# Must remake to plot effects.
-best.aphis.mod <- lmer(Aphis ~ Ichneumonoidea + (1|Site) + (1|Field),
-                       data = mean_density_wide %>% filter(Season == 'Spring'),
-                       REML = FALSE)
-# make plot
-# png('spring_aphis_effect.jpg',
-#     width = 7,
-#     height = 5,
-#     units = 'in',
-#     res = 300)
-plot(allEffects(best.aphis.mod, residuals = TRUE),
-     main = 'Aphis, Spring',
-     id = list(n = 36, labels = mean_density_wide %>%
-                 filter(Season == 'Spring') %>%
-                 unite('id', Site, Field, Plot, sep = '.') %>%
-                 pull(id)))
-# dev.off()
-
-# extract and examine the top Therioaphis model.
-best.therio.mod <- get.models(springTabs[[3]], subset = 1)[[1]]
-summary(best.therio.mod)
-# Must remake to plot effects.
-best.therio.mod <- lmer(Therioaphis ~ Geocoris + (1|Site) + (1|Field),
-                        data = mean_density_wide %>% filter(Season == 'Spring'),
-                        REML = FALSE)
-# make plot
-# png('spring_therio_effect.jpg',
-#     width = 7,
-#     height = 5,
-#     units = 'in',
-#     res = 300)
-plot(allEffects(best.therio.mod, residuals = TRUE),
-     main = 'Therioaphis, Spring',
-     id = list(n = 36, labels = mean_density_wide %>%
-                 filter(Season == 'Spring') %>%
-                 unite('id', Site, Field, Plot, sep = '.') %>%
-                 pull(id)))
-# dev.off()
-
 # for each aphid taxon, make variable importance heatmap for all aphids
 aphPredVI <- list()
 for (i in 1:length(short_aphlist)){
@@ -702,7 +641,9 @@ for (i in 1:length(short_aphlist)){
                         high="red",
                         breaks = c(0.3,0.9),
                         labels = c('low','high')) +
-    labs(title = short_aphlist[[i]], x = '', y = 'Variable importance') +
+    labs(title = paste0(short_aphlist[[i]], ' spring'),
+         x = '',
+         y = 'Variable importance') +
     theme(legend.position = c(0.95,0.85))
 
   aphPredVI[[i]] <- p
@@ -719,19 +660,439 @@ for (i in 1:length(aphPredVI)) {
 # combine all importance tables into one
 aphVI <- rbindlist(importance_tab, idcol = TRUE) %>% as_tibble()
 # constuct heatmap
-PLOT_aphVI <- ggplot(data = aphVI,
+aphPredVISpr <- ggplot(data = aphVI,
                      aes(x = .id, y = ExpVars, fill = VarWeights)) +
   geom_tile() +
-  theme(
-    axis.text.x=element_text(angle = 45, hjust = 1),
-    axis.text.y = element_text(angle = 45))+
   scale_fill_gradient(low="blue", high="red") +
   labs(x = 'Aphid',
        y = 'Predator',
-       title = 'Variable importance, aphids ~ predators') +
+       title = 'Variable importance, spring',
+       subtitle = 'aphid ~ predators + (1|Site:Field), plot-level data') +
   coord_flip()
-# show it
-PLOT_aphVI
+
+# average beta coef plots
+coefs_tab <- list()
+for(i in 1:length(short_aphlist)){
+  aphPredCoefs <- dredges[[i]] %>%
+    tibble %>%
+    select(predlist, weight) %>%
+    mutate(across(predlist, ~ multiply_by(.x, weight))) %>%
+    summarize(across(.fns = ~ mean(.x, na.rm = TRUE)))
+  coefs_tab[[i]] <- aphPredCoefs
+}
+names(coefs_tab) <- short_aphlist
+aphPredCoefs <- rbindlist(coefs_tab, idcol = TRUE) %>%
+  as_tibble()
+
+aphPredCoefSpr <- aphPredCoefs %>%
+  select(-weight) %>%
+  pivot_longer(predlist, names_to = 'term', values_to = 'coeff') %>%
+  ggplot(aes(x = .id, y = term, fill = coeff)) +
+  geom_tile() +
+  geom_text(aes(label = round(coeff, 3))) +
+  scale_fill_steps2(low = 'blue', mid = 'white', high = 'red') +
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Model-averaged coefficients, spring',
+       subtitle = 'aphid ~ predators + (1|Site:Field), plot-level data') +
+  coord_flip()
+
+# Correlation plots between aphids and predators
+aphPredCorrSpr <- mean_density_wide %>%
+  # spring data only
+  filter(Season == 'Spring') %>%
+  # get only the cols we need
+  select(short_aphlist, predlist) %>%
+  # create a correlation matrix
+  correlate() %>%
+  # drop rows and cols to keep only aphid ~ predator correlations
+  select(term, short_aphlist) %>%
+  filter(term %in% predlist) %>%
+  # pivot longer
+  pivot_longer(short_aphlist,
+               names_to = 'Aphid',
+               values_to = 'correlation') %>%
+  # build ggplot
+  ggplot(aes(x = Aphid, y = term, fill = correlation)) +
+  geom_tile() +
+  geom_text(aes(label = round(correlation, 2))) +
+  scale_fill_steps2(low = 'blue', mid = 'white', high = 'red') +
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Correlations, aphids ~ predators, spring',
+       subtitle = 'From plot-level data') +
+  coord_flip()
+
+# show plots
+grid.arrange(aphPredVISpr, aphPredCoefSpr, aphPredCorrSpr, nrow = 3)
+
+##### build models on field-level data for comparison ####
+# create empty list to hold dredges
+dredges2 <- list()
+# for each aphid taxon, make a global model and dredge through all predators
+for (i in 1:length(short_aphlist)) {
+
+  taxon <- short_aphlist[[i]]
+  # note: mean_density_wide already has log-transformed arthropod data
+  formula <-  paste0(taxon, '~ Arachnida + Coccinellidae + ',
+                     'Ichneumonoidea + Nabis + Geocoris + ',
+                     'Anthocoridae + (1|Site)')
+  mGlobal <- landCoverTabs[[1]] %>%
+    filter(Season=='Spring') %$%
+    lmer(formula(formula),
+         na.action = 'na.fail',
+         REML = FALSE)
+
+  dredges2[[i]] <- dredge(mGlobal) # dredge and store output in list
+
+}
+names(dredges2) <- short_aphlist
+
+# check data sources
+importance_tab2 <- lapply(dredges2, function (x) {
+  sw(x) %>%
+    tibble(names = names(.),
+           .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+    mutate(ExpVars = names,
+           VarWeights = sw,
+           .keep = 'none') %>%
+    arrange(ExpVars)
+})
+
+names(importance_tab2) <- short_aphlist
+# make tables of model selection results
+springTabs2 <- lapply(dredges2, slice_head, n = 5)
+names(springTabs2) <- short_aphlist
+
+
+# combine all importance tables into one
+aphVI <- rbindlist(importance_tab2, idcol = TRUE) %>% as_tibble()
+# constuct heatmap
+aphPredVISpr <- ggplot(data = aphVI,
+                       aes(x = .id, y = ExpVars, fill = VarWeights)) +
+  geom_tile() +
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Variable importance, spring',
+       subtitle = 'aphid ~ predators + (1|Site), field-level data') +
+  coord_flip()
+
+# average beta coef plots
+coefs_tab <- list()
+for(i in 1:length(short_aphlist)){
+  aphPredCoefs <- dredges2[[i]] %>%
+    tibble %>%
+    select(predlist, weight) %>%
+    mutate(across(predlist, ~ multiply_by(.x, weight))) %>%
+    summarize(across(.fns = ~ mean(.x, na.rm = TRUE)))
+  coefs_tab[[i]] <- aphPredCoefs
+}
+names(coefs_tab) <- short_aphlist
+aphPredCoefs <- rbindlist(coefs_tab, idcol = TRUE) %>%
+  as_tibble()
+
+aphPredCoefSpr <- aphPredCoefs %>%
+  select(-weight) %>%
+  pivot_longer(predlist, names_to = 'term', values_to = 'coeff') %>%
+  ggplot(aes(x = .id, y = term, fill = coeff)) +
+  geom_tile() +
+  geom_text(aes(label = round(coeff, 3))) +
+  scale_fill_steps2(low = 'blue', mid = 'white', high = 'red') +
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Model-averaged coefficients, spring',
+       subtitle = 'aphid ~ predators + (1|Site), field-level data') +
+  coord_flip()
+
+# Correlation plots between aphids and predators
+aphPredCorrSpr <- landCoverTabs[[1]] %>%
+  # spring data only
+  filter(Season == 'Spring') %>%
+  # get only the cols we need
+  select(short_aphlist, predlist) %>%
+  # create a correlation matrix
+  correlate() %>%
+  # drop rows and cols to keep only aphid ~ predator correlations
+  select(term, short_aphlist) %>%
+  filter(term %in% predlist) %>%
+  # pivot longer
+  pivot_longer(short_aphlist,
+               names_to = 'Aphid',
+               values_to = 'correlation') %>%
+  # build ggplot
+  ggplot(aes(x = Aphid, y = term, fill = correlation)) +
+  geom_tile() +
+  geom_text(aes(label = round(correlation, 2))) +
+  scale_fill_steps2(low = 'blue', mid = 'white', high = 'red') +
+  labs(x = 'Aphid',
+       y = 'Predator',
+       title = 'Correlations, aphids ~ predators, spring',
+       subtitle = 'From field-level data') +
+  coord_flip()
+
+# show plots
+grid.arrange(aphPredVISpr, aphPredCoefSpr, aphPredCorrSpr, nrow = 3)
+
+
+
+
+#
+# #### best models ####
+# # extract and examine the top Acyrthosiphon model.
+# # old now ##
+# best.acy.mod <- get.models(springTabs[[1]], subset = 3)[[1]]
+# summary(best.acy.mod)
+# # must remake to plot effects.
+# best.acy.mod.sp <- lmer(Acyrthosiphon ~ Coccinellidae + (1|Site:Field),
+#                         data = mean_density_wide %>% filter(Season == 'Spring'),
+#                         REML = FALSE, na.action = 'na.omit')
+# summary(best.acy.mod.sp)
+# # Note: no data seems to be missing here.
+#
+# # make plot
+# # png('spring_acy_effect.jpg',
+# #     width = 7,
+# #     height = 5,
+# #     units = 'in',
+# #     res = 300)
+# q <- plot(allEffects(best.acy.mod.sp, residuals = TRUE),
+#      main = 'Acyrthosiphon, Spring, nested random effects',
+#      id = list(n = 36, labels = mean_density_wide %>%
+#                  filter(Season == 'Spring') %>%
+#                  unite('id', Site, Field, Plot, sep = '.') %>%
+#                  pull(id)))
+#
+# # dev.off()
+#
+# ## better plot
+# # png('lattice.png', height = 6, width = 6, units = 'in', res = 300)
+# trellis.par.set(list(par.xlab.text = list(cex=2),
+#                      par.ylab.text = list(cex=2),
+#                      par.main.text = list(col = "blue", cex=0.5)))
+# plot(effect('Coccinellidae',best.acy.mod.sp,
+#             residuals = T),
+#      partial.residuals = list(smooth=F),
+#      axes = list(x = list(Coccinellidae = list(lab = 'Log(Ladybug density)')),
+#                  y = list(lab = 'Log(Aphid density)')),
+#      main = NULL,
+#      lattice=list(key.args=list(axis.text = list(cex=10))))
+# # dev.off()
+#
+# # # not run:
+# # library(ggeffects)
+# # b <- ggemmeans(bmod, terms = 'Coccinellidae')
+# #
+# # ggplot(b, aes(x, predicted)) +
+# #   geom_point()+
+# #   geom_line() +
+# #   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = .1)
+#
+# # extract and examine the top Aphis model.
+# best.aphis.mod <- get.models(springTabs[[2]], subset = 1)[[1]]
+# summary(best.aphis.mod)
+# # Must remake to plot effects.
+# best.aphis.mod <- lmer(Aphis ~ Ichneumonoidea + (1|Site) + (1|Field),
+#                        data = mean_density_wide %>% filter(Season == 'Spring'),
+#                        REML = FALSE)
+# # make plot
+# # png('spring_aphis_effect.jpg',
+# #     width = 7,
+# #     height = 5,
+# #     units = 'in',
+# #     res = 300)
+# plot(allEffects(best.aphis.mod, residuals = TRUE),
+#      main = 'Aphis, Spring',
+#      id = list(n = 36, labels = mean_density_wide %>%
+#                  filter(Season == 'Spring') %>%
+#                  unite('id', Site, Field, Plot, sep = '.') %>%
+#                  pull(id)))
+# # dev.off()
+#
+# # extract and examine the top Therioaphis model.
+# best.therio.mod <- get.models(springTabs[[3]], subset = 1)[[1]]
+# summary(best.therio.mod)
+# # Must remake to plot effects.
+# best.therio.mod <- lmer(Therioaphis ~ Geocoris + (1|Site) + (1|Field),
+#                         data = mean_density_wide %>% filter(Season == 'Spring'),
+#                         REML = FALSE)
+# # make plot
+# # png('spring_therio_effect.jpg',
+# #     width = 7,
+# #     height = 5,
+# #     units = 'in',
+# #     res = 300)
+# plot(allEffects(best.therio.mod, residuals = TRUE),
+#      main = 'Therioaphis, Spring',
+#      id = list(n = 36, labels = mean_density_wide %>%
+#                  filter(Season == 'Spring') %>%
+#                  unite('id', Site, Field, Plot, sep = '.') %>%
+#                  pull(id)))
+# # dev.off()
+
+#### try some predator mods that include trt ####
+# make df of log(total abundance) and add margin and lc data, but don't pool
+allFactors_long <- data_long %>%
+  # drop 'vial'
+  select(-Vial) %>%
+  # divide 'Pre-' values by 3 to account for unequal sampling area
+  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
+                             Treatment !='Pre-' ~ Density)) %>%
+  # log transform
+  mutate(Density = log(Density + 1)) %>%
+  # pivot wider to make col for each taxon
+  pivot_wider(names_from = Taxa, values_from = Density) %>%
+  # create unique id for each site:field combo
+  mutate(id = paste0(Site, '0', Field)) %>%
+  # join margin data
+  left_join(field_margins, by = c('id'='id', 'Season'='Season')) %>%
+  # add dummy vars for treatment
+  cbind(., to.dummy(.$Treatment, 'Trt')) %>%
+  # create watering method column
+  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
+                                      'Flooding',
+                                    Site == 'Minden' ~
+                                      'Sprinklers',
+                                    Site == 'Yerington' & Field %in% c(2, 3) ~
+                                      'Flooding',
+                                    Site == 'Yerington' & Field == 1 ~
+                                      'Sprinklers')) %>%
+  # arrange sensibly for readabilicy
+  arrange(Season, id, Plot, Treatment) %>%
+  # relocate for readability
+  relocate(id) %>%
+  relocate(starts_with('Trt'), .after = Treatment) %>%
+  relocate(wateringMethod, shan, rich, totalCover, .after = Season)
+
+# now, join landcover
+allFacts <- list()
+for (i in 1:length(landCoverTabs)) {
+
+  lcOneSeason <- landCoverTabs[[i]] %>%
+    filter(Season == 'Spring')
+  allFacts[[i]] <- left_join(allFactors_long, lcOneSeason, by = 'id') %>%
+    # drop duplicate cols
+    select(-ends_with('.y')) %>%
+    # strip '.x' suffix
+    rename_with(~ str_sub(.x, end = -3), .cols = ends_with('.x')) %>%
+    tibble
+
+}
+names(allFacts) <- names(landCoverTabs)
+
+
+##### now, find the best landcover + trt + aphid model for each pred!! ####
+buildLandcoverModTab <- function(taxon = 'empty', data = 'empty',
+                                 dataSet = 'empty', m.max = 3){
+  # taxon='Arachnida'
+  # dataSet = allFacts[1]
+  # data= allFacts[[2]]
+  # m.max=3
+
+  distList <- c('_no ',
+                '_const ',
+                '_sig1 ',
+                '_sig2 ',
+                '_sig3 ',
+                '_sig4 ',
+                '_sig5 ')
+
+  varList <- data %>%
+    select(contains('_')) %>%
+    names() %>% str_extract('[:alpha:]+') %>%
+    unique()
+
+
+
+  if (taxon == 'empty' | !is_tibble(data)) {
+    stop(red("Please specify taxon and data \n"), call. = FALSE)
+  }
+
+  # print inputs
+  cat(yellow('Taxon:'),
+      green(taxon),
+      yellow('Data:'),
+      green(names(dataSet)),
+      '\n')
+  # get dfname
+  dfname <- as.name(deparse(substitute(data)))
+
+  aphList <- append(short_aphlist, 'AllAph')
+  cand_mod_tabs_aph <- list()
+  for (i in 1:length(aphList)) {
+    # i=1
+    message(blue('fitting', aphList[[i]], 'models'))
+    cand_mod_tabs_dist <- list()
+    for (j in 1:length(distList)) {
+      # j=1
+      # incase full model fails to fit, try 'tricking' dredge
+      message(blue('fitting', distList[[j]],'models'))
+      # fit reduced model
+      fmod.red <- lmer(as.formula(
+        paste0(taxon, ' ~ (1|Site:Field)')),
+        data = data,
+        REML = FALSE,
+        na.action = 'na.fail')
+      # define full model formula
+      form <-formula(
+        paste0(taxon, ' ~ ',
+               paste0(varList, distList[[j]], '+ ', collapse = ''),
+               aphList[[i]],'+ (1|Site:Field)'
+        ))
+      # Replace reduced model formula with full global model formula.
+      attr(fmod.red@frame, "formula") <- form
+      # Run dredge() with m.max parameter to avoid convergence failures.
+      # fmod.red@call$data <- dfname
+
+      cand_mod_tabs_dist[[j]] <-  # superassign?
+        model.sel(lapply(
+          dredge(fmod.red, m.lim = c(NA, m.max),
+                 trace = 2, evaluate = FALSE),
+          eval))
+
+      message(blue(nrow(cand_mod_tabs_dist[[j]]), 'models fit\n'))
+
+    }
+    # Rbind the elements of the list together. This forces recalculation of AICc
+    cand_mod_tabs_aph[[i]] <- rbind(cand_mod_tabs_dist[[1]],
+                                    cand_mod_tabs_dist[[2]],
+                                    cand_mod_tabs_dist[[3]],
+                                    cand_mod_tabs_dist[[4]],
+                                    cand_mod_tabs_dist[[5]],
+                                    cand_mod_tabs_dist[[6]],
+                                    cand_mod_tabs_dist[[7]])
+
+  }
+  full_mod_table <- rbind(cand_mod_tabs_aph[[1]],
+                          cand_mod_tabs_aph[[2]],
+                          cand_mod_tabs_aph[[3]],
+                          cand_mod_tabs_aph[[4]],
+                          cand_mod_tabs_aph[[5]])
+  return(full_mod_table)
+}
+
+# make full mod tabs for each taxon and version of the data (heavy!)
+predModTabs <- list()
+for (i in 1:length(allFacts)) {
+  message(red('LC Version:', names(allFacts[i])))
+  data <- allFacts[[i]]
+  lcVers <- list()
+  for (j in 1:length(predlist)) {
+    message(red('LC Version', predlist[j]))
+    lcVers[[j]] <- buildLandcoverModTab(predlist[[j]], data)
+
+  }
+  names(lcVers) <- names(predlist)
+  predModTabs[[i]] <- lcVers
+
+}
+names(predModTabs) <- names(allFacts)
+
+saveRDS(predModTabs, 'predModTabs')
+
+
+
+
 
 
 ### fall data only ####

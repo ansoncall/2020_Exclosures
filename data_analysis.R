@@ -930,7 +930,7 @@ grid.arrange(aphPredVISpr, aphPredCoefSpr, aphPredCorrSpr, nrow = 3)
 #                  pull(id)))
 # # dev.off()
 
-#### try some predator mods that include trt ####
+#### plot - level data with all factors ####
 # make df of log(total abundance) and add margin and lc data, but don't pool
 allFactors_long <- data_long %>%
   # drop 'vial'
@@ -980,7 +980,14 @@ for (i in 1:length(landCoverTabs)) {
 }
 names(allFacts) <- names(landCoverTabs)
 
+#### review sham trt effects ####
+# make plot pretty
+ggplot(allFacts$landcover7 %>% filter(Season == 'Spring'),
+       aes(x = reorder(id, Coccinellidae), y = Coccinellidae, fill = Treatment)) +
+  geom_boxplot()
+# make plot-level data with difference between sham and control.
 
+#### try some predator mods that include trt ####
 ##### now, find the best landcover + trt + aphid model for each pred!! ####
 buildLandcoverModTab <- function(taxon = 'empty', data = 'empty',
                                  dataSet = 'empty', m.max = 3){

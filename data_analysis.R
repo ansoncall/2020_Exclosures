@@ -1283,6 +1283,14 @@ library(ggiraphExtra)
 ggAncova(linMod, interactive = TRUE)
 # ggAncova(linModMixed, interactive = TRUE) # not good
 
+Anova(linMod)
+summary(linMod)
+library(webshot) # to capture tab_model output as png
+tab_model(linMod)
+tab_model(linMod, file = 'linMod.html')
+webshot('linMod.html', 'linMod.png')
+
+
 tryAov <- aov(AllAph ~ Coccinellidae + Treatment, data = qData)
 Anova(tryAov)
 
@@ -1299,12 +1307,28 @@ Anova(tryAov2)
 # drop coccinellidae?
 tryAov <- aov(AllAph ~ Treatment, data = qData)
 Anova(tryAov)
-Anova(linMod)
-summary(linMod)
-library(webshot) # to capture tab_model output as png
-tab_model(linMod)
-tab_model(linMod, file = 'linMod.html')
-webshot('linMod.html', 'linMod.png')
+summary(tryAov)
+
+
+wideQ <- qData %>%
+  select(-`Trt.Pre-`, -`Trt.Control`, -`Trt.Sham`) %>%
+  pivot_wider(names_from = Treatment, values_from = shan:NonAcy)
+
+tryT <- t.test(wideQ$AllAph_Control, wideQ$AllAph_Sham)
+tryTPaired <- t.test(wideQ$AllAph_Control, wideQ$AllAph_Sham, paired = TRUE)
+
+
+ggplot(qData, aes(x =Treatment, y=AllAph)) +
+  geom_violin(draw_quantiles = c(0.25,0.5,0.75))
+
+
+
+
+
+
+
+
+
 
 ##### not log-transformed data ####
 allFactors_long_noLog <- data_long %>%

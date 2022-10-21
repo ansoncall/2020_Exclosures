@@ -1273,7 +1273,7 @@ qNonZero <- qData %>%
 
 qZero <- qData %>%
   filter((Coccinellidae == 0 & Treatment == 'Sham'))
-
+View(diffData_wide %>% filter(Season == "Spring"))
 
 
 # make lm and lmer mods
@@ -1321,7 +1321,61 @@ tab_model(linModHigh)
 
 # do models on +/- sham effect
 qDiffJoin <- qJoin %>%
-  left_join(diffData_wide %>% filter(Season == 'Spring'))
+  left_join(diffData_wide %>%
+              filter(Season == 'Spring') %>%
+              mutate(diffLadybugs = Coccinellidae) %>%
+              select(Site, Field, Plot, diffLadybugs)) %>%
+  mutate(shamEffect = case_when(diffLadybugs > 0 ~ "positive",
+                                diffLadybugs <= 0 ~ "neutral/negative"))
+
+library(ggiraphExtra)
+
+linModPos <- qDiffJoin %>%
+  filter(shamEffect == 'positive') %$%
+  lm(AllAph ~ Coccinellidae + Treatment)
+
+linModNeg <- qDiffJoin %>%
+  filter(shamEffect == 'neutral/negative') %$%
+  lm(AllAph ~ Coccinellidae + Treatment)
+
+ggAncova(linModPos)
+ggAncova(linModNeg)
+
+tab_model(linModPos)
+tab_model(linModNeg)
+
+# looking good
+
+##### developing composite predator effect #####
+# could sum all predators
+qData %>% mutate(AllPreds = Anthocoridae + Arachnida + Coccinellidae) %>%
+  ggplot(aes(x = AllPreds, y = AllAph)) +
+  geom_point(aes(color = Treatment)) +
+  geom_smooth(method = 'lm') +
+  labs(title = '3 preds summed')
+
+qData %>% mutate(AllPreds = Anthocoridae + Arachnida + Coccinellidae) %$%
+  lm(AllAph ~ AllPreds + Treatment) -> allPredMod
+
+ggAncova(allPredMod)
+
+tab_model(allPredMod)
+
+# could scale and then sum
+qData %>% mutate(across(.cols = c(Anthocoridae, Arachnida, Coccinellidae),
+                        ~ scale(.x, center = FALSE),
+                        .names = '{.col}_scale')) %>%
+  mutate(AllPreds = Anthocoridae_scale + Arachnida_scale + Coccinellidae_scale) %>%
+  ggplot(aes(x = AllPreds, y = AllAph)) +
+  geom_point(aes(color = Treatment)) +
+  geom_smooth(method = 'lm') +
+  labs(title = 'preds scaled then summed')
+
+
+
+# is sham effect similar across predators where it is known to have an effect
+
+
 
 # fixed int: THIS IS NONSENSE
 # You could subtract the explicit intercept from the regressand and then fit the

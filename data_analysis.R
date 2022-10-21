@@ -1321,16 +1321,157 @@ tryTPaired <- t.test(wideQ$AllAph_Control, wideQ$AllAph_Sham, paired = TRUE)
 ggplot(qData, aes(x =Treatment, y=AllAph)) +
   geom_violin(draw_quantiles = c(0.25,0.5,0.75))
 
+# try interaction - sham can't attract ladybugs if they aren't present
+# restore outlier
+qData <- allFactors_long %>%
+  filter(Season == 'Spring',
+         Treatment != 'Pre-')
+
+interLm <- lm(AllAph ~ Coccinellidae * Treatment, data = qData)
+summary(interLm)
+plot(allEffects(interLm))
+ggEffect(AllAph ~ Coccinellidae * Treatment, data = qData)
+
+
+#### Jenks #####
+# given log-transform && keeping the outlier, what about thresholds of ladybug
+# density?
+# restore outlier into data
+qData <- allFactors_long %>%
+  filter(Season == 'Spring',
+         Treatment != 'Pre-')
+
+# find jenks or kmeans clusters
+install.packages('BAMMtools')
+library(BAMMtools) # for fast Jenks breaks
+install.packages('classInt')
+library(classInt) # for kmeans clustering
+
+# summarize data to get plot-level means
+sumQData <- qData %>%
+  group_by(Site, Field, Plot) %>%
+  summarize(meanLadybugs = mean(Coccinellidae))
+sumRData <- rData %>%
+  group_by(Site, Field, Plot) %>%
+  summarize(meanLadybugs = mean(Coccinellidae))
+
+# jenks
+logJenks <- getJenksBreaks(sumQData$meanLadybugs, 3)
+Jenks <- getJenksBreaks(sumRData$meanLadybugs, 3)
+# kmeans
+logKMeans <- classIntervals(sumQData$meanLadybugs, 2, style = "kmeans")
+KMeans <- classIntervals(sumRData$meanLadybugs, 2, style = "kmeans")
+# update data tables with category
+sumQData %<>%
+  mutate(logDensJenks = case_when(meanLadybugs <= logJenks[[1]] ~ 'Zero',
+                               meanLadybugs > 0 & meanLadybugs <= logJenks[[2]]
+                               ~ 'Low',
+                               meanLadybugs > logJenks[[2]] ~ 'High')) %>%
+mutate(logDensKMeans = case_when(meanLadybugs <= logKMeans$brks[[1]] ~ 'Zero',
+                             meanLadybugs > 0 & meanLadybugs <= logKMeans$brks[[2]]
+                             ~ 'Low',
+                             meanLadybugs > logKMeans$brks[[2]] ~ 'High'))
+
+sumRData %<>%
+  mutate(densJenks = case_when(meanLadybugs <= Jenks[[1]] ~ 'Zero',
+                               meanLadybugs > 0 & meanLadybugs <= Jenks[[2]]
+                               ~ 'Low',
+                               meanLadybugs > Jenks[[2]] ~ 'High'))%>%
+  mutate(densKMeans = case_when(meanLadybugs <= KMeans$brks[[1]] ~ 'Zero',
+                                meanLadybugs > 0 & meanLadybugs <= KMeans$brks[[2]]
+                                ~ 'Low',
+                                meanLadybugs > KMeans$brks[[2]] ~ 'High'))
+
+# join to original dfs
+
+
+
+
+library(grid) # for grobTree() to make text annotations on violin plots
+
+# nice plot for logged data
+grob <- grobTree(textGrob("K Means breaks", x=0.1,  y=0.9, hjust=0,
+                          gp=gpar(col="red", fontsize=13, fontface="italic")))
+grob2 <- grobTree(textGrob("Jenks breaks", x=0.9,  y=0.9, hjust=1,
+                           gp=gpar(col="blue", fontsize=13, fontface="italic")))
+ggplot(sumQData, aes('', meanLadybugs)) +
+  geom_violin() +
+  geom_dotplot(binaxis = "y",
+               stackdir = "center",
+               dotsize = 1,
+               binwidth = max(sumQData$meanLadybugs)/20,
+               aes(fill = logDensJenks, group = logDensJenks)) +
+  geom_hline(yintercept = c(logKMeans$brks[[1]] + 0.065, # manual jitter
+                            logKMeans$brks[[2]] + 0.01,
+                            logKMeans$brks[[3]]+ 0.02), color = 'red') +
+  geom_hline(yintercept = c(logJenks[[1]] + 0.075,
+                            logJenks[[2]] + 0.075,
+                            logJenks[[3]] + 0.03), color = 'blue') +
+  annotation_custom(grob) +
+  annotation_custom(grob2) +
+  labs(y = 'log(Coccinellidae + 1) Density', x = '',
+       fill = 'Jenks group',
+       title = 'Plot grouping by log(ladybug density)') +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+
+# nice plot for unlogged data
+ggplot(sumRData, aes('', meanLadybugs)) +
+  geom_violin() +
+  geom_dotplot(binaxis = "y",
+               stackdir = "center",
+               dotsize = 1,
+               binwidth = max(sumRData$meanLadybugs)/20,
+               aes(fill = densJenks, group = densJenks)) +
+  geom_hline(yintercept = c(KMeans$brks[[1]] + 0.22, # manual jitter
+                            KMeans$brks[[2]] - 0.03,
+                            KMeans$brks[[3]]+ 0.22), color = 'red') +
+  geom_hline(yintercept = c(Jenks[[1]] + 0.27,
+                            Jenks[[2]] + 0.27,
+                            Jenks[[3]] + 0.27), color = 'blue') +
+  annotation_custom(grob) +
+  annotation_custom(grob2) +
+  labs(y = 'Coccinellidae Density', x = '',
+       fill = 'Jenks group',
+       title = 'Plot grouping by ladybug density - no log transform') +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+
+
+# does sham have a larger effect when ladybugs are nonzero?
+diffData %>%
+  filter(Taxon == 'Coccinellidae',
+         Season == 'Spring') %>%
+  left_join(sumRData %>% select(Site, Field, Plot, meanLadybugs, densJenks)) %>%
+  ggplot(aes(x = densJenks, y = Difference, fill = densJenks)) +
+  geom_boxplot() +
+  # geom_point(inherit.aes = FALSE,
+  #            data = predSpringStatsDf,
+  #            aes(x = taxon, y = mean),
+  #            position = position_nudge(x = 0.2)) +
+  # geom_errorbar(inherit.aes = FALSE,
+  #               data = predSpringStatsDf,
+  #               position = position_nudge(x = 0.2),
+  #               aes(ymin = lower, ymax = upper, x = taxon),
+  #               width = 0.2) +
+  geom_hline(yintercept = 0, color = 'red') +
+  coord_flip(ylim = c(-10, 14))
+
+diffData %>%
+  filter(Taxon == 'Coccinellidae',
+         Season == 'Spring') %>%
+  left_join(sumRData %>% select(Site, Field, Plot, meanLadybugs, densJenks)) %>%
+  ggplot(aes(x = meanLadybugs, y = Difference)) +
+  geom_jitter(height = 0, width = 0.05, shape = 21) +
+  geom_smooth(method = 'lm') +
+  labs(x = "Plot-level mean ladybug density (jittered)",
+       y = 'Sham - Control ladybug density')
 
 
 
 
 
-
-
-
-
-##### not log-transformed data ####
+ ##### not log-transformed data ####
 allFactors_long_noLog <- data_long %>%
   # drop 'vial'
   select(-Vial) %>%

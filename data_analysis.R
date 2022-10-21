@@ -1267,20 +1267,80 @@ nrow(qData)
 qData %<>% filter(!(Site == "Lovelock" & Field == 2 & Plot == 2))
 nrow(qData)
 
+# filter where sham was 0
+qNonZero <- qData %>%
+  filter(!(Coccinellidae == 0 & Treatment == 'Sham'))
+
+qZero <- qData %>%
+  filter((Coccinellidae == 0 & Treatment == 'Sham'))
+
+
 
 # make lm and lmer mods
 linMod <- lm(AllAph ~ Coccinellidae + Treatment, data = qData)
+linModNonZero <- lm(AllAph ~ Coccinellidae + Treatment, data = qNonZero)
+linModZero <- t.test(qZero$AllAph)
+
 linModMixed <- lmer(AllAph ~ Coccinellidae + Treatment + (1|Site:Field),
                   data = qData)
 # plot effs
 plot(allEffects(linMod))
+plot(allEffects(linModNonZero))
 plot(allEffects(linModMixed))
-
 
 # need ggiraphExtra for the following
 library(ggiraphExtra)
 # this seems to work well for the non-mixed mod
 ggAncova(linMod, interactive = TRUE)
+ggAncova(linModNonZero, interactive = TRUE)
+ggAncova(linModZero, interactive = TRUE)
+
+
+tab_model(linMod)
+tab_model(linModNonZero)
+tab_model(linModMixed)
+
+# do models on jenks categories
+# need sumQData from below
+qJoin <- qData %>%
+  left_join(sumQData)
+
+linModLow <- qJoin %>%
+  filter(logDensJenks == 'Low') %$%
+  lm(AllAph ~ Coccinellidae + Treatment)
+
+linModHigh <- qJoin %>%
+  filter(logDensJenks == 'High') %$%
+  lm(AllAph ~ Coccinellidae + Treatment)
+
+ggAncova(linModLow)
+ggAncova(linModHigh)
+
+tab_model(linModLow)
+tab_model(linModHigh)
+
+# do models on +/- sham effect
+qDiffJoin <- qJoin %>%
+  left_join(diffData_wide %>% filter(Season == 'Spring'))
+
+# fixed int: THIS IS NONSENSE
+# You could subtract the explicit intercept from the regressand and then fit the
+# intercept-free model:
+
+intercept <- linMod$coefficients[[1]]
+linModFix <- lm(I(AllAph - intercept) ~
+                  0+Coccinellidae * Treatment, data = qData)
+
+ggAncova(linModFix)
+
+ggplot(qData, aes(y = AllAph, x = Coccinellidae, color = Treatment))+
+  geom_point()+
+  geom_smooth(method = 'lm', formula = y~0+x, fullrange = T)+
+  xlim(0,3)
+
+tab_model(linModFix)
+## END NONSENSE
+
 # ggAncova(linModMixed, interactive = TRUE) # not good
 
 Anova(linMod)
@@ -1352,7 +1412,7 @@ sumQData <- qData %>%
   group_by(Site, Field, Plot) %>%
   summarize(meanLadybugs = mean(Coccinellidae))
 sumRData <- rData %>%
-  group_by(Site, Field, Plot) %>%
+  group_by(Site, Field, Plot, Season) %>%
   summarize(meanLadybugs = mean(Coccinellidae))
 
 # jenks
@@ -1411,7 +1471,8 @@ ggplot(sumQData, aes('', meanLadybugs)) +
   annotation_custom(grob2) +
   labs(y = 'log(Coccinellidae + 1) Density', x = '',
        fill = 'Jenks group',
-       title = 'Plot grouping by log(ladybug density)') +
+       title = 'Plot grouping by log(ladybug density)',
+       subtitle = 'Spring only') +
   theme(axis.ticks.x = element_blank(),
         axis.text.x = element_blank())
 
@@ -1442,8 +1503,8 @@ ggplot(sumRData, aes('', meanLadybugs)) +
 diffData %>%
   filter(Taxon == 'Coccinellidae',
          Season == 'Spring') %>%
-  left_join(sumRData %>% select(Site, Field, Plot, meanLadybugs, densJenks)) %>%
-  ggplot(aes(x = densJenks, y = Difference, fill = densJenks)) +
+  left_join(sumQData %>% select(Site, Field, Plot, meanLadybugs, logDensJenks)) %>%
+  ggplot(aes(x = logDensJenks, y = Difference, fill = logDensJenks)) +
   geom_boxplot() +
   # geom_point(inherit.aes = FALSE,
   #            data = predSpringStatsDf,
@@ -1459,16 +1520,25 @@ diffData %>%
 
 diffData %>%
   filter(Taxon == 'Coccinellidae',
-         Season == 'Spring') %>%
-  left_join(sumRData %>% select(Site, Field, Plot, meanLadybugs, densJenks)) %>%
+         Season == 'Spring')  %>%
+  left_join(sumQData %>% select(Site, Field, Plot, meanLadybugs, logDensJenks)) ->t#
+t%>% filter(Season == 'Spring') %>%
   ggplot(aes(x = meanLadybugs, y = Difference)) +
   geom_jitter(height = 0, width = 0.05, shape = 21) +
-  geom_smooth(method = 'lm') +
+  geom_smooth(method = 'lm', formula=y~x+0) +
   labs(x = "Plot-level mean ladybug density (jittered)",
        y = 'Sham - Control ladybug density')
 
+diffMod <- diffData %>%
+  filter(Taxon == 'Coccinellidae') %>%
+  left_join(sumRData %>% select(Site, Field, Plot, Season, meanLadybugs, densJenks)) %>%
+  filter(Season == 'Spring')%$%
+  lm(Difference ~ 0 + meanLadybugs)
 
+summary(diffMod)
+tab_model(diffMod)
 
+plot(diffMod)
 
 
  ##### not log-transformed data ####
@@ -1506,8 +1576,7 @@ allFactors_long_noLog <- data_long %>%
 
 # prep data
 rData <- allFactors_long_noLog %>%
-  filter(Season == 'Spring',
-         Treatment != 'Pre-')
+  filter(Treatment != 'Pre-')
 nrow(rData)
 
 # MUST REMOVE ENTIRE PLOT

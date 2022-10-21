@@ -1319,6 +1319,7 @@ ggAncova(linModHigh)
 tab_model(linModLow)
 tab_model(linModHigh)
 
+# This is beth's fave approach: ####
 # do models on +/- sham effect
 qDiffJoin <- qJoin %>%
   left_join(diffData_wide %>%
@@ -1345,7 +1346,12 @@ tab_model(linModPos)
 tab_model(linModNeg)
 
 # looking good
+# repeat for Anthocoridae, Arachnida
+# repeat across fall, sp+fa combined
 
+diffMod <- lm(AllAph ~ Coccinellidae, data = diffData_wide %>%
+                filter(Season == 'Spring'))
+tab_model(diffMod)
 ##### developing composite predator effect #####
 # could sum all predators
 qData %>% mutate(AllPreds = Anthocoridae + Arachnida + Coccinellidae) %>%

@@ -3,16 +3,22 @@
 # pre-generated AICc tables of arthropod~landcover models.
 
 # Load packages ####
+library(BAMMtools) # for fast Jenks breaks
 library(car) # for Anova() on lmer model objects
+library(classInt) # for kmeans clustering
 library(corrr) # for correlation plots of landcover vars
 library(crayon) # for colored terminal outputs
 library(data.table) # for rbindlist() to rbind a list of tables and make id col
+library(DiagrammeRsvg) # for plotting SEMs
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
 library(gridExtra) # create multi-panel plots
+library(ggeffects) # for easy effects plots
 library(ggfortify) # create PCA plots
+library(ggiraphExtra) # more easy effects plots
 library(ggpmisc) # make ggplots that show R2 value with stat_poly_eq()
 library(ggridges) # for ggridges plots
+library(grid) # for grobTree() to make text annotations on violin plots
 library(gtools) # for mixedsort() to arrange factor levels in vegdata tibble
 library(hardhat) # for get_levels to extract factor levels in a tidy way
 library(knitr) # for knitting R markdown docs
@@ -23,12 +29,14 @@ library(MuMIn) # model selection tools
 library(mvabund) # for building multivariate mods of insect density
 library(piecewiseSEM) # for structural equation modeling
 library(plotly) # interactive plots with plotly()
+library(rsvg) # for more SEM plots
 library(sjPlot) # create effects plots on lmer objects
 library(tidyselect) # for peek()
 library(tidytext) # sort ggcols after faceting
 library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
 library(vegan) # for diversity indices in vegdata
+library(webshot) # to capture tab_model output (or other html output) as png
 
 # Define functions ####
 # note: this is not the only place functions are defined
@@ -879,7 +887,7 @@ grid.arrange(aphPredVISpr, aphPredCoefSpr, aphPredCorrSpr, nrow = 3)
 # # dev.off()
 #
 # # # not run:
-# # library(ggeffects)
+
 # # b <- ggemmeans(bmod, terms = 'Coccinellidae')
 # #
 # # ggplot(b, aes(x, predicted)) +
@@ -1289,7 +1297,7 @@ plot(allEffects(linModNonZero))
 plot(allEffects(linModMixed))
 
 # need ggiraphExtra for the following
-library(ggiraphExtra)
+
 # this seems to work well for the non-mixed mod
 ggAncova(linMod, interactive = TRUE)
 ggAncova(linModNonZero, interactive = TRUE)
@@ -1329,7 +1337,6 @@ qDiffJoin <- qJoin %>%
   mutate(shamEffect = case_when(diffLadybugs > 0 ~ "positive",
                                 diffLadybugs <= 0 ~ "neutral/negative"))
 
-library(ggiraphExtra)
 
 linModPos <- qDiffJoin %>%
   filter(shamEffect == 'positive') %$%
@@ -1405,7 +1412,7 @@ tab_model(linModFix)
 
 Anova(linMod)
 summary(linMod)
-library(webshot) # to capture tab_model output as png
+
 tab_model(linMod)
 tab_model(linMod, file = 'linMod.html')
 webshot('linMod.html', 'linMod.png')
@@ -1463,9 +1470,9 @@ qData <- allFactors_long %>%
 
 # find jenks or kmeans clusters
 install.packages('BAMMtools')
-library(BAMMtools) # for fast Jenks breaks
+
 install.packages('classInt')
-library(classInt) # for kmeans clustering
+
 
 # summarize data to get plot-level means
 sumQData <- qData %>%
@@ -1507,7 +1514,6 @@ sumRData %<>%
 
 
 
-library(grid) # for grobTree() to make text annotations on violin plots
 
 # nice plot for logged data
 grob <- grobTree(textGrob("K Means breaks", x=0.1,  y=0.9, hjust=0,
@@ -4231,11 +4237,11 @@ spring_acy_sem <- psem(
   )
 plot(spring_acy_sem)
 qinstall.packages('DiagrammeRsvg')
-library(DiagrammeRsvg)
+
 plot(spring_acy_sem)%>%
   export_svg %>% charToRaw %>% rsvg_png("graph.png")
 install.packages('rsvg')
-library(rsvg)
+
 export_graph(plot(spring_acy_sem),
              file_name = "pic.png",
              file_type = "png")

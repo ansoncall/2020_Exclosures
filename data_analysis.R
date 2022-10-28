@@ -543,13 +543,13 @@ for (i in 1:length(weightList)) {
 
 }
 
-# print the the pca plots, four at a time (one distance weight at a time)
-for (i in 1:length(pcaOut)){
-
-  do.call('grid.arrange', c(unlist(pcaOut[i], recursive = FALSE), ncol = 2))
-  ggsave(paste0('pcaplot', i, '.png'), width = 12, height = 8, units = 'in')
-
-}
+# # print the the pca plots, four at a time (one distance weight at a time)
+# for (i in 1:length(pcaOut)){
+#
+#   do.call('grid.arrange', c(unlist(pcaOut[i], recursive = FALSE), ncol = 2))
+#   ggsave(paste0('pcaplot', i, '.png'), width = 12, height = 8, units = 'in')
+#
+# }
 # # print all the pca plots at once (hard to read)
 # do.call('grid.arrange', c(unlist(pcaOut, recursive = FALSE), ncol = 4))
 
@@ -964,7 +964,7 @@ allFactors_long <- data_long %>%
                                       'Flooding',
                                     Site == 'Yerington' & Field == 1 ~
                                       'Sprinklers')) %>%
-  # arrange sensibly for readabilicy
+  # arrange sensibly for readability
   arrange(Season, id, Plot, Treatment) %>%
   # relocate for readability
   relocate(id) %>%
@@ -1086,7 +1086,26 @@ diffData %>%
   geom_hline(yintercept = 0, color = 'red') +
   theme(legend.position = 'none') +
   coord_flip(ylim = c(-10, 14))
-  #
+
+# fall version
+diffData %>%
+  filter(Taxon %in% predlist,
+         Season == 'Fall') %>%
+  ggplot(aes(x = Taxon, y = Difference, fill = Taxon)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = 'Spectral') +
+  geom_point(inherit.aes = FALSE,
+             data = predSpringStatsDf,
+             aes(x = taxon, y = mean),
+             position = position_nudge(x = 0.2)) +
+  geom_errorbar(inherit.aes = FALSE,
+                data = predFallStatsDf,
+                position = position_nudge(x = 0.2),
+                aes(ymin = lower, ymax = upper, x = taxon),
+                width = 0.2) +
+  geom_hline(yintercept = 0, color = 'red') +
+  theme(legend.position = 'none') +
+  coord_flip(ylim = c(-10, 14))
 
 predStatsDf2 %>%
   # select(taxon, mean, lower, upper, p) %>%
@@ -1100,6 +1119,7 @@ predFallStatsDf %>%
   mutate(across(where(is.double), ~round(.x, 3))) %>%
   grid.table()
 
+# focus on fall Ichneumonoidea
 diffData %>%
   filter(Season == 'Fall',
          Taxon == 'Ichneumonoidea') %>%
@@ -1135,7 +1155,7 @@ for(i in 1:length(short_aphlist)){
 
 }
 names(aphSpringStats) <- short_aphlist
-View(diffData_wide)
+# View(diffData_wide)
 aphSpringStatsDf <- as.data.frame(do.call(rbind, aphSpringStats)) %>%
   rename(mean = `mean of x`, lower = V2, upper = V3, p = V4) %>%
   rownames_to_column('taxon')
@@ -1180,7 +1200,7 @@ diffData %>%
   coord_flip()
 
 #
-View(diffData)
+# View(diffData)
 aphSpringStatsDf %>%
   select(taxon, mean, lower, upper, p) %>%
   arrange(desc(taxon)) %>%
@@ -1205,8 +1225,19 @@ diffData_wide %>%
   labs(title = 'All Seasons',
        subtitle = 'Correlations between changes in aphid density in sham treatments
        and changes in predator density in sham treatments')
-
-
+# need to take out ichneumonoidea to see trends in other taxo
+diffData_wide %>%
+  filter(AllAph > -3000) %>%
+  pivot_longer(predlist, names_to = 'Predator', values_to = 'Difference') %>%
+  filter(Predator != 'Ichneumonoidea') %>% # drop ich
+  ggplot(aes(x = AllAph, y = Difference, fill = Predator, color = Predator)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  scale_fill_brewer(palette = 'Spectral') +
+  scale_color_brewer(palette = 'Spectral') +
+  labs(title = 'All Seasons',
+       subtitle = 'Correlations between changes in aphid density in sham treatments
+       and changes in predator density in sham treatments')
 
 # Correlation plots between aphids and predators
 diffData_wide %>%
@@ -1351,6 +1382,93 @@ ggAncova(linModNeg)
 
 tab_model(linModPos)
 tab_model(linModNeg)
+
+### TODO RECREATE THIS FOR OTHER PREDS: ANTHOCORIDAE, ARACHNIDA ####
+# 1. clean up data - where does "qDiffJoin" come from? "qJoin"?
+# RETRACE STEPS AND CHECK ALL INPUTS
+
+# qDiffJoin
+qDiffJoin <- qJoin %>% # check this
+  left_join(diffData_wide %>% # also check this
+              filter(Season == 'Spring') %>%
+              mutate(diffLadybugs = Coccinellidae) %>%
+              select(Site, Field, Plot, diffLadybugs)) %>%
+  mutate(shamEffect = case_when(diffLadybugs > 0 ~ "positive",
+                                diffLadybugs <= 0 ~ "neutral/negative"))
+
+# qJoin
+qJoin <- qData %>%
+  left_join(sumQData) # check this
+
+# sumQData
+sumQData <- qData %>% # check this
+  group_by(Site, Field, Plot) %>%
+  summarize(meanLadybugs = mean(Coccinellidae))
+
+# qData
+qData <- allFactors_long %>% # check this
+  filter(Season == 'Spring',
+         Treatment != 'Pre-')
+
+# diffData_wide
+diffData_wide <- data_long %>% # check this
+  filter(Treatment != 'Pre-') %>%
+  select(-Vial) %>%
+  pivot_wider(names_from = Taxa, values_from = Density) %>%
+  pivot_wider(names_from = Treatment, values_from = Arachnida:NonAcy) %>%
+  mutate(Arachnida = Arachnida_Sham - Arachnida_Control,
+         Nabis = Nabis_Sham - Nabis_Control,
+         Geocoris = Geocoris_Sham - Geocoris_Control,
+         Anthocoridae = Anthocoridae_Sham - Anthocoridae_Control,
+         Coccinellidae = Coccinellidae_Sham - Coccinellidae_Control,
+         Ichneumonoidea = Ichneumonoidea_Sham - Ichneumonoidea_Control,
+         Acyrthosiphon = Acyrthosiphon_Sham - Acyrthosiphon_Control,
+         Aphis = Aphis_Sham - Aphis_Control,
+         Therioaphis = Therioaphis_Sham - Therioaphis_Control,
+         Lygus = Therioaphis_Sham - Therioaphis_Control,
+         Thysanoptera = Thysanoptera_Sham - Thysanoptera_Control,
+         Other = Other_Sham - Other_Control,
+         AllAph = AllAph_Sham - AllAph_Control,
+         NonAcy = NonAcy_Sham - NonAcy_Control) %>%
+  select(-ends_with('_Sham'), -ends_with('_Control'))
+
+# allFactors_long
+allFactors_long <- data_long %>% # check this
+  # drop 'vial'
+  select(-Vial) %>%
+  # divide 'Pre-' values by 3 to account for unequal sampling area
+  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
+                             Treatment !='Pre-' ~ Density)) %>%
+  # log transform
+  mutate(Density = log(Density + 1)) %>%
+  # pivot wider to make col for each taxon
+  pivot_wider(names_from = Taxa, values_from = Density) %>%
+  # create unique id for each site:field combo
+  mutate(id = paste0(Site, '0', Field)) %>%
+  # join margin data
+  left_join(field_margins, by = c('id'='id', 'Season'='Season')) %>%
+  # add dummy vars for treatment
+  cbind(., to.dummy(.$Treatment, 'Trt')) %>%
+  # create watering method column
+  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
+                                      'Flooding',
+                                    Site == 'Minden' ~
+                                      'Sprinklers',
+                                    Site == 'Yerington' & Field %in% c(2, 3) ~
+                                      'Flooding',
+                                    Site == 'Yerington' & Field == 1 ~
+                                      'Sprinklers')) %>%
+  # arrange sensibly for readability
+  arrange(Season, id, Plot, Treatment) %>%
+  # relocate for readability
+  relocate(id) %>%
+  relocate(starts_with('Trt'), .after = Treatment) %>%
+  relocate(wateringMethod, shan, rich, totalCover, .after = Season)
+
+### TODO MARK WHEN CHECKS ARE COMPLETE
+### THEN MOVE TO INCLUDE OTHER PREDATORS
+
+
 
 # looking good
 # repeat for Anthocoridae, Arachnida

@@ -1332,7 +1332,7 @@ plot(allEffects(linModMixed))
 # this seems to work well for the non-mixed mod
 ggAncova(linMod, interactive = TRUE)
 ggAncova(linModNonZero, interactive = TRUE)
-ggAncova(linModZero, interactive = TRUE)
+# ggAncova(linModZero, interactive = TRUE)
 
 
 tab_model(linMod)
@@ -1387,53 +1387,39 @@ tab_model(linModNeg)
 # 1. clean up data - where does "qDiffJoin" come from? "qJoin"?
 # RETRACE STEPS AND CHECK ALL INPUTS
 
-# qDiffJoin
-qDiffJoin <- qJoin %>% # check this
-  left_join(diffData_wide %>% # also check this
-              filter(Season == 'Spring') %>%
-              mutate(diffLadybugs = Coccinellidae) %>%
-              select(Site, Field, Plot, diffLadybugs)) %>%
-  mutate(shamEffect = case_when(diffLadybugs > 0 ~ "positive",
-                                diffLadybugs <= 0 ~ "neutral/negative"))
-
-# qJoin
-qJoin <- qData %>%
-  left_join(sumQData) # check this
-
-# sumQData
-sumQData <- qData %>% # check this
-  group_by(Site, Field, Plot) %>%
-  summarize(meanLadybugs = mean(Coccinellidae))
-
-# qData
-qData <- allFactors_long %>% # check this
-  filter(Season == 'Spring',
-         Treatment != 'Pre-')
-
 # diffData_wide
-diffData_wide <- data_long %>% # check this
+# this df contains plot-level DIFFERENCES between sham and control
+diffData_wide <- data_long %>% # check this # DONE
   filter(Treatment != 'Pre-') %>%
   select(-Vial) %>%
   pivot_wider(names_from = Taxa, values_from = Density) %>%
   pivot_wider(names_from = Treatment, values_from = Arachnida:NonAcy) %>%
-  mutate(Arachnida = Arachnida_Sham - Arachnida_Control,
-         Nabis = Nabis_Sham - Nabis_Control,
-         Geocoris = Geocoris_Sham - Geocoris_Control,
-         Anthocoridae = Anthocoridae_Sham - Anthocoridae_Control,
-         Coccinellidae = Coccinellidae_Sham - Coccinellidae_Control,
-         Ichneumonoidea = Ichneumonoidea_Sham - Ichneumonoidea_Control,
-         Acyrthosiphon = Acyrthosiphon_Sham - Acyrthosiphon_Control,
-         Aphis = Aphis_Sham - Aphis_Control,
-         Therioaphis = Therioaphis_Sham - Therioaphis_Control,
-         Lygus = Therioaphis_Sham - Therioaphis_Control,
-         Thysanoptera = Thysanoptera_Sham - Thysanoptera_Control,
-         Other = Other_Sham - Other_Control,
-         AllAph = AllAph_Sham - AllAph_Control,
-         NonAcy = NonAcy_Sham - NonAcy_Control) %>%
-  select(-ends_with('_Sham'), -ends_with('_Control'))
+  mutate(diffArachnida = Arachnida_Sham - Arachnida_Control,
+         diffNabis = Nabis_Sham - Nabis_Control,
+         diffGeocoris = Geocoris_Sham - Geocoris_Control,
+         diffAnthocoridae = Anthocoridae_Sham - Anthocoridae_Control,
+         diffCoccinellidae = Coccinellidae_Sham - Coccinellidae_Control,
+         diffIchneumonoidea = Ichneumonoidea_Sham - Ichneumonoidea_Control,
+         diffAcyrthosiphon = Acyrthosiphon_Sham - Acyrthosiphon_Control,
+         diffAphis = Aphis_Sham - Aphis_Control,
+         diffTherioaphis = Therioaphis_Sham - Therioaphis_Control,
+         diffLygus = Therioaphis_Sham - Therioaphis_Control,
+         diffThysanoptera = Thysanoptera_Sham - Thysanoptera_Control,
+         diffOther = Other_Sham - Other_Control,
+         diffAllAph = AllAph_Sham - AllAph_Control,
+         diffNonAcy = NonAcy_Sham - NonAcy_Control) %>%
+  select(-ends_with('_Sham'), -ends_with('_Control')) %>%
+  ## maybe add scaled+summed pred col here?
+  mutate(diffArachnidaScale = c(scale(diffArachnida)),
+         diffAnthocoridaeScale = c(scale(diffAnthocoridae)),
+         diffCoccinellidaeScale = c(scale(diffCoccinellidae))) %>%
+  mutate(diffPredSum =
+           diffArachnidaScale + diffAnthocoridaeScale + diffCoccinellidaeScale)
 
 # allFactors_long
-allFactors_long <- data_long %>% # check this
+# this df contains subplot-level LOG(COUNTS) with other field-level data
+# attached
+allFactors_long <- data_long %>% # check this # DONE
   # drop 'vial'
   select(-Vial) %>%
   # divide 'Pre-' values by 3 to account for unequal sampling area
@@ -1446,6 +1432,7 @@ allFactors_long <- data_long %>% # check this
   # create unique id for each site:field combo
   mutate(id = paste0(Site, '0', Field)) %>%
   # join margin data
+  # check this # DONE
   left_join(field_margins, by = c('id'='id', 'Season'='Season')) %>%
   # add dummy vars for treatment
   cbind(., to.dummy(.$Treatment, 'Trt')) %>%
@@ -1463,15 +1450,180 @@ allFactors_long <- data_long %>% # check this
   # relocate for readability
   relocate(id) %>%
   relocate(starts_with('Trt'), .after = Treatment) %>%
-  relocate(wateringMethod, shan, rich, totalCover, .after = Season)
+  relocate(wateringMethod, shan, rich, totalCover, .after = Season) %>%
+  ## add scaled + summed predator col
+  mutate(ArachnidaScale = c(scale(Arachnida)),
+         AnthocoridaeScale = c(scale(Anthocoridae)),
+         CoccinellidaeScale = c(scale(Coccinellidae))) %>%
+  mutate(PredSum =
+           ArachnidaScale + AnthocoridaeScale + CoccinellidaeScale)
 
-### TODO MARK WHEN CHECKS ARE COMPLETE
-### THEN MOVE TO INCLUDE OTHER PREDATORS
 
+# meanPlotData
+# this summarizes allFactors_long to get MEAN LOG(COUNT) of select taxa
+# this makes PLOT-LEVEL data
+meanPlotData <- allFactors_long %>% # check this # DONE
+  filter(Treatment != 'Pre-') %>%
+  group_by(Site, Field, Plot, Season) %>%
+  summarize(meanAnthocoridae = mean(Anthocoridae),
+            meanArachnida = mean(Arachnida),
+            meanCoccinellidae = mean(Coccinellidae),
+            meanPredSum = mean(PredSum),
+            meanAllAph = mean(AllAph))
 
+# meanJoin
+# this df contains SHAM & CONTROL LOG(COUNTS), WITH SHAM & CONTROL MEANS
+# this is SUBPLOT-LEVEL DATA, BUT "PRE-" TREATMENTS ARE DISCARDED.
+# sham & control means are necessarily repeated for each plot.
+meanJoin <- allFactors_long %>% # check this
+  filter(Treatment != 'Pre-') %>%
+  select(-`Trt.Pre-`) %>%
+  left_join(meanPlotData) # check this # DONE
 
+# NOW, NEED TO ADD DIFFDATA
+# meanDiffJoin
+# this contains SUBPLOT-LEVEL LOG(COUNTS),
+# WITH REPEATED PLOT-LEVEL MEAN(LOG(COUNTS)) for "bugginess" AND
+# REPEATED PLOT-LEVEL DIFFERENCES (UNLOGGED) for sham effect
+meanDiffJoin <- meanJoin %>% # check this
+  left_join(diffData_wide %>% # also check this
+              select(Site, Field, Plot, Season, starts_with('diff'))) %>%
+  mutate(arachnidaShamEffect =
+           case_when(diffArachnida > 0 ~ "positive",
+                     diffArachnida <= 0 ~ "neutral/negative"),
+         anthocoridaeShamEffect =
+           case_when(diffAnthocoridae > 0 ~ "positive",
+                     diffAnthocoridae <= 0 ~ "neutral/negative"),
+         coccinellidaeShamEffect =
+           case_when(diffCoccinellidae > 0 ~ "positive",
+                     diffCoccinellidae <= 0 ~ "neutral/negative"),
+         predShamEffect =
+           case_when(diffPredSum > 0 ~ "positive",
+                     diffPredSum <= 0 ~ "neutral/negative")
+  )
+
+# for COCCINELLIDAE:
+## recreate sham effect plot
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(meanCoccinellidae, diffCoccinellidae)) +
+  geom_jitter(width = 0.05, height = 0, shape = 21, aes(color = coccinellidaeShamEffect)) +
+  geom_smooth(method = 'lm')
+## recreate ancova plot
+coccMod <- lm(AllAph ~ Coccinellidae + Treatment,
+              data = meanDiffJoin %>% filter(Season == 'Spring',
+                                             coccinellidaeShamEffect == 'positive'))
+
+ggAncova(coccMod)
+
+tab_model(coccMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(Season == 'Spring',
+         coccinellidaeShamEffect == 'positive') %>%
+  summarize(meanCoccinellidaeEffect = mean(diffCoccinellidae))
 # looking good
+
 # repeat for Anthocoridae, Arachnida
+# ANTHOCORIDAE
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(meanAnthocoridae, diffAnthocoridae)) +
+  geom_jitter(width = 0.05, height = 0, shape = 21, aes(color = anthocoridaeShamEffect)) +
+  geom_smooth(method = 'lm')
+## ancova plot
+anthMod <- lm(AllAph ~ Anthocoridae + Treatment,
+              data = meanDiffJoin %>% filter(Season == 'Spring',
+                                             anthocoridaeShamEffect == 'positive'))
+
+ggAncova(anthMod)
+
+tab_model(anthMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(Season == 'Spring',
+         anthocoridaeShamEffect == 'positive') %>%
+  summarize(meanAnthocoridaeEffect = mean(diffAnthocoridae))
+
+# reconcile ladybug and pirate bug effects
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  unite('cVsaEffect', coccinellidaeShamEffect, anthocoridaeShamEffect) %>%
+  ggplot(aes(diffCoccinellidae, diffAnthocoridae)) +
+  geom_jitter(height = 0, width = 0.05,
+              aes(color = cVsaEffect))+
+  geom_smooth(method = 'lm')
+
+# ARACHNIDA
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(meanArachnida, diffArachnida)) +
+  geom_jitter(width = 0.05, height = 0, shape = 21, aes(color = arachnidaShamEffect)) +
+  geom_smooth(method = 'lm')
+## ancova plot
+araMod <- lm(AllAph ~ Arachnida + Treatment,
+              data = meanDiffJoin %>% filter(Season == 'Spring',
+                                             arachnidaShamEffect == 'positive'))
+
+ggAncova(araMod)
+
+tab_model(araMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(Season == 'Spring',
+         arachnidaShamEffect == 'positive') %>%
+  summarize(meanArachnidaEffect = mean(diffArachnida))
+
+# reconcile ladybug and spider effects
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  unite('cVsaraEffect', coccinellidaeShamEffect, arachnidaShamEffect) %>%
+  ggplot(aes(diffCoccinellidae, diffArachnida)) +
+  geom_jitter(height = 0, width = 0.05,
+              aes(color = cVsaraEffect))+
+  geom_smooth(method = 'lm')
+
+# COMPOSITE PREDATORS
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(meanPredSum, diffPredSum)) +
+  geom_jitter(width = 0.05, height = 0, shape = 21, aes(color = predShamEffect)) +
+  geom_smooth(method = 'lm')
+## ancova plot
+predMod <- lm(AllAph ~ PredSum + Treatment,
+             data = meanDiffJoin %>% filter(Season == 'Spring',
+                                            predShamEffect == 'positive'))
+
+ggAncova(predMod)
+
+tab_model(predMod)
+
+# reconcile ladybug and spider effects
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  unite('cVspredEffect', coccinellidaeShamEffect, predShamEffect) %>%
+  ggplot(aes(diffCoccinellidae, diffPredSum)) +
+  geom_jitter(height = 0, width = 0.05,
+              aes(color = cVspredEffect))+
+  geom_smooth(method = 'lm')
+
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  unite('cVspredEffect', coccinellidaeShamEffect, predShamEffect) %>%
+  # filter(cVspredEffect == 'neutral/negative_positive') %>%
+  group_by(cVspredEffect) %>%
+  count()
+
+
+# aph~ladybug corr
+meanPlotData %>% filter(Season=='Spring') %>%
+  ggplot(aes(meanAllAph, meanCoccinellidae)) +
+  geom_point()+
+  geom_smooth(method = 'lm')
+
 # repeat across fall, sp+fa combined
 
 diffMod <- lm(AllAph ~ Coccinellidae, data = diffData_wide %>%
@@ -1501,6 +1653,33 @@ qData %>% mutate(across(.cols = c(Anthocoridae, Arachnida, Coccinellidae),
   geom_point(aes(color = Treatment)) +
   geom_smooth(method = 'lm') +
   labs(title = 'preds scaled then summed')
+
+
+# revisiting landcover effect on ladybugs
+# only focusing on the known best model
+lbFit<-lmer(Coccinellidae ~ dirt_sig1 + weedy_sig1 + (1|Site),
+     data = landCoverTabs$landcover8 %>% filter(Season == 'Spring'))
+
+plot(allEffects(lbFit, residuals = T))
+
+
+summary(lbFit)
+
+tab_model(lbFit)
+
+# show highest vs lowest site
+landCoverTabs$landcover8 %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(reorder(id, weedy_sig1), scale(weedy_sig1))) +
+  geom_bar(stat = 'identity')
+
+landCoverTabs$landcover8 %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(reorder(id, weedy_sig1), Coccinellidae)) +
+  geom_bar(stat = 'identity')
+
+
+
 
 
 

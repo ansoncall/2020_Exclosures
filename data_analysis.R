@@ -858,14 +858,7 @@ meanDiffJoin %>%
               aes(color = cVsaraEffect))+
   geom_smooth(method = 'lm')
 
-# repeat across fall, sp+fa combined
 
-
-
-
-diffMod <- lm(AllAph ~ Coccinellidae, data = diffData_wide %>%
-                filter(Season == 'Spring'))
-tab_model(diffMod)
 ##### developing composite predator effect #####
 # note - tried this, it didn't work
 
@@ -893,6 +886,38 @@ landCoverTabs$landcover8 %>%
   ggplot(aes(reorder(id, weedy_sig1), Coccinellidae)) +
   geom_bar(stat = 'identity')
 
+### Ichneumonoidea ####
+# NOTE: There is no overall effect of sham on Ichneumonoidea in the spring, but
+# it is still included here for consistency.
+meanDiffJoin %>%
+  filter(Season == 'Spring') %>%
+  ggplot(aes(meanIchneumonoidea, diffIchneumonoidea)) +
+  geom_jitter(width = 0.05,
+              height = 0,
+              shape = 21,
+              aes(color = ichneumonoideaShamEffect)) +
+  geom_smooth(method = 'lm')
+# NOTE: clearly *no* positive effect of sham here.
+
+# ancova
+ichMod <- lm(AllAph ~ Ichneumonoidea + Treatment,
+             data = meanDiffJoin %>%
+               filter(Season == 'Spring',
+                      ichneumonoideaShamEffect == 'positive'))
+
+# plot ancova
+ggAncova(ichMod)
+
+# ancova summary
+tab_model(ichMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(Season == 'Spring',
+         ichneumonoideaShamEffect == 'positive') %>%
+  summarize(meanIchneumonoideaEffect = mean(diffIchneumonoidea))
+# NOTE: even after filtering, the positive effect of sham is super weak.
+
 ## Fall ####
 # NOTE: some varnames reused from 'Spring'
 # NOTE: only Ichneumonoidea had strong attraction to the sham in the fall. Other
@@ -902,6 +927,8 @@ landCoverTabs$landcover8 %>%
 # "bugginess" plot - sham effect increases as ladybug density increases
 # NOTE: there are far fewer ladybugs in the fall. They are always clustered in
 # either the sham or control subplot at each plot.
+# NOTE: Sham treatments have no overall effect on ladybugs in the fall, so we
+# don't necessarily expect anything here.
 meanDiffJoin %>%
   filter(Season == 'Fall') %>%
   ggplot(aes(meanCoccinellidae, diffCoccinellidae)) +
@@ -927,8 +954,9 @@ ggAncova(coccMod)
 tab_model(coccMod)
 
 # What is the average "positive" effect of the sham treatment, i.e. after
-# screening out plots where the sham effect was negative or neutral?
-# NOTE: Sham effect on ladybugs is smaller in the fall!
+# screening out plots where the sham effect was negative or neutral? NOTE: Sham
+# effect on ladybugs is smaller in the fall, and completely absent if you
+# don't remove the points where the effect was neutral/negative!
 meanDiffJoin %>%
   filter(Season == 'Fall',
          coccinellidaeShamEffect == 'positive') %>%
@@ -940,6 +968,8 @@ meanDiffJoin %>%
 
 # In contrast with the spring, the sham treatment has a much less consistent
 # effect on Anthocoridae
+# NOTE: Again, there is no overall sham effect here, so there is no expectation
+# that this model would explain anything.
 meanDiffJoin %>%
   filter(Season == 'Fall') %>%
   ggplot(aes(meanAnthocoridae, diffAnthocoridae)) +
@@ -949,22 +979,10 @@ meanDiffJoin %>%
               aes(color = anthocoridaeShamEffect)) +
   geom_smooth(method = 'lm')
 
-# note that this does NOT mean that Coccinellidae and Anthocoridae are abundant
-# at the same sites
-meanDiffJoin %>%
-  filter(Season == 'Spring') %>%
-  ggplot(aes(meanAnthocoridae, diffAnthocoridae)) +
-  geom_jitter(width = 0.05,
-              height = 0,
-              shape = 21,
-              aes(color = coccinellidaeShamEffect)) + # color by ladybug effect
-  geom_smooth(method = 'lm') +
-  labs(title = 'Points colored by sham effect on ladybugs')
-
 # ancova
 anthMod <- lm(AllAph ~ Anthocoridae + Treatment,
               data = meanDiffJoin %>%
-                filter(Season == 'Spring',
+                filter(Season == 'Fall',
                        anthocoridaeShamEffect == 'positive'))
 
 # plot ancova
@@ -973,36 +991,20 @@ ggAncova(anthMod)
 # ancova summary
 tab_model(anthMod)
 
+# NOTE: More aphids in sham treatments (but N.S. effect), even after filtering.
 
 # avg POSITIVE sham effect
 meanDiffJoin %>%
-  filter(Season == 'Spring',
+  filter(Season == 'Fall',
          anthocoridaeShamEffect == 'positive') %>%
   summarize(meanAnthocoridaeEffect = mean(diffAnthocoridae))
-
-# reconcile ladybug and pirate bug effects
-# NOTE: by excluding different sites than in the ladybug analysis, the sham
-# effect on aphids has disappeared.
-meanDiffJoin %>%
-  filter(Season == 'Spring') %>%
-  unite('cVsaEffect', coccinellidaeShamEffect, anthocoridaeShamEffect) %>%
-  ggplot(aes(diffCoccinellidae, diffAnthocoridae)) +
-  geom_jitter(height = 0, width = 0.05,
-              aes(color = cVsaEffect))+
-  geom_smooth(method = 'lm')
-
-# NOTE: Anthocoridae and Coccinellidae have opposite correlations with aphids:
-ggplot(meanDiffJoin %>% filter(Season=="Spring")) +
-  geom_point(aes(Anthocoridae, AllAph), color = 'red') +
-  geom_point(aes(Coccinellidae, AllAph), color = 'blue') +
-  geom_smooth(aes(Anthocoridae, AllAph), method = 'lm', color = 'red') +
-  geom_smooth(aes(Coccinellidae, AllAph), method = 'lm', color = 'blue') +
-  labs(title = 'Anthocoridae in red, Coccinellidae in blue')
-
+# NOTE: this is about 2.3 less than in the spring.
 
 ### Arachnida ####
+# NOTE: Again, there is no overall sham effect here, so there is no expectation
+# that this model would explain anything.
 meanDiffJoin %>%
-  filter(Season == 'Spring') %>%
+  filter(Season == 'Fall') %>%
   ggplot(aes(meanArachnida, diffArachnida)) +
   geom_jitter(width = 0.05,
               height = 0,
@@ -1012,28 +1014,66 @@ meanDiffJoin %>%
 
 ## ancova
 araMod <- lm(AllAph ~ Arachnida + Treatment,
-             data = meanDiffJoin %>% filter(Season == 'Spring',
+             data = meanDiffJoin %>% filter(Season == 'Fall',
                                             arachnidaShamEffect == 'positive'))
 
 ggAncova(araMod)
 
 tab_model(araMod)
 
+# NOTE: More aphids in sham treatments (but N.S. effect), even after filtering.
+
 # avg POSITIVE sham effect
 meanDiffJoin %>%
-  filter(Season == 'Spring',
+  filter(Season == 'Fall',
          arachnidaShamEffect == 'positive') %>%
   summarize(meanArachnidaEffect = mean(diffArachnida))
+# Effect is *slightly* larger in the fall (after filtering).
 
-# reconcile ladybug and spider effects
-# NOTE: again, we see the same issue as with Anthocoridae.
+### Ichneumonoidea ####
 meanDiffJoin %>%
-  filter(Season == 'Spring') %>%
-  unite('cVsaraEffect', coccinellidaeShamEffect, arachnidaShamEffect) %>%
-  ggplot(aes(diffCoccinellidae, diffArachnida)) +
-  geom_jitter(height = 0, width = 0.05,
-              aes(color = cVsaraEffect))+
+  filter(Season == 'Fall') %>%
+  ggplot(aes(meanIchneumonoidea, diffIchneumonoidea)) +
+  geom_jitter(width = 0.05,
+              height = 0,
+              shape = 21,
+              aes(color = ichneumonoideaShamEffect)) +
   geom_smooth(method = 'lm')
+# NOTE: clear positive effect of sham here.
+
+# ancova
+ichMod <- lm(AllAph ~ Ichneumonoidea + Treatment,
+              data = meanDiffJoin %>%
+                filter(Season == 'Fall',
+                       ichneumonoideaShamEffect == 'positive'))
+
+# plot ancova
+ggAncova(ichMod)
+
+# ancova summary
+tab_model(ichMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(Season == 'Fall',
+         ichneumonoideaShamEffect == 'positive') %>%
+  summarize(meanIchneumonoideaEffect = mean(diffIchneumonoidea))
+# NOTE: getting a noticeable but N.S. sham effect here. might try slicing
+# differently, to focus on plots where the difference between sham and control
+# is larger
+ichMod2 <- lm(AllAph ~ Ichneumonoidea + Treatment,
+             data = meanDiffJoin %>%
+               filter(Season == 'Fall',
+                      diffIchneumonoidea >= 25)) # only substantial diff. here
+
+# plot ancova
+ggAncova(ichMod2)
+
+# ancova summary
+tab_model(ichMod2)
+# NOTE: effect size quadruples, but power is lost and coef. is still N.S.
+
+
 
 
 ## Jenks #####

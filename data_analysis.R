@@ -963,6 +963,11 @@ meanDiffJoin %>%
   summarize(`Mean positive effect of sham on Coccinellids:` =
               mean(diffCoccinellidae))
 
+# NOTE: ladybugs are much less abundant in the fall
+meanDiffJoin %>%
+  filter(Treatment != 'Pre-') %>%
+  ggplot(aes(Season, Coccinellidae)) +
+  geom_boxplot()
 
 ### Anthocoridae ####
 
@@ -1000,6 +1005,12 @@ meanDiffJoin %>%
   summarize(meanAnthocoridaeEffect = mean(diffAnthocoridae))
 # NOTE: this is about 2.3 less than in the spring.
 
+meanDiffJoin %>%
+  filter(Treatment != 'Pre-') %>%
+  ggplot(aes(Season, Anthocoridae)) +
+  geom_boxplot()
+
+
 ### Arachnida ####
 # NOTE: Again, there is no overall sham effect here, so there is no expectation
 # that this model would explain anything.
@@ -1029,6 +1040,12 @@ meanDiffJoin %>%
          arachnidaShamEffect == 'positive') %>%
   summarize(meanArachnidaEffect = mean(diffArachnida))
 # Effect is *slightly* larger in the fall (after filtering).
+
+meanDiffJoin %>%
+  filter(Treatment != 'Pre-') %>%
+  ggplot(aes(Season, Arachnida)) +
+  geom_boxplot()
+
 
 ### Ichneumonoidea ####
 meanDiffJoin %>%

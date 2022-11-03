@@ -751,7 +751,7 @@ ggAncova(coccMod)
 # model summary
 tab_model(coccMod)
 
-# What is the average "positive" effect of the sham treatment, i.e. after
+  # What is the average "positive" effect of the sham treatment, i.e. after
 # screening out plots where the sham effect was negative or neutral?
 meanDiffJoin %>%
   filter(Season == 'Spring',
@@ -1223,6 +1223,41 @@ tab_model(ichMod2)
 # given log-transform && keeping the outlier, what about thresholds of ladybug
 # density?
 # NOTE: tried this, beth didn't like it as much. Deleted.
+
+## GRAPHS FOR BETH'S REPORT ####
+
+# Manually create data for sham effect figure, pulling from ancova outputs
+Taxon <- c('Coccinellidae (Spring)', 'Ichneumonoidea (Fall)')
+Season <- c('Spring', 'Fall')
+CIlow <- c(-1.66, -1.44)
+CIhigh <- c(0.30, 0.35)
+Estimate <- c(-0.66, -0.57)
+Pvalue <- c(0.193, 0.190)
+MeanShamIncrease <- c(2.43, 24.53)
+
+effectData <- data.frame(Taxon, Season, CIlow, CIhigh, Estimate,
+                    Pvalue, MeanShamIncrease) %>%
+  mutate(Taxon = fct_relevel(Taxon, 'Ichneumonoidea (Fall)')) %>%
+  mutate(across(.cols = c(CIhigh, Estimate), ~ (exp(.x)*100)*-1/MeanShamIncrease)) %>%
+  mutate(CIlow = ((exp(CIlow)-1)*100)*-1/MeanShamIncrease)
+
+# make "predator effect" plot
+ggplot(effectData, aes(Taxon, Estimate)) +
+  geom_point(shape = 21) +
+  geom_errorbar(ymin = effectData$CIlow, ymax = effectData$CIhigh, width = 0.1) +
+  ylim(-60, 60) +
+  geom_hline(aes(yintercept = 0)) +
+  coord_flip() +
+  theme_classic() +
+  labs(y = "% change in aphid density per individual",
+       x = '')
+
+
+
+
+
+
+
 # END HERE############ ####
 
 # Model selection ####
@@ -2095,7 +2130,7 @@ ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
                       ' Variable importance')
   )
 
-  ggplotly(p, tooltip = sw)
+p
 
 
 ### fall data only ####
@@ -2642,7 +2677,7 @@ for (i in 1:length(dVarList)) {
   PLOTS_corr[[i]] <- tempList
 }
 names(PLOTS_corr) <- names(landCoverTabs)
-# PLOTS_corr
+PLOTS_corr
 
 
 ### Flooded vs sprinklers ####
@@ -2727,7 +2762,48 @@ final_fig <- ggplot(mean_density_wide,
 final_fig
 # ggsave('watering.png', width = 5.5, height = 6.5)
 
+## NEW FIG for BETH #######
+library(scales)
+install.packages('cowplot')
+library(cowplot)
 
+mean_density_wide %>%
+  select(Site, Field, Plot, Season, Anthocoridae, AllAph, wateringMethod) %>%
+  filter(Season == 'Spring') %>%
+  pivot_longer(cols = c(Anthocoridae, AllAph),
+               names_to = 'Taxon',
+               values_to = 'Density') %>%
+  mutate(Taxon = fct_recode(Taxon, A = 'AllAph', B = 'Anthocoridae')) %>%
+  filter(Taxon == 'A') %>%
+  ggplot(aes(x = wateringMethod,
+             y = Density)) +
+  geom_jitter(aes(color = Site), width = 0.1) +
+  stat_summary(fun.data = 'mean_cl_boot', geom="errorbar", width = 0.3)+
+  labs(
+    y = 'log(aphid density)',
+    x = 'Watering method',
+    title = 'A')+
+  # theme_classic(base_size = 20) +
+  scale_color_brewer(palette = 'Set1') +
+  theme(strip.background = element_blank(),
+        strip.text = element_text(face = 'bold', size = 15),
+        legend.position = 'none',
+        plot.title = element_text(face = 'bold', size = 15))
+
+q<-landCoverTabs$landcover8 %>%
+  filter(Season == 'Spring') %>%
+  mutate(SW = rescale(water_no)) %>%
+  ggplot(aes(SW, AllAph)) +
+  geom_point(aes(color = Site)) +
+  geom_smooth(method = 'lm', color = 'black') +
+  scale_color_brewer(palette = 'Set1') +
+  labs(y = 'Mean log(aphid density)',
+       x = 'Surface water',
+       title = 'B') +
+  theme(legend.position = 'right',
+        plot.title = element_text(face = 'bold', size = 15))
+
+plot_grid(p,q, nrow = 1, rel_widths = c(1/3, 2/3))
 
 # ### sum of nat ####
 # # note: this code is for a demo figure in the ESA presentation
@@ -2882,6 +2958,98 @@ for (i in 1:length(ssnList)) {
 }
 names(PLOTS_by4) <- names(ssnList)
 
+#### PLOTS 4 BETH ######
+# read select rds
+springLB <- readRDS('modTabs/Coccinellidae_regular8_full_spring')
+fallWS <- readRDS('modTabs/Ichneumonoidea_regular8_full_fall')
+
+# fa wasps
+
+wsSW<-sw(fallWS) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names) %>%
+  separate(names, c('class', 'distWeight'), sep = "_") %>%
+  mutate(distWeight = as_factor(recode(distWeight,
+                                       `sig1` = 'Very aggressive',
+                                       `sig2` = 'Aggressive',
+                                       `sig3` = 'Moderately aggressive',
+                                       `sig4` = 'Moderate',
+                                       `sig5` = 'Slight',
+                                       `sig6` = 'Minimal',
+                                       `const` = 'Constant',
+                                       `no` = 'None'))) %>%
+  mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+         class = recode(class,
+                        ag = 'Agricultural',
+                        alfalfa = 'Alfalfa',
+                        dirt = 'Bare soil +\n dirt road',
+                        impermeable = 'Impermeable',
+                        naturalArid = 'Natural',
+                        water = 'Surface\nwater',
+                        weedy = 'Weedy',
+                        wet = 'Riparian')) %>%
+  filter(class %in% c("Agricultural", 'Natural', 'Weedy')) %>%
+  mutate(Taxon = 'B')
+
+tot <- rbind(lbSW, wsSW)
+
+ggplot(data = tot, aes(x = class, y = distWeight, fill = sw)) +
+  geom_tile() +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 1))+
+    # axis.text.y = element_text(angle = 45))+
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Landcover class',
+       y = 'Distance weighting algorithm',
+       fill = 'Variable importance') +
+  facet_wrap(~Taxon, strip.position = 'top') +
+  theme(strip.background = element_blank(),
+        strip.text = element_text(face = 'bold', size = 20)) +
+  coord_flip()
+
+# sp ladybugs
+
+lbSW<-sw(springLB) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names) %>%
+  separate(names, c('class', 'distWeight'), sep = "_") %>%
+  mutate(distWeight = as_factor(recode(distWeight,
+                                       `sig1` = 'Very aggressive',
+                                       `sig2` = 'Aggressive',
+                                       `sig3` = 'Moderately aggressive',
+                                       `sig4` = 'Moderate',
+                                       `sig5` = 'Slight',
+                                       `sig6` = 'Minimal',
+                                       `const` = 'Constant',
+                                       `no` = 'None'))) %>%
+  mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+         class = recode(class,
+                        ag = 'Agricultural',
+                        alfalfa = 'Alfalfa',
+                        dirt = 'Bare soil +\n dirt road',
+                        impermeable = 'Impermeable',
+                        naturalArid = 'Natural',
+                        water = 'Surface\nwater',
+                        weedy = 'Weedy',
+                        wet = 'Riparian')) %>%
+  filter(class %in% c("Agricultural", 'Natural', 'Weedy')) %>%
+  mutate(Taxon = 'A')
+
+q<-ggplot(data = lbSW, aes(x = class, y = distWeight, fill = sw)) +
+  geom_tile() +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 1))+
+  # axis.text.y = element_text(angle = 45))+
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Landcover class',
+       y = 'Distance weighting algorithm',
+       fill = 'Variable importance') +
+  coord_flip()
+
+
+grid.arrange(q,p, nrow = 1)
+
+
 
 # get best models ####
 # collect best models from each modTable
@@ -3001,12 +3169,15 @@ plot(allEffects(localPlotMod, residuals = TRUE))
 ### QUICK CHECKS########### ####
 # SPRING ladybugs
 temp <- ssnList$spring
-reg8full <- temp$Geocoris_regular8_full_spring
+reg8full <- temp$Coccinellidae_regular8_full_spring
 plotMod <- get.models(reg8full, 1)[[1]]
 summary(plotMod)
-localData <-landCoverTabs$landcover8 %>% filter(Season == 'Spring')
+localData <-landCoverTabs$landcover8 %>%
+  filter(Season == 'Spring') %>%
+  # scale landcover
+  mutate(across(contains("_"), ~scale(.x)))
 # remake with local data for effects plots
-localPlotMod <- lmer(Geocoris ~ alfalfa_sig5 + impermeable_sig5 + (1|Site),
+localPlotMod <- lmer(Coccinellidae ~ dirt_sig1 + weedy_sig1 + (1|Site),
                      data = localData,
                      REML = FALSE,
                      na.action = 'na.fail')
@@ -3014,8 +3185,35 @@ localPlotMod <- lmer(Geocoris ~ alfalfa_sig5 + impermeable_sig5 + (1|Site),
 cat(red('reg8 sp'))
 summary(localPlotMod)
 summary(plotMod)
+
 plot(allEffects(localPlotMod, residuals = TRUE))
+plot(effect('weedy_sig1', localPlotMod, residuals = TRUE))
 tab_model(localPlotMod)
+
+# SPRING FIX ladybugs
+temp <- ssnList$spring
+fixed8full <- temp$Coccinellidae_fixed8_full_spring
+plotMod <- get.models(fixed8full, 1)[[1]]
+summary(plotMod)
+localDataFix <-landCoverTabs$landcover8Fixed %>%
+  filter(Season == 'Spring') %>%
+  # scale landcover
+  mutate(across(contains("_"), ~scale(.x)))
+# remake with local data for effects plots
+localPlotModFix <- lmer(Coccinellidae ~ weedy_sig2 + (1|Site),
+                     data = localDataFix,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+
+cat(red('fix8 sp'))
+summary(localPlotModFix)
+
+plot(allEffects(localPlotModFix, residuals = TRUE)
+     , main = 'Weeds increase ladybugs')
+tab_model(localPlotModFix)
+
+
+
 
 
 # fall ladybugs
@@ -3036,6 +3234,8 @@ plot(allEffects(localPlotMod, residuals = TRUE))
 tab_model(localPlotMod)
 
 ### END QUICK CHECKS########## ####
+### MORE PLOTS FOR REPORT (above?) ######## ####
+
 
 View(localData)
 

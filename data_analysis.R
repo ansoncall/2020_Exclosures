@@ -815,7 +815,7 @@ meanDiffJoin %>%
   geom_smooth(method = 'lm')
 
 # NOTE: Anthocoridae and Coccinellidae have opposite correlations with aphids:
-ggplot(meanDiffJoin %>% filter(Season=="Spring")) +
+ggplot(meanDiffJoin) +
   geom_point(aes(Anthocoridae, AllAph), color = 'red') +
   geom_point(aes(Coccinellidae, AllAph), color = 'blue') +
   geom_smooth(aes(Anthocoridae, AllAph), method = 'lm', color = 'red') +
@@ -922,7 +922,8 @@ meanDiffJoin %>%
 # NOTE: some varnames reused from 'Spring'
 # NOTE: only Ichneumonoidea had strong attraction to the sham in the fall. Other
 # taxa included here for consistency.
-## Coccinellidae ####
+
+### Coccinellidae ####
 
 # "bugginess" plot - sham effect increases as ladybug density increases
 # NOTE: there are far fewer ladybugs in the fall. They are always clustered in
@@ -1043,7 +1044,7 @@ meanDiffJoin %>%
 
 meanDiffJoin %>%
   filter(Treatment != 'Pre-') %>%
-  ggplot(aes(Season, Arachnida)) +
+  ggplot(aes(Season, Nabis)) +
   geom_boxplot()
 
 
@@ -1090,6 +1091,131 @@ ggAncova(ichMod2)
 tab_model(ichMod2)
 # NOTE: effect size quadruples, but power is lost and coef. is still N.S.
 
+## Both seasons ####
+### Coccinellidae ####
+
+# "bugginess" plot - sham effect increases as ladybug density increases
+meanDiffJoin %>%
+  ggplot(aes(meanCoccinellidae, diffCoccinellidae)) +
+  geom_jitter(width = 0.05,
+              height = 0,
+              shape = 21, # open circles
+              aes(color = coccinellidaeShamEffect)) + # color points only
+  geom_smooth(method = 'lm')
+
+# ancova
+coccMod <- lm(AllAph ~ Coccinellidae + Treatment,
+              data = meanDiffJoin %>%
+                filter(
+                       # take only plots where sham effect is positive for
+                       # ladybugs
+                       coccinellidaeShamEffect == 'positive'))
+
+# ancova plot
+ggAncova(coccMod)
+
+# model summary
+tab_model(coccMod)
+
+meanDiffJoin %>%
+  filter(
+         coccinellidaeShamEffect == 'positive') %>%
+  summarize(`Mean positive effect of sham on Coccinellids:` =
+              mean(diffCoccinellidae))
+
+# NOTE: ladybugs are much less abundant in the fall
+meanDiffJoin %>%
+  filter(Treatment != 'Pre-') %>%
+  ggplot(aes(Season, Coccinellidae)) +
+  geom_boxplot()
+
+### Anthocoridae ####
+meanDiffJoin %>%
+  ggplot(aes(meanAnthocoridae, diffAnthocoridae)) +
+  geom_jitter(width = 0.05,
+              height = 0,
+              shape = 21,
+              aes(color = anthocoridaeShamEffect)) +
+  geom_smooth(method = 'lm')
+
+# ancova
+anthMod <- lm(AllAph ~ Anthocoridae + Treatment,
+              data = meanDiffJoin %>%
+                filter(anthocoridaeShamEffect == 'positive'))
+
+# plot ancova
+ggAncova(anthMod)
+
+# ancova summary
+tab_model(anthMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(Season == 'Fall',
+         anthocoridaeShamEffect == 'positive') %>%
+  summarize(meanAnthocoridaeEffect = mean(diffAnthocoridae))
+
+
+### Arachnida ####
+meanDiffJoin %>%
+  ggplot(aes(meanArachnida, diffArachnida)) +
+  geom_jitter(width = 0.05,
+              height = 0,
+              shape = 21,
+              aes(color = arachnidaShamEffect)) +
+  geom_smooth(method = 'lm')
+
+## ancova
+araMod <- lm(AllAph ~ Arachnida + Treatment,
+             data = meanDiffJoin %>% filter(arachnidaShamEffect == 'positive'))
+
+ggAncova(araMod)
+
+tab_model(araMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(arachnidaShamEffect == 'positive') %>%
+  summarize(meanArachnidaEffect = mean(diffArachnida))
+
+
+### Ichneumonoidea ####
+meanDiffJoin %>%
+  ggplot(aes(meanIchneumonoidea, diffIchneumonoidea)) +
+  geom_jitter(width = 0.05,
+              height = 0,
+              shape = 21,
+              aes(color = ichneumonoideaShamEffect)) +
+  geom_smooth(method = 'lm')
+
+# ancova
+ichMod <- lm(AllAph ~ Ichneumonoidea + Treatment,
+             data = meanDiffJoin %>%
+               filter(ichneumonoideaShamEffect == 'positive'))
+
+# plot ancova
+ggAncova(ichMod)
+
+# ancova summary
+tab_model(ichMod)
+
+# avg POSITIVE sham effect
+meanDiffJoin %>%
+  filter(ichneumonoideaShamEffect == 'positive') %>%
+  summarize(meanIchneumonoideaEffect = mean(diffIchneumonoidea))
+# NOTE: getting a noticeable but N.S. sham effect here. might try slicing
+# differently, to focus on plots where the difference between sham and control
+# is larger
+ichMod2 <- lm(AllAph ~ Ichneumonoidea + Treatment,
+              data = meanDiffJoin %>%
+                filter(diffIchneumonoidea >= 25)) # only substantial diff. here
+
+# plot ancova
+ggAncova(ichMod2)
+
+# ancova summary
+tab_model(ichMod2)
+# NOTE: effect size quadruples, but power is lost and coef. is still N.S.
 
 
 
@@ -2516,44 +2642,25 @@ for (i in 1:length(dVarList)) {
   PLOTS_corr[[i]] <- tempList
 }
 names(PLOTS_corr) <- names(landCoverTabs)
+# PLOTS_corr
+
 
 ### Flooded vs sprinklers ####
-# make df of watering methods
-wateringMethod <- c(
-  'Flooding',
-  'Flooding',
-  'Flooding',
-  'Flooding',
-  'Flooding',
-  'Flooding',
-  'Sprinklers',
-  'Sprinklers',
-  'Sprinklers',
-  'Sprinklers',
-  'Flooding',
-  'Flooding'
-)
-idList <- landCoverTabs[[1]] %>% filter(Season == 'Spring') %>%
-  pull(id)
-wM <- tibble(wateringMethod, idList)
-wM
-# join this new df to the arthropod data
-withWM <- mean_density_wide %>%
-  mutate(idList = paste0(Site, '0', Field)) %>%
-  left_join(wM, by = c('idList' = 'idList'))
+# make df of watering methods # ALREADY DONE
 
 # model
-floodMod <- lmer(Acyrthosiphon ~ wateringMethod + (1|Site),
-                 data = withWM)
+floodMod <- lmer(AllAph ~ wateringMethod + (1|Site),
+                 data = mean_density_wide)
+
 floodMod
 summary(floodMod)
 
 plot(allEffects(floodMod))
 
 # some plots
-p <- ggplot(withWM,
+p <- ggplot(mean_density_wide,
        aes(x = wateringMethod,
-           y = Acyrthosiphon)) +
+           y = AllAph)) +
   # geom_boxplot() +
   # geom_jitter() +
   # geom_violin()
@@ -2566,7 +2673,7 @@ p <- ggplot(withWM,
   scale_color_brewer(palette = 'Set1')
 
 p
-q=ggplot(withWM,
+q=ggplot(mean_density_wide,
        aes(x = wateringMethod,
            y = Acyrthosiphon)) +
   # geom_boxplot() +
@@ -2581,7 +2688,7 @@ q=ggplot(withWM,
   scale_color_brewer(palette = 'Set1')
 q
 
-r=ggplot(withWM,
+r=ggplot(mean_density_wide,
        aes(x = wateringMethod,
            y = Acyrthosiphon)) +
   geom_boxplot() +
@@ -2597,23 +2704,23 @@ r
 grid.arrange(p,q,r, nrow =1)
 
 # t tests
-flooded <- withWM %>%
+flooded <- mean_density_wide %>%
   filter(wateringMethod=='Flooding') %>%
   select(Acyrthosiphon)
-sprinklers <- withWM %>%
+sprinklers <- mean_density_wide %>%
   filter(wateringMethod=='Sprinklers') %>%
   select(Acyrthosiphon)
 
 t.test(flooded, sprinklers, var.equal = TRUE)
 t.test(flooded, sprinklers)
 
-final_fig <- ggplot(withWM,
+final_fig <- ggplot(mean_density_wide,
                     aes(x = wateringMethod,
-                        y = Coccinellidae)) +
+                        y = Anthocoridae)) +
   geom_jitter(aes(color = Site), width = 0.1) +
   stat_summary(fun.data = 'mean_cl_boot', geom="errorbar", width = 0.3)+
   labs(
-       y = 'log(Ladybug density)',
+       y = 'log(Pirate bug density)',
        x = 'Irrigation method')+
   # theme_classic(base_size = 20) +
   scale_color_brewer(palette = 'Set1')
@@ -2856,10 +2963,11 @@ localPlotMod <- lmer(Coccinellidae ~ dirt_sig1 + weedy_sig1 + (1|Site),
                      data = localData,
                      REML = FALSE,
                      na.action = 'na.fail')
+
 cat(red('reg8'))
-summary(plotMod)
 summary(localPlotMod)
 plot(allEffects(localPlotMod, residuals = TRUE))
+tab_model(localPlotMod)
 
 # fix 7
 fix7full <- temp$Coccinellidae_fixed7_full_spring
@@ -2889,6 +2997,154 @@ cat(red('fix8'))
 summary(plotMod)
 summary(localPlotMod)
 plot(allEffects(localPlotMod, residuals = TRUE))
+
+### QUICK CHECKS########### ####
+# SPRING ladybugs
+temp <- ssnList$spring
+reg8full <- temp$Geocoris_regular8_full_spring
+plotMod <- get.models(reg8full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8 %>% filter(Season == 'Spring')
+# remake with local data for effects plots
+localPlotMod <- lmer(Geocoris ~ alfalfa_sig5 + impermeable_sig5 + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+
+cat(red('reg8 sp'))
+summary(localPlotMod)
+summary(plotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+tab_model(localPlotMod)
+
+
+# fall ladybugs
+temp <- ssnList$fall
+reg8full <- temp$Geocoris_regular8_full_fall
+plotMod <- get.models(reg8full, 1)[[1]]
+summary(plotMod)
+localData <-landCoverTabs$landcover8 #%>% filter(Season == 'Fall')
+# remake with local data for effects plots
+localPlotMod <- lmer(Geocoris ~ alfalfa_no + (1|Site),
+                     data = localData,
+                     REML = FALSE,
+                     na.action = 'na.fail')
+
+cat(red('reg8 fa'))
+summary(localPlotMod)
+plot(allEffects(localPlotMod, residuals = TRUE))
+tab_model(localPlotMod)
+
+### END QUICK CHECKS########## ####
+
+View(localData)
+
+## check anthocoridae
+buildLandcoverModTab <- function(taxon = 'empty', data = 'empty', m.max = 3){
+  # taxon='NonAcy'
+  # data=allLandCover[[i]]
+  # m.max=3
+
+  distList <- c('_no ',
+                '_const ',
+                '_sig1 ',
+                '_sig2 ',
+                '_sig3 ',
+                '_sig4 ',
+                '_sig5 ')
+
+  varList <- data %>%
+    select(contains('_')) %>%
+    names() %>% str_extract('[:alpha:]+') %>%
+    unique()
+
+  cand_mod_tabs <- list()
+
+  if (taxon == 'empty' | !is_tibble(data)) {
+    stop(red("Please specify taxon and data \n"), call. = FALSE)
+  }
+
+  # print inputs
+  cat(yellow('Taxon:'),
+      green(taxon),
+      yellow('Data:'),
+      green(deparse(substitute(data))),
+      '\n')
+
+  # get dfname
+  dfname <- as.name(deparse(substitute(data)))
+  # Build models
+  for (i in 1:length(distList)) {
+    # i=2
+
+    # incase full model fails to fit, try 'tricking' dredge
+    message(blue('fitting', distList[[i]],'models'))
+    # fit reduced model
+    fmod.red <- lmer(as.formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ (1|Site)'
+      )),
+      data = data,
+      REML = FALSE,
+      na.action = 'na.fail')
+    # define full model formula
+    form <-formula(
+      paste0('log(',
+             taxon,
+             ' + 1) ~ ',
+             paste0(varList, distList[[i]], '+ ', collapse = ''),
+             '(1|Site)'
+      ))
+    # Replace reduced model formula with full global model formula.
+    attr(fmod.red@frame, "formula") <- form
+    # Run dredge() with m.max parameter to avoid convergence failures.
+    fmod.red@call$data <- dfname
+
+    cand_mod_tabs[[i]] <-  # superassign?
+      model.sel(lapply(
+        dredge(fmod.red, m.lim = c(NA, m.max), trace = 2, evaluate = FALSE),
+        eval))
+
+    message(blue(nrow(cand_mod_tabs[[i]]), 'models fit\n'))
+
+  }
+  # Rbind the elements of the list together. This forces recalculation of AICc
+  mod_table <- rbind(cand_mod_tabs[[1]],
+                     cand_mod_tabs[[2]],
+                     cand_mod_tabs[[3]],
+                     cand_mod_tabs[[4]],
+                     cand_mod_tabs[[5]],
+                     cand_mod_tabs[[6]],
+                     cand_mod_tabs[[7]])
+
+  return(mod_table)
+}
+
+
+localDataSp <- localData %>% filter(Season == 'Spring')
+localDataFa <- localData %>% filter(Season == 'Fall')
+testTab <- buildLandcoverModTab("Nabis", localData, 3)
+testTabSp <- buildLandcoverModTab("Nabis", localDataSp, 3)
+testTabFa <- buildLandcoverModTab("Nabis", localDataFa, 3)
+View(testTabSp)
+
+plotGlobalVarImportance(testTab)
+plotGlobalVarImportance(testTabSp)
+plotGlobalVarImportance(testTabFa)
+
+t <- get.models(testTabSp, 9)[[1]]
+summary(t)
+plot(allEffects(t, residuals = T))
+tab_model(t)
+
+r <- get.models(testTabFa, 1)[[1]]
+summary(r)
+plot(allEffects(r, residuals = T))
+tab_model(r)
+
+
+
 
 # acyrthosiphon
 reg7full <- temp$Acyrthosiphon_regular7_full_spring

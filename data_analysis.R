@@ -2884,10 +2884,10 @@ names(tabList) <- rdsList$rdsName
 ### spring data only
 
 # # Subset data for modeling with landcover classes.
-# fD_spring <- landCoverTabs[[1]] %>%
-#   filter(Season == 'Spring') %>%
-#   mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
-#
+fD_spring <- landCoverTabs[[2]] %>%
+  filter(Season == 'Spring') %>%
+  mutate_at(21:69, ~ as.vector(scale(.))) # All landcover scores are scaled here.
+names(fD_spring)
 # # Subset data for modeling with landcover classes and margin data.
 # fD_spring_sub <- fD_spring %>% filter(Site != 'Yerington')
 
@@ -3980,11 +3980,19 @@ plot(allEffects(arachnida_fin_mod_sp, residuals = TRUE), main = 'Arachnida, fina
 
 #### Coccinellidae ####
 # Build global model selection table
-coccinellidae_mod_table_sp <- readRDS('modTabs/Coccinellidae_spring_8class')
+coccinellidae_mod_table_sp <- readRDS('modTabs/Coccinellidae_regular8_full_spring')
 # Plot best mod and call summary
-buildBestLandcoverMod(mod_table = coccinellidae_mod_table_sp, rank = 1,'Spring')
-test <- lmer(log(Coccinellidae+1)~total_cover+(1|Site), data = fD_spring_sub, REML = FALSE)
+names(fD_spring)
+test1 <- buildBestLandcoverMod(mod_table = coccinellidae_mod_table_sp, rank = 1,'Spring')
+
+summary(test1)
+
+test <- lmer(log(Coccinellidae+1)~dirt_sig1+weedy_sig1+(1|Site), data = fD_spring, REML = FALSE)
 summary(test)
+
+test2 <- lm(log(Coccinellidae+1)~dirt_sig1+weedy_sig1, data = fD_spring)
+summary(test2)
+
 plot(allEffects(test, residuals=T))
 
 # make nice plot

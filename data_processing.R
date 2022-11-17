@@ -478,9 +478,9 @@ fall %>% filter(Site=='Yerington',
 
 # Resolve error 10: YF1P7 Yerington field 1 plot NA -> Yerington field 2 plot 1
 fall %<>%
-  mutate(Field = case_when(Plot == '' ~ '2',
+  mutate(Field = case_when(is.na(Plot) ~ '2',
                            !is.na(Plot) ~ as.character(Field)),
-         Plot = case_when(Plot == '' ~ '1', !is.na(Plot) ~ as.character(Plot)))
+         Plot = case_when(is.na(Plot) ~ '1', !is.na(Plot) ~ as.character(Plot)))
 
 # identify error 11
 spring %>%
@@ -593,6 +593,10 @@ vegdata %>%
 # many species are incorrectly ID'ed or unknown
 # joining the updated species id table can help
 new_ids %>% group_by(orig_code) %>% count
+# note: MOPU3 is not mapped to any original code
+# remove this record.
+new_ids %<>% filter(!is.na(orig_code))
+
 vegdata %>%
   left_join(new_ids,  by = c("species" = "orig_code")) %>%
   mutate(species = case_when(is.na(new_code) ~ paste(species),
@@ -1050,3 +1054,97 @@ data_names <- list('data',
                    'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data/', .y, ".csv")))
+
+# wrangle to create a final subplot-level dataframe with all the data
+## read in tidy csvs ####
+# arthropod data by plot, taxa in separate cols
+data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
+# arthropod data by plot, all taxa in one col
+data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
+# landcover class by field, regular classification
+landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
+# landcover class by field, target alfalfa fields identified manually
+landcoverFixed <-
+  read_csv('tidy_data/landcover_fixed.csv', col_types = 'ffffdddddddddddd')
+# vegetation survey data by survey plot
+vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
+# vegetation survey data by site (farm)
+vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
+
+# wrangle to make final output ####
+# (this was moved from the analysis script)
+## prepare landcover data ####
+# landcover data - 2 versions: 'regular' and 'fixed'
+landcoverReg <- landcover %>%
+  mutate(alfalfa = class6,
+         naturalArid = class10,
+         dirt = class2 + class2 + class7,
+         ag = class0 + class3,
+         impermeable = class4 + class9,
+         weedy = class5,
+         wet = class8,
+         weedyWet = class5 + class8,
+         water = class11
+  ) %>%
+  select(-starts_with('class'))
+
+landcoverFix <- landcoverFixed %>%
+  mutate(alfalfa_fix = class6,
+         naturalArid_fix = class10,
+         dirt_fix = class2 + class2 + class7,
+         ag_fix = class0 + class3,
+         impermeable_fix = class4 + class9,
+         weedy_fix = class5,
+         wet_fix = class8,
+         weedyWet_fix = class5 + class8,
+         water_fix = class11
+  ) %>%
+  select(-starts_with('class'))
+
+# join into a single df
+landcoverBinned <- left_join(landcoverReg, landcoverFix,
+                             by = c("siteId",
+                                    "site",
+                                    "field",
+                                    "distanceWeight")) %>%
+  pivot_wider(names_from = distanceWeight, values_from = alfalfa:water_fix)
+
+## prepare margin data ####
+field_margins <- vegPlots %>% filter(type == 'Margin') %>%
+  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
+  group_by(field_id, season) %>%
+  summarize(shan = mean(shan),
+            rich = mean(rich),
+            totalCover = mean(total_cover),
+            .groups = 'keep') %>%
+  # make join key
+  mutate(siteId = str_replace(field_id, ' ', '0'), Season = season) %>%
+  ungroup() %>%
+  select(-field_id, -season)
+
+## make combined df of all subplot-level data ####
+subplotData <- data_long %>%
+  select(-Vial) %>%
+  # divide 'Pre-' values by 3 to account for unequal sampling area
+  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
+                             Treatment !='Pre-' ~ Density)) %>%
+  # create watering method column
+  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
+                                      'Flooding',
+                                    Site == 'Minden' ~
+                                      'Sprinklers',
+                                    Site == 'Yerington' & Field %in% c(2, 3) ~
+                                      'Flooding',
+                                    Site == 'Yerington' & Field == 1 ~
+                                      'Sprinklers')) %>%
+  pivot_wider(names_from = Taxa, values_from = Density) %>%
+  # make siteId column for joining landcover data
+  mutate(siteId = paste0(Site, '0', Field), .before = everything()) %>%
+  # join landcover data
+  left_join(landcoverBinned, by = 'siteId') %>%
+  # join vegetation data
+  left_join(field_margins, by = c('siteId', 'Season')) %>%
+  select(-siteId)
+
+## final export ####
+write_csv(subplotData, 'tidy_data/subplotData.csv')

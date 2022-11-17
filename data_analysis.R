@@ -69,22 +69,10 @@ rpaste0 <- function (x,y) {
 }
 
 # import data ####
-## read in tidy csvs ####
-# arthropod data by plot, taxa in separate cols
-data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
-# arthropod data by plot, all taxa in one col
-data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
-# landcover class by field, regular classification
-landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
-# landcover class by field, target alfalfa fields identified manually
-landcoverFixed <-
-  read_csv('tidy_data/landcover_fixed.csv', col_types = 'ffffdddddddddddd')
-# vegetation survey data by survey plot
-vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
-# vegetation survey data by site (farm)
-vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
+subplotData <- read_csv('tidy_data/subplotData.csv')
 
-## wrangle ####
+
+
 # make df of log(total abundance) across treatments
 mean_density_long <- data_long %>%
   # divide 'Pre-' values by 3 to account for unequal sampling area
@@ -159,6 +147,7 @@ mean_density_field <- data_long %>%
   relocate(shan, rich, totalCover, .after = wateringMethod)
 
 ## prepare landcover data ####
+## REWRITE THIS TO MAKE ONE DATAFRAME! ####
 # landcover data - 4 versions: (7- vs 8-class) * (regular vs fixed)
 landcover7 <- landcover %>%
   mutate(alfalfa = class6,

@@ -68,181 +68,23 @@ rpaste0 <- function (x,y) {
   paste0(y,x)
 }
 
-# import data ####
-subplotData <- read_csv('tidy_data/subplotData.csv')
+# import/wrangle data ####
+# subplot-level data, all vars
+# "Pre-" density has already been /3
+# No transformations have been applied
+subplotData <- read_csv('tidy_data/subplotData.csv',
+                        col_types = 'ffffff')
+# make plot-level data, excluding "Pre-" measurements
+plotData <- subplotData %>%
+  filter(Treatment != "Pre-") %>%
+  group_by(Site, Field, Plot, Season) %>%
+  summarize(across(where(is.numeric), .fns = mean))
 
-
-
-# make df of log(total abundance) across treatments
-mean_density_long <- data_long %>%
-  # divide 'Pre-' values by 3 to account for unequal sampling area
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  # create unique id for each location and sampling time
-  unite(id, Site, Field, Plot, Season, Taxa, remove = FALSE) %>%
-  # using the new id col, group treatments together
-  # note: 'Full' treatment has already been removed.
-  # only Pre-, Control, and Sham remain.
-  group_by(id) %>%
-  # summarize using the mean
-  summarize(Mean_Density = mean(Density)) %>%
-  # log+1 transform all values
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
-  # separate id column to restore original columns
-  separate(id, c('Site', 'Field', 'Plot', 'Season', 'Taxa')) %>%
-  # create watering method column
-  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
-                                      'Flooding',
-                                    Site == 'Minden' ~
-                                      'Sprinklers',
-                                    Site == 'Yerington' & Field %in% c(2, 3) ~
-                                      'Flooding',
-                                    Site == 'Yerington' & Field == 1 ~
-                                      'Sprinklers'))
-
-# make wide version of same df
-mean_density_wide <- mean_density_long %>%
-  # create separate columns for each taxon
-  pivot_wider(names_from = Taxa, values_from = Mean_Density)
-
-# create margin data
-field_margins <- vegPlots %>% filter(type == 'Margin') %>%
-  mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
-  group_by(field_id, season) %>%
-  summarize(shan = mean(shan),
-            rich = mean(rich),
-            totalCover = mean(total_cover),
-            .groups = 'keep') %>%
-  # make join key
-  mutate(id = str_replace(field_id, ' ', '0'), Season = season) %>%
-  ungroup() %>%
-  select(-field_id, -season)
-
-# summarize mean_density across fields
-# don't use mean_density_field here:
-# must average within fields BEFORE log transformation for greatest accuracy
-mean_density_field <- data_long %>%
-  mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
-                             Treatment !='Pre-' ~ Density)) %>%
-  unite(id, Site, Field, Season, Taxa, remove = FALSE) %>%
-  group_by(id) %>%
-  summarize(Mean_Density = mean(Density)) %>%
-  # log+1 transform all values
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
-  separate(id, c('Site', 'Field', 'Season', 'Taxa')) %>%
-  pivot_wider(names_from = Taxa, values_from = Mean_Density) %>%
-  mutate(id = paste0(Site, 0, Field), .before = Site) %>%
-  # create watering method column
-  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
-                                      'Flooding',
-                                    Site == 'Minden' ~
-                                      'Sprinklers',
-                                    Site == 'Yerington' & Field %in% c(2, 3) ~
-                                      'Flooding',
-                                    Site == 'Yerington' & Field == 1 ~
-                                      'Sprinklers'), .after = Season) %>%
-  # join margin data
-  left_join(field_margins, by = c('id' = 'id', 'Season' = 'Season')) %>%
-  # relocate field margin data cols
-  relocate(shan, rich, totalCover, .after = wateringMethod)
-
-## prepare landcover data ####
-## REWRITE THIS TO MAKE ONE DATAFRAME! ####
-# landcover data - 4 versions: (7- vs 8-class) * (regular vs fixed)
-landcover7 <- landcover %>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedyWet = class5 + class8,
-         water = class11
-  ) %>%
-  # scale landcover factors here!
-  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
-
-
-#   mutate_at(21:69, ~ as.vector(scale(.)))
-
-landcover8 <- landcover %>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedy = class5,
-         wet =  class8,
-         water = class11
-  ) %>%
-  # scale landcover factors here!
-  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
-
-landcover7Fixed <- landcoverFixed %>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedyWet = class5 + class8,
-         water = class11
-  ) %>%
-  # scale landcover factors here!
-  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
-
-landcover8Fixed <- landcoverFixed %>%
-  mutate(alfalfa = class6,
-         naturalArid = class10,
-         dirt = class2 + class2 + class7,
-         ag = class0 + class3,
-         impermeable = class4 + class9,
-         weedy = class5,
-         wet =  class8,
-         water = class11
-  ) %>%
-  # scale landcover factors here!
-  mutate(across(alfalfa:water, ~ as.vector(scale(.))))
-
-# make list of landcover tables to prepare for joins
-# define list of names
-lcNames <- c('landcover7', 'landcover8', 'landcover7Fixed', 'landcover8Fixed')
-lcIn <- list(landcover7, landcover8, landcover7Fixed, landcover8Fixed)
-names(lcIn) <- lcNames
-# make empty list to hold outputs
-landCoverTabs <- list()
-
-# for each version of the landcover tables, join the mean_density_field table.
-for (i in 1:length(lcIn)) {
-
-  # Reshape landcover data
-  landcover_wide <- lcIn[[i]] %>%
-    # finish tidying cols after collapsing klasses
-    select(-(class0:class11)) %>%
-    # relevel distanceWeights
-    mutate(distanceWeight = fct_relevel(distanceWeight,
-                                        c('const', 'no'),
-                                        after = Inf)) %>%
-    # widen
-    pivot_wider(id_cols = c(site, field),
-                names_from = distanceWeight,
-                values_from = alfalfa:water) %>%
-    mutate(id = paste0(site, field), .before = site)
-
-  # join landcover data to arthropod density data
-  field_data <- left_join(mean_density_field, landcover_wide) %>%
-    # tidy: remove extra 'site' and 'field' cols
-    select(-site, -field)
-
-  # add to output list
-  landCoverTabs[[i]] <- field_data
-
-}
-
-# name list elements
-names(landCoverTabs) <- lcNames
-
-# clean up env
-rm(data, landcover, landcoverFixed, mean_density_field,
-   field_data, landcover7, landcover8, landcover7Fixed, landcover8Fixed)
+# make field-level data by taking means across fields (all plots pooled)
+fieldData <- subplotData %>%
+  filter(Treatment != "Pre-") %>%
+  group_by(Site, Field, Treatment, Season) %>%
+  summarize(across(where(is.numeric), .fns = mean))
 
 # define color palette ####
 # Acyrthosiphon aphids: #548235
@@ -254,10 +96,15 @@ rm(data, landcover, landcoverFixed, mean_density_field,
 
 # Arthropod data summary ####
 ## Aphid histograms ####
+
 # density plot
-PLOT_aphid_density <- mean_density_long %>%
-  # focus on aphids only
-  filter(Taxa %in% c('Acyrthosiphon', 'NonAcy')) %>%
+subplotData %>%
+  # lengthen (aphids only)
+  pivot_longer(c(Acyrthosiphon, NonAcy),
+               names_to = 'Taxa',
+               values_to = 'Mean_Density') %>%
+  # log-transform
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
   # relevel factors
   mutate(Taxa = fct_relevel(Taxa, 'Acyrthosiphon'),
          Season = fct_relevel(Season, 'Spring')) %>%
@@ -268,40 +115,16 @@ PLOT_aphid_density <- mean_density_long %>%
        y = 'Taxon') +
   theme(legend.position = 'none') +
   facet_wrap(~ Season, nrow = 2) +
-  xlim(-1, 10) +
+  xlim(-1, 10.1) +
   scale_y_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids",
                             "Other taxa")) +
   scale_fill_manual(values = c('#548235', '#3b3838'),
                     guide = 'none')
-# plot
-PLOT_aphid_density
 
-# boxplot
-PLOT_aphid_boxplot <- mean_density_long %>%
-  # focus on aphids only
-  filter(Taxa %in% c('Acyrthosiphon', 'NonAcy')) %>%
-  # relevel factors
-  mutate(Taxa = fct_relevel(Taxa, 'Acyrthosiphon'),
-         Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(x = Taxa, y = Mean_Density, fill = Taxa)) +
-  geom_boxplot() +
-  labs(title = 'Aphids, Log+1 Transformation',
-       y = 'log(Density + 1)',
-       x = 'Taxon') +
-  ylim(c(0, 9)) +
-  theme(legend.position = 'none') +
-  facet_wrap(~ Season, ncol = 2) +
-  scale_x_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids",
-                            "Other taxa")) +
-  scale_fill_manual(values = c('#548235', '#3B3838'),
-                    guide = 'none')
-# plot
-PLOT_aphid_boxplot
-
-# boxplot, all aphids combined, spring vs fall
-PLOT_aphidsBySeason_boxplot <- mean_density_long %>%
-  # focus on aphids only
-  filter(Taxa == 'AllAph') %>%
+# density boxplot, all aphids combined
+subplotData %>%
+  # log-transform
+  mutate(Mean_Density = log(AllAph + 1)) %>%
   # relevel factors
   mutate(Season = fct_relevel(Season, 'Spring')) %>%
   ggplot(aes(x = Season, y = Mean_Density, fill = Season)) +
@@ -314,8 +137,6 @@ PLOT_aphidsBySeason_boxplot <- mean_density_long %>%
   theme(legend.position = 'none') +
   scale_fill_manual(values = c('#76db91', '#9e3c21'),
                     guide = 'none')
-# plot
-PLOT_aphidsBySeason_boxplot
 
 ## Predator histogram ####
 # define list of predators
@@ -323,9 +144,13 @@ predlist <- c('Arachnida', 'Anthocoridae', 'Nabis', 'Coccinellidae',
               'Geocoris', 'Ichneumonoidea')
 # build density plot
 # density plot + boxplot
-PLOT_predator_density <- mean_density_long %>%
-  # focus on aphids only
-  filter(Taxa %in% predlist) %>%
+subplotData %>%
+  # lengthen (predators only)
+  pivot_longer(all_of(predlist),
+               names_to = 'Taxa',
+               values_to = 'Mean_Density') %>%
+  # log-transform
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
   # relevel factors
   mutate(Season = fct_relevel(Season, 'Spring')) %>%
   ggplot(aes(y = Taxa, x = Mean_Density, fill = Taxa)) +
@@ -336,122 +161,96 @@ PLOT_predator_density <- mean_density_long %>%
        y = 'Taxon') +
   theme(legend.position = 'none') +
   scale_fill_brewer(palette = 'Spectral')
-# plot
-PLOT_predator_density
 
 
 # Landcover data summary ####
-## Alfalfa reclassification effect ####
+## Effect of "fixing" alfalfa classification on alfalfa areaScore
+fieldData %>%
+  # only need one season
+  filter(Season == "Spring") %>%
+  # calculate change in alfalfa area
+  mutate(Change_sig1 = alfalfa_fix_sig1 - alfalfa_sig1,
+         Change_sig2 = alfalfa_fix_sig2 - alfalfa_sig2,
+         Change_sig3 = alfalfa_fix_sig3 - alfalfa_sig3,
+         Change_sig4 = alfalfa_fix_sig4 - alfalfa_sig4,
+         Change_sig5 = alfalfa_fix_sig5 - alfalfa_sig5,
+         Change_const = alfalfa_fix_const - alfalfa_const,
+         Change_no = alfalfa_fix_no - alfalfa_no) %>%
+  # scale across new cols (must ungroup first)
+  ungroup() %>%
+  mutate(across(contains("Change"), ~as.numeric(scale(.x)))) %>%
+  # pivot longer
+  pivot_longer(contains("Change"),
+               names_to = 'distWeight',
+               values_to = 'Change') %>%
+  # make field id, also trim up values in distWeight column
+  mutate(FieldID = paste0(Site, '0', Field),
+         distWeight = str_extract(distWeight, "_[:alnum:]+")) %>%
+  # reorder_within to make ordered bars within facets of ggplot
+  mutate(FieldID = reorder_within(FieldID,
+                                  desc(Change),
+                                  distWeight,
+                                  sep = '')) %>%
+  ggplot(aes(FieldID, Change)) +
+  geom_col() +
+  facet_wrap(~ distWeight, scales = 'free_x') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# make a single large data frame for comparisons
-# empty list to hold modified data frames
-lcCompares <- list()
-
-for (i in 1:length(lcIn)) {
-
-  lcCompares[[i]] <- lcIn[[i]] %>%
-    # lengthen
-    pivot_longer(alfalfa:water,
-                 names_to = 'klass',
-                 values_to = 'weightedArea') %>%
-    # drop unused cols
-    select(!starts_with('class')) %>%
-    # make id col
-    unite(id, siteId, distanceWeight, klass, remove = FALSE)
-
-}
-# add names
-names(lcCompares) <- c('landcover7', 'landcover8',
-                 'landcover7Fixed', 'landcover8Fixed')
-# join tables with the same number of klasses
-sevenClass <- lcCompares$landcover7Fixed %>%
-  rename(weightedAreaFixedKlass = weightedArea) %>%
-  left_join(lcCompares$landcover7) %>%
-  mutate(areaDifference = (weightedArea-weightedAreaFixedKlass)/weightedArea)
-
-eightClass <- lcCompares$landcover8Fixed %>%
-  rename(weightedAreaFixedKlass = weightedArea) %>%
-  left_join(lcCompares$landcover8)%>%
-  mutate(areaDifference = (weightedArea-weightedAreaFixedKlass)/weightedArea)
-# put the two versions in a list and add names
-klassCompares <- list(sevenClass, eightClass)
-names(klassCompares) <- c('sevenClass', 'eightClass')
-
-# plot the change in areas by field
-PLOTS_klassCompares <- list()
-for (i in 1:length(klassCompares)) {
-
-  # increase in alfalfa due to manual classification
-  p <- klassCompares[[i]] %>%
-    filter(klass == 'alfalfa') %>%
-    mutate(distanceWeight =
-             fct_relevel(distanceWeight,
-                         c('sig1', 'sig2', 'sig3',
-                           'sig4', 'sig5', 'const', 'no')),
-           FieldID = reorder_within(siteId,
-                                    desc(areaDifference),
-                                    distanceWeight,
-                                    sep = '_')) %>%
-  ggplot(aes(x = FieldID,
-               y = areaDifference*-1,
-               fill = site)) +
-    geom_col() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    labs(title = 'Increase in alfalfa area score due to manual classification',
-         x = 'Field',
-         y = 'Area Score change, proportion increase') +
-    facet_wrap(~ distanceWeight, scales = 'free') +
-    scale_fill_brewer(palette = 'Set1') +
-    # scale_y_reordered() +
-    scale_x_discrete(label = function(x) str_extract(x, '[:alnum:]+'))
-
-  # decrease in weedy or weedyWet klass due to manual classification
-  q <- klassCompares[[i]] %>%
-    filter(klass %in% c('weedy', 'weedyWet')) %>%
-    mutate(distanceWeight =
-             fct_relevel(distanceWeight,
-                         c('sig1', 'sig2', 'sig3',
-                           'sig4', 'sig5', 'const', 'no')),
-           FieldID = reorder_within(siteId,
-                                    areaDifference,
-                                    distanceWeight,
-                                    sep = '_')) %>%
-    ggplot(aes(x = FieldID,
-               y = areaDifference*-1,
-               fill = site)) +
-    geom_col() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-    labs(title = 'Decrease in weedy or weedyWet area score
-         due to manual classification',
-         x = 'Field',
-         y = 'Area Score change, proportion decrease') +
-    facet_wrap(~ distanceWeight * klass, scales = 'free') +
-    scale_fill_brewer(palette = 'Set1') +
-    # scale_y_reordered() +
-    scale_x_discrete(label = function(x) str_extract(x, '[:alnum:]+'))
-
-  PLOTS_klassCompares[[i]] <- list(p, q)
-
-}
-
-names(PLOTS_klassCompares) <- c('sevenClass', 'eightClass')
-# note: alfalfa plots for 7- and 8- class are the same, because the effect of
-# moving area TO alfalfa is the same, regardless of what class the area is
-# moving FROM
-PLOTS_klassCompares$sevenClass[1]
-PLOTS_klassCompares$sevenClass[2]
-PLOTS_klassCompares$eightClass[2]
+## Effect of "fixing" alfalfa classification on weedyWet areaScore
+fieldData %>%
+  # only need one season
+  filter(Season == "Spring", Treatment == 'Control') %>%
+  # calculate change in alfalfa area
+  mutate(Change_sig1 = weedyWet_fix_sig1 - weedyWet_sig1,
+         Change_sig2 = weedyWet_fix_sig2 - weedyWet_sig2,
+         Change_sig3 = weedyWet_fix_sig3 - weedyWet_sig3,
+         Change_sig4 = weedyWet_fix_sig4 - weedyWet_sig4,
+         Change_sig5 = weedyWet_fix_sig5 - weedyWet_sig5,
+         Change_const = weedyWet_fix_const - weedyWet_const,
+         Change_no = weedyWet_fix_no - weedyWet_no) %>%
+  # scale across new cols (must ungroup first)
+  ungroup() %>%
+  mutate(across(contains("Change"), ~as.numeric(scale(.x)))) %>%
+  # pivot longer
+  pivot_longer(contains("Change"),
+               names_to = 'distWeight',
+               values_to = 'Change') %>%
+  # make field id, also trim up values in distWeight column
+  mutate(FieldID = paste0(Site, '0', Field),
+         distWeight = str_extract(distWeight, "_[:alnum:]+")) %>%
+  # reorder_within to make ordered bars within facets of ggplot
+  mutate(FieldID = reorder_within(FieldID,
+                                  desc(Change),
+                                  distWeight,
+                                  sep = '')) %>%
+  ggplot(aes(FieldID, Change)) +
+  geom_col() +
+  facet_wrap(~ distWeight, scales = 'free_x') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # in summary, manual classification seems to change Yerington the most
 
 ## weedy/wet binning effect ####
 # what is the correlation between weedy and wet cover?
-lcIn$landcover8 %>%
+fieldData %>%
+  # only need one season and trt
+  filter(Season == 'Spring', Treatment == 'Control') %>%
+  # focus on weedy vs. wet
+  select(contains(c('weedy', 'wet'))) %>%
+  # drop data from "fixed" classifications, also drop "weedyWet" cols
+  select(-contains(c('fix', 'weedyWet'))) %>%
+  # pivot longer to put all distweights in one col
+  pivot_longer(contains(c('weedy', 'wet'))) %>%
+  # separate klass and distweight in name col
+  separate(name, c('klass', 'distWeight'), "_") %>%
+  # widen
+  pivot_wider(names_from = c(klass), values_from = value) %>%
   ggplot(aes(x = weedy, y = wet)) +
   stat_poly_line() +
   stat_poly_eq() +
+  geom_point() +
   geom_smooth(method = 'lm') +
-  facet_wrap(~ distanceWeight, scales = 'free') +
+  facet_wrap(~ distWeight, scales = 'free') +
   labs(title = 'Correlation between "weedy" and "wet" classes',
        subtitle = 'across all distance weights') +
   theme(axis.ticks = element_blank(),
@@ -462,88 +261,62 @@ lcIn$landcover8 %>%
 # correlated
 
 # wet and water correlation
-lcIn$landcover8 %>%
+fieldData %>%
+  # only need one season and trt
+  filter(Season == 'Spring', Treatment == 'Control') %>%
+  # focus on weedy vs. wet
+  select(contains(c('water', 'wet'))) %>%
+  # drop data from "fixed" classifications, also drop "weedyWet" cols
+  select(-contains(c('fix'))) %>%
+  # pivot longer to put all distweights in one col
+  pivot_longer(contains(c('water', 'wet'))) %>%
+  # separate klass and distweight in name col
+  separate(name, c('klass', 'distWeight'), "_") %>%
+  # widen
+  pivot_wider(names_from = c(klass), values_from = value) %>%
   ggplot(aes(x = wet, y = water)) +
   geom_point() +
   stat_poly_line() +
   stat_poly_eq() +
-  facet_wrap(~ distanceWeight, scales = 'free') +
+  facet_wrap(~ distWeight, scales = 'free') +
   labs(title = 'Correlation between "wet" and "water" classes',
        subtitle = 'across all distance weights') +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank())
 # moderate correlation here. this breaks down when using weedyWet (7-class)
-lcIn$landcover7 %>%
+fieldData %>%
+  # only need one season and trt
+  filter(Season == 'Spring', Treatment == 'Control') %>%
+  # focus on weedy vs. wet
+  select(contains(c('water', 'weedyWet'))) %>%
+  # drop data from "fixed" classifications, also drop "weedyWet" cols
+  select(-contains(c('fix'))) %>%
+  # pivot longer to put all distweights in one col
+  pivot_longer(contains(c('water', 'weedyWet'))) %>%
+  # separate klass and distweight in name col
+  separate(name, c('klass', 'distWeight'), "_") %>%
+  # widen
+  pivot_wider(names_from = c(klass), values_from = value) %>%
   ggplot(aes(x = weedyWet, y = water)) +
   geom_point() +
   stat_poly_line() +
   stat_poly_eq() +
-  facet_wrap(~ distanceWeight, scales = 'free') +
+  facet_wrap(~ distWeight, scales = 'free') +
   labs(title = 'Correlation between "weedyWet" and "water" classes',
        subtitle = 'across all distance weights') +
   theme(axis.ticks = element_blank(),
         axis.text = element_blank())
 
+
 ## pca ####
-# define list of distance weights
-weightList <- c('sig1', 'sig2', 'sig3', 'sig4', 'sig5', 'const', 'no')
-# list to hold PCA outputs
-pcaOut <- list()
-# for each distance weight, make 4 pcas (one for each dataset)
-for (i in 1:length(weightList)) {
 
-  # list to hold filtered dataset
-  df <- list()
-  # filter each dataset
-  for (j in 1:length(lcIn)){
-
-    df[[j]] <- lcIn[[j]] %>%
-      filter(distanceWeight == weightList[[i]])
-
-  }
-  # list to hold principal components
-  comps <- list()
-  # 7-class and 8-class need different predictors, so can't for-loop here.
-  comps[[1]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
-                    weedyWet+water, data = df[[1]], scale. = TRUE)
-  comps[[2]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
-                         weedy+wet+water, data = df[[2]], scale. = TRUE)
-  comps[[3]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
-                         weedyWet+water, data = df[[3]], scale. = TRUE)
-  comps[[4]] <- prcomp(~alfalfa+naturalArid+dirt+ag+impermeable+
-                         weedy+wet+water, data = df[[4]], scale. = TRUE)
-
-  # holds pcas for each dataset
-  pcas <- list()
-  # list of dataset names for plot titles
-  dfNames <- c('7class', '8class',
-               '7class, alfalfa fixed', '8class, alfalfa fixed')
-  # plot the pca for each dataset
-  for(k in 1:length(comps)){
-
-  pcas[[k]] <- autoplot(comps[[k]], data = df[[k]], colour = 'site',
-           loadings = TRUE, loadings.label = TRUE) +
-    scale_colour_brewer(palette = 'Set1') +
-    labs(title = paste0(weightList[[i]], ' ', dfNames[[k]]))
-
-  }
-  # save the series of pca plots to the pcaOut list
-  pcaOut[[i]] <- pcas
-
-}
-
-# # print the the pca plots, four at a time (one distance weight at a time)
-# for (i in 1:length(pcaOut)){
-#
-#   do.call('grid.arrange', c(unlist(pcaOut[i], recursive = FALSE), ncol = 2))
-#   ggsave(paste0('pcaplot', i, '.png'), width = 12, height = 8, units = 'in')
-#
-# }
-# # print all the pca plots at once (hard to read)
-# do.call('grid.arrange', c(unlist(pcaOut, recursive = FALSE), ncol = 4))
+# Not wanting to fix this right now. Used to have pca plot for every combination
+# of distWeight, nClasses (7 or 8), and fixed vs. non-fixed
 
 # Margin data summary ####
 ## Across sites ####
+# still need to import the vegplots csv for this
+vegPlots <- read_csv('tidy_data/vegPlots.csv')
 # Shannon diversity
 ggplot(data = vegPlots %>% filter(type == 'Margin'),
        aes(x = site, y = shan, fill = season)) +

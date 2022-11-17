@@ -1144,7 +1144,7 @@ subplotData <- data_long %>%
   left_join(landcoverBinned, by = 'siteId') %>%
   # join vegetation data
   left_join(field_margins, by = c('siteId', 'Season')) %>%
-  select(-siteId)
+  select(-siteId, -site, -field)
 
 ## final export ####
 write_csv(subplotData, 'tidy_data/subplotData.csv')

@@ -121,6 +121,81 @@ subplotData %>%
   scale_fill_manual(values = c('#548235', '#3b3838'),
                     guide = 'none')
 
+# calculate median and mean aphid density in each season
+subplotData %>%
+  group_by(Season) %>%
+  summarize(medianAllAph = median(AllAph),
+            medianAcyrthosiphon = median(Acyrthosiphon),
+            medianNonAcy = median(NonAcy),
+            meanAllAph = mean(AllAph),
+            meanAcyrthosiphon = mean(Acyrthosiphon),
+            meanNonAcy = mean(NonAcy)) %>% View
+# predators
+subplotData %>%
+  group_by(Season) %>%
+  summarize(medianAnth = median(Anthocoridae),
+            medianAra = median(Arachnida),
+            medianCocc = median(Coccinellidae),
+            medianGeoc = median(Geocoris),
+            medianIch = median(Ichneumonoidea),
+            medianNab = median(Nabis),
+            meanAnth = mean(Anthocoridae),
+            meanAra = mean(Arachnida),
+            meanCocc = mean(Coccinellidae),
+            meanGeoc = mean(Geocoris),
+            meanIch = mean(Ichneumonoidea),
+            meanNab = mean(Nabis)) %>% View
+# statistical tests
+# aphids
+lm(log(AllAph+1) ~ Season, subplotData) %>% summary
+lm(log(Acyrthosiphon+1) ~ Season, subplotData) %>% summary
+lm(log(NonAcy+1) ~ Season, subplotData) %>% summary
+# predators
+lm(log(Anthocoridae+1) ~ Season, subplotData) %>% summary
+lm(log(Arachnida+1) ~ Season, subplotData) %>% summary
+lm(log(Coccinellidae+1) ~ Season, subplotData) %>% summary
+lm(log(Geocoris+1) ~ Season, subplotData) %>% summary
+lm(log(Ichneumonoidea+1) ~ Season, subplotData) %>% summary
+lm(log(Nabis+1) ~ Season, subplotData) %>% summary
+summary(lm(log(Anthocoridae+1) ~ Season, subplotData))$coefficients[2,4] %>%
+  p.adjust('bonferroni', 6)
+summary(lm(log(Arachnida+1) ~ Season, subplotData))$coefficients[2,4] %>%
+  p.adjust('bonferroni', 6)
+summary(lm(log(Coccinellidae+1) ~ Season, subplotData))$coefficients[2,4] %>%
+  p.adjust('bonferroni', 6)
+summary(lm(log(Geocoris+1) ~ Season, subplotData))$coefficients[2,4] %>%
+  p.adjust('bonferroni', 6)
+summary(lm(log(Ichneumonoidea+1) ~ Season, subplotData))$coefficients[2,4] %>%
+  p.adjust('bonferroni', 6)
+summary(lm(log(Nabis+1) ~ Season, subplotData))$coefficients[2,4] %>%
+  p.adjust('bonferroni', 6)
+# calculate relative skewness of aphid density across seasons
+# use datawizard package
+# all aphids
+subplotData %>%
+  filter(Season == 'Spring') %>%
+  pull(AllAph) %>% datawizard::skewness(.)
+subplotData %>%
+  filter(Season == 'Fall') %>%
+  pull(AllAph) %>% datawizard::skewness(.)
+# Acyrthosiphon aphids
+subplotData %>%
+  filter(Season == 'Spring') %>%
+  pull(Acyrthosiphon) %>% datawizard::skewness(.)
+subplotData %>%
+  filter(Season == 'Fall') %>%
+  pull(Acyrthosiphon) %>% datawizard::skewness(.)
+# Non-Acyrthosiphon aphids
+subplotData %>%
+  filter(Season == 'Spring') %>%
+  pull(NonAcy) %>% datawizard::skewness(.)
+subplotData %>%
+  filter(Season == 'Fall') %>%
+  pull(NonAcy) %>% datawizard::skewness(.)
+
+
+
+
 # density boxplot, all aphids combined
 subplotData %>%
   # log-transform
@@ -153,13 +228,13 @@ subplotData %>%
   mutate(Mean_Density = log(Mean_Density + 1)) %>%
   # relevel factors
   mutate(Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(y = Taxa, x = Mean_Density, fill = Taxa)) +
+  ggplot(aes(y = Taxa, x = Mean_Density, fill = Season)) +
   geom_density_ridges(alpha = 0.6) +
   labs(title = 'Predators, Log+1 Transformation, all seasons',
        subtitle = 'Plot-level density (means of subplots within a plot)',
        x = 'log(Density + 1)',
        y = 'Taxon') +
-  theme(legend.position = 'none') +
+  # theme(legend.position = 'none') +
   scale_fill_brewer(palette = 'Spectral')
 
 
@@ -343,6 +418,17 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 ## Not seeing much variation here. May want to shaw by field.
 ## Remember, Yerington will always be missing. Need to fix colors, factor order,
 ## etc.
+
+# Predator~aphid correlation ####
+# (subplot-scale)
+# can put all preds as explanatory factors, OR can put aphids as explanatory
+# factors and bonferroni-correct for multiple preds
+# choosing the second option
+# guess I should use zero-inf negbin mods?
+GLMERdata <- subplotData %>% filter(Treatment != 'Pre-')
+glmer(Anthocoridae ~ AllAph * Season + (1|Site),
+      GLMERdata, family = 'poisson')
+
 
 # Top-down effect ####
 # START HERE########### ####

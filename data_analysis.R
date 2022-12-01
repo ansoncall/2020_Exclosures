@@ -429,6 +429,118 @@ GLMERdata <- subplotData %>% filter(Treatment != 'Pre-')
 glmer(Anthocoridae ~ AllAph * Season + (1|Site),
       GLMERdata, family = 'poisson')
 
+# following Zuur 2009
+# Cleveland dotplot
+dotchart(subplotData$AllAph,
+         groups = factor(subplotData$Season))
+# clear violation of homogeneity - some AllAph values are extreme.
+
+# pair plot - not sure what I'm looking for here
+pairs(subplotData %>% select(Coccinellidae, AllAph, Season))
+
+# boxplot
+boxplot(AllAph ~ Season, varwidth = T, data = subplotData)
+# clearly right-skewed, but sample sizes are even across seasons.
+
+# Zuur 2.4: "The only thing we cannot solve... is observations with extreme
+# explanatory variables. If this happens for your data, then a transformation on
+# the explanatory variable(s) could well be justified at this stage."
+
+# try log+1 transformation of explanatory variable.
+dotchart(log(subplotData$AllAph+1),
+         groups = factor(subplotData$Season))
+# this looks much better!
+
+M1 <- lm(Coccinellidae ~ log(AllAph+1) + Season, GLMERdata)
+summary(M1)
+# check assumptions:
+# 1. normality
+# 2. homogeneity
+# 3. fixed X
+# 4. independence
+# 5. correct model specification
+
+# 1. normality
+# plot histogram of residuals
+hist(residuals(M1))
+# right-skewed. We have non-normality.
+
+# 2. homogeneity
+# plot pooled residuals
+plot(M1, which = 1)
+# spread is not equal across range of fitted values. We have heterogeneity or
+# heteroscedasticity. Why?
+plot(GLMERdata$Season, residuals(M1))
+# variance higher in spring
+plot(log(GLMERdata$AllAph+1), residuals(M1))
+# variance higher in spring
+# Zuur 2009 2.3.3 "The easiest option is... data transformation."
+# 4.1.1 "but we try to avoid this for as long as possible."
+
+# could use different variance structures.
+# many options available (See Zuur 2009 Ch. 4), choose using AIC or biological
+# knowledge.
+
+# try fixed variance structure as an example.
+# Note: gls doesn't like subplotData but will fit GLMERdata. WHY??
+# remake lm for anova comparison
+library(nlme)
+M.lm <- gls(Coccinellidae ~ log(AllAph+1) + Season, GLMERdata)
+# specify variance structure
+vf1Fixed <- varFixed(~log(AllAph+1))
+# make model with fixed variance structure
+M.gls <- gls(Coccinellidae ~ log(AllAph+1) + Season, data = GLMERdata,
+             weights = vf1Fixed)
+anova(M.lm, M.gls)
+
+# this approach addresses higher variance with higher AllAph. This was not
+# necessarily the problem, as the variance is just higher in the spring.
+# try VarIdent instead.
+vf2 <- varIdent(form = ~ 1 | Season)
+M.gls2 <- gls(Coccinellidae ~ log(AllAph+1) + Season, data = GLMERdata,
+              weights = vf2)
+anova(M.lm, M.gls, M.gls2)
+# VarIdent is clearly favored by AIC.
+# Graphical validation of this model:
+# extract normalized residuals
+E2 <- resid(M.gls2, type = 'normalized')
+coplot(E2 ~ log(AllAph+1) | Season, data = GLMERdata,
+       ylab = 'normalized residuals')
+# guess this is better, but it still seems like there is a pattern in the fall
+# residuals? Plus they are not normally distributed.
+# try adding interaction:
+M.gls3 <- gls(Coccinellidae ~ log(AllAph+1) * Season, data = GLMERdata,
+              weights = vf2)
+anova(M.gls2, M.gls3)
+# Interaction is only slightly better?
+# Graphical validation of this model:
+# extract normalized residuals
+E3 <- resid(M.gls3, type = 'normalized')
+coplot(E3 ~ log(AllAph+1) | Season, data = GLMERdata,
+       ylab = 'normalized residuals')
+# still some patterns in residuals here. This must be the nestedness?
+# read ch. 5!!
+
+# a basic random effects model
+# make site ordinal factor
+GLMERdata %<>% mutate(fSite = as.factor(as.numeric(Site)))
+M.lme <- lme(Coccinellidae ~ log(AllAph+1), data = GLMERdata,
+             random = ~ 1 | fSite)
+summary(M.lme)
+# plot (not working? random effect variance too low?)
+F0 <- fitted(M.lme, level = 0)
+F1 <- fitted(M.lme, level = 1)
+I <- order(GLMERdata$AllAph); Sites <- sort(GLMERdata$AllAph)
+plot(Sites, F0[I], type = 'l', ylim = c(0,15),
+     ylab = 'Coccinellidae', xlab = 'AllAph')
+for (i in 1:4){
+  x1 <- GLMERdata$AllAph[GLMERdata$fSite == i]
+  y1 <- F1[GLMERdata$Site == i]
+  K <- order(x1)
+  lines(sort(x1), y1[K])
+}
+text(GLMERdata$AllAph, GLMERdata$Coccinellidae, GLMERdata$fSite, cex = 0.9)
+# obviously very silly fit here.
 
 # Top-down effect ####
 # START HERE########### ####

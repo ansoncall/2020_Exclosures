@@ -9,16 +9,18 @@ library(classInt) # for kmeans clustering
 library(corrr) # for correlation plots of landcover vars
 library(crayon) # for colored terminal outputs
 library(data.table) # for rbindlist() to rbind a list of tables and make id col
+library(DHARMa) # for simulated residuals
 library(DiagrammeRsvg) # for plotting SEMs
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
-library(gridExtra) # create multi-panel plots
 library(ggeffects) # for easy effects plots
 library(ggfortify) # create PCA plots
 library(ggiraphExtra) # more easy effects plots
+library(glmmTMB) # for mixed-effects GLM
 library(ggpmisc) # make ggplots that show R2 value with stat_poly_eq()
 library(ggridges) # for ggridges plots
 library(grid) # for grobTree() to make text annotations on violin plots
+library(gridExtra) # create multi-panel plots
 library(gtools) # for mixedsort() to arrange factor levels in vegdata tibble
 library(hardhat) # for get_levels to extract factor levels in a tidy way
 library(knitr) # for knitting R markdown docs
@@ -27,16 +29,19 @@ library(lmerTest) # for lmer with p values
 library(magrittr) # for assignment and exposition pipes
 library(MuMIn) # model selection tools
 library(mvabund) # for building multivariate mods of insect density
+library(parallel) # parallelization of dredge()
+library(performance) # for pseudo-R^2 of GLMERs
 library(piecewiseSEM) # for structural equation modeling
 library(plotly) # interactive plots with plotly()
 library(rsvg) # for more SEM plots
-library(sjPlot) # create effects plots on lmer objects
+library(sjPlot) # create effects plots on lmer objects, plot tables
 library(tidyselect) # for peek()
 library(tidytext) # sort ggcols after faceting
 library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
 library(vegan) # for diversity indices in vegdata
 library(webshot) # to capture tab_model output (or other html output) as png
+
 
 # Define functions ####
 # note: this is not the only place functions are defined
@@ -70,21 +75,27 @@ rpaste0 <- function (x,y) {
 
 # import/wrangle data ####
 # subplot-level data, all vars
+# pre- data not /3, can use area offset to correct.
+# No transformations have been applied
+subplotDataRaw <- read_csv('tidy_data/subplotDataRaw.csv',
+                           col_types = 'ffffff')
+
 # "Pre-" density has already been /3
 # No transformations have been applied
 subplotData <- read_csv('tidy_data/subplotData.csv',
                         col_types = 'ffffff')
+
 # make plot-level data, excluding "Pre-" measurements
 plotData <- subplotData %>%
   filter(Treatment != "Pre-") %>%
   group_by(Site, Field, Plot, Season) %>%
-  summarize(across(where(is.numeric), .fns = mean))
+  summarize(across(where(is.numeric), .fns = mean), .groups = 'keep')
 
 # make field-level data by taking means across fields (all plots pooled)
 fieldData <- subplotData %>%
   filter(Treatment != "Pre-") %>%
   group_by(Site, Field, Treatment, Season) %>%
-  summarize(across(where(is.numeric), .fns = mean))
+  summarize(across(where(is.numeric), .fns = mean), .groups = 'keep')
 
 # define color palette ####
 # Acyrthosiphon aphids: #548235
@@ -123,31 +134,42 @@ subplotData %>%
 
 # calculate median and mean aphid density in each season
 subplotData %>%
+  # summarize seasons indepentently
   group_by(Season) %>%
-  summarize(medianAllAph = median(AllAph),
-            medianAcyrthosiphon = median(Acyrthosiphon),
-            medianNonAcy = median(NonAcy),
-            meanAllAph = mean(AllAph),
-            meanAcyrthosiphon = mean(Acyrthosiphon),
-            meanNonAcy = mean(NonAcy)) %>% View
-# predators
-subplotData %>%
-  group_by(Season) %>%
-  summarize(medianAnth = median(Anthocoridae),
-            medianAra = median(Arachnida),
-            medianCocc = median(Coccinellidae),
-            medianGeoc = median(Geocoris),
-            medianIch = median(Ichneumonoidea),
-            medianNab = median(Nabis),
-            meanAnth = mean(Anthocoridae),
-            meanAra = mean(Arachnida),
-            meanCocc = mean(Coccinellidae),
-            meanGeoc = mean(Geocoris),
-            meanIch = mean(Ichneumonoidea),
-            meanNab = mean(Nabis)) %>% View
+  # create summary cols
+  summarize(median_AllAph = median(AllAph),
+            median_Acyrthosiphon = median(Acyrthosiphon),
+            median_NonAcy = median(NonAcy),
+            mean_AllAph = mean(AllAph),
+            mean_Acyrthosiphon = mean(Acyrthosiphon),
+            mean_NonAcy = mean(NonAcy),
+            median_Anth = median(Anthocoridae),
+            median_Ara = median(Arachnida),
+            median_Cocc = median(Coccinellidae),
+            median_Geoc = median(Geocoris),
+            median_Ich = median(Ichneumonoidea),
+            median_Nab = median(Nabis),
+            mean_Anth = mean(Anthocoridae),
+            mean_Ara = mean(Arachnida),
+            mean_Cocc = mean(Coccinellidae),
+            mean_Geoc = mean(Geocoris),
+            mean_Ich = mean(Ichneumonoidea),
+            mean_Nab = mean(Nabis)) %>%
+  # move all stats into a single col
+  pivot_longer(starts_with('mean')|starts_with('median'),
+               names_to = 'Taxon', values_to = 'Value') %>%
+  # parse 'Taxon' col
+  separate(Taxon, c('Stat', 'Taxon'), '_', remove = FALSE) %>%
+  # arrange rows
+  arrange(Taxon, Season, Stat) %>%
+  # relocate columns
+  relocate(Taxon, Season, Stat) %>%
+  # print table to viewer
+  tab_df(alternate.rows = TRUE)
+
 # statistical tests
 # aphids
-lm(log(AllAph+1) ~ Season, subplotData) %>% summary
+lm(log(AllAph+1) ~ Season, subplotData) %>% anova
 lm(log(Acyrthosiphon+1) ~ Season, subplotData) %>% summary
 lm(log(NonAcy+1) ~ Season, subplotData) %>% summary
 # predators
@@ -157,6 +179,7 @@ lm(log(Coccinellidae+1) ~ Season, subplotData) %>% summary
 lm(log(Geocoris+1) ~ Season, subplotData) %>% summary
 lm(log(Ichneumonoidea+1) ~ Season, subplotData) %>% summary
 lm(log(Nabis+1) ~ Season, subplotData) %>% summary
+# print p values with bonferonni correction for predators
 summary(lm(log(Anthocoridae+1) ~ Season, subplotData))$coefficients[2,4] %>%
   p.adjust('bonferroni', 6)
 summary(lm(log(Arachnida+1) ~ Season, subplotData))$coefficients[2,4] %>%
@@ -169,6 +192,7 @@ summary(lm(log(Ichneumonoidea+1) ~ Season, subplotData))$coefficients[2,4] %>%
   p.adjust('bonferroni', 6)
 summary(lm(log(Nabis+1) ~ Season, subplotData))$coefficients[2,4] %>%
   p.adjust('bonferroni', 6)
+
 # calculate relative skewness of aphid density across seasons
 # use datawizard package
 # all aphids
@@ -233,9 +257,26 @@ subplotData %>%
   labs(title = 'Predators, Log+1 Transformation, all seasons',
        subtitle = 'Plot-level density (means of subplots within a plot)',
        x = 'log(Density + 1)',
-       y = 'Taxon') +
+       y = 'Taxon')
   # theme(legend.position = 'none') +
-  scale_fill_brewer(palette = 'Spectral')
+  # scale_fill_brewer(palette = 'Spectral')
+aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis')
+subplotData %>%
+  # lengthen (predators only)
+  pivot_longer(all_of(aphlist),
+               names_to = 'Taxa',
+               values_to = 'Mean_Density') %>%
+  # log-transform
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
+  # relevel factors
+  mutate(Season = fct_relevel(Season, 'Spring')) %>%
+  ggplot(aes(y = Taxa, x = Mean_Density, fill = Season)) +
+  geom_density_ridges(alpha = 0.6) +
+  labs(title = 'Predators, Log+1 Transformation, all seasons',
+       subtitle = 'Plot-level density (means of subplots within a plot)',
+       x = 'log(Density + 1)',
+       y = 'Taxon')
+
 
 
 # Landcover data summary ####
@@ -419,17 +460,3302 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 ## Remember, Yerington will always be missing. Need to fix colors, factor order,
 ## etc.
 
-# Predator~aphid correlation ####
-# (subplot-scale)
-# can put all preds as explanatory factors, OR can put aphids as explanatory
-# factors and bonferroni-correct for multiple preds
-# choosing the second option
-# guess I should use zero-inf negbin mods?
-GLMERdata <- subplotData %>% filter(Treatment != 'Pre-')
-glmer(Anthocoridae ~ AllAph * Season + (1|Site),
-      GLMERdata, family = 'poisson')
+# Predator models ####
+## prepare data
+# split spring and fall data
+dfSp <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Spring') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # center and scale (not needed with rank transform)
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
 
-# following Zuur 2009
+dfFa <- subplotDataRaw %>%
+
+  filter(Season == 'Fall') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # center and scale (not needed with rank transform)
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+# use rank transform on landcover vars
+dfSpRnk <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Spring') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # rank transform landcover to uniformly distribute
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~dense_rank(.x))) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # # center and scale (not needed with rank transform)
+  # mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+  #               .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+dfFaRnk <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Fall') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # rank transform landcover to uniformly distribute
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~dense_rank(.x))) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # # center and scale (not needed with rank transform)
+  # mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+  #               .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+# example dotcharts - shows distribution of explanatory variables
+dotchart(sort(dfSpRnk$AllAph))
+dotchart(sort(dfSp$log_AllAph))
+dotchart(sort(dfFa$log_AllAph))
+
+
+## SOURCE ####
+## source glm.R to build model selection tables
+source('glm.R', echo = TRUE)
+
+tab.nb.anth.fa.scaled %>% View
+
+# split spring and fall data
+dfSp <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Spring') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # center and scale (not needed with rank transform)
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+dfFa <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Fall') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # center and scale (not needed with rank transform)
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+# use rank transform on landcover vars
+dfSpRnk <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Spring') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # rank transform landcover to uniformly distribute
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~dense_rank(.x))) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # # center and scale (not needed with rank transform)
+  # mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+  #               .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+dfFaRnk <- subplotDataRaw %>%
+  # spring only
+  filter(Season == 'Fall') %>%
+  # "regular" landcover only
+  select(!contains('fix')) %>%
+  # rank transform landcover to uniformly distribute
+  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+                .fns = ~dense_rank(.x))) %>%
+  # log AllAph col
+  mutate(log_AllAph = log(AllAph +1)) %>%
+  # # center and scale (not needed with rank transform)
+  # mutate(across(.cols = contains('_'), # all landcover + log_AllAph
+  #               .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
+                          Treatment != 'Pre-' ~ 1))
+
+# make data again, this time with scaled and centered vars
+# reset data
+# note: data varnames reused. only modtabs and top mods renamed.
+
+
+# example dotcharts - shows distribution of explanatory variables
+dotchart(sort(dfSpRnk$AllAph))
+dotchart(sort(dfSp$log_AllAph))
+dotchart(sort(dfFa$log_AllAph))
+
+
+# Note: the following is highly redundant. Var names are often reused. Only
+# model selection tables are saved. Code is condensed for space saving.
+
+# set global NA action
+options(na.action = 'na.fail')
+
+## COCCINELLIDAE ####
+
+
+# build global mods (condensed for space)
+gMod.sig1 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+gMod.sig2 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+gMod.sig3 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+gMod.sig4 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+gMod.sig5 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+gMod.const <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+gMod.no <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
+                       alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfSp, family = 'nbinom2')
+
+# dredge
+# make it parallel
+clust <- try(makeCluster(getOption("cl.cores", 8), type = 'PSOCK'))
+clusterExport(clust, 'dfSp')
+clusterEvalQ(clust, library(glmmTMB))
+
+# dredging
+sig1.dredge <- dredge(gMod.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+sig2.dredge <- dredge(gMod.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+sig3.dredge <- dredge(gMod.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+sig4.dredge <- dredge(gMod.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+sig5.dredge <- dredge(gMod.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+const.dredge <- dredge(gMod.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+no.dredge <- dredge(gMod.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
+
+# kill cluster
+stopCluster(clust)
+
+# rbind and recalc AIC
+cocc.nb.tab <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,sig5.dredge,const.dredge,no.dredge)
+
+
+
+
+### SAVE THIS STUFF FOR LATER #####
+# view top mods
+cocc.nb.tab %>%
+  tibble %>%
+  filter(delta < 5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+# validate top model
+top.cc.mod <- get.models(cocc.nb.tab, 1)[[1]]
+summary(top.cc.mod) # no random effect variance. essentially equivalent to a
+                    # fixed effects mod. I checked.
+
+# get fitted values
+dfSpRnk$CoccFit <- predict(top.cc.mod, dfSpRnk, type = 'response')
+# get residuals
+dfSpRnk$CoccPearsResid <- resid(top.cc.mod, type = 'pearson')
+
+# diagnostic plots
+# fitted vs actual
+ggplot(dfSp, aes(Coccinellidae, CoccFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+# residual vs fitted
+ggplot(dfSp, aes(CoccFit, CoccPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# DHARMa residuals
+plot(simulateResiduals(top.cc.mod))
+
+# calculate pseudo-r2
+r2(top.cc.mod) ## okay. this is all I got for now.
+
+
+## COCCINELLIDAE FALL ####
+# build global mods
+gMod.coc.sig1 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFa,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig2 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFa,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig3 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFa,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig4 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFa,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig5 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFa,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.const <- glmmTMB(Coccinellidae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFa,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.coc.no <- glmmTMB(Coccinellidae ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = dfFa,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+
+# dredge
+# make it parallel
+clust <- try(makeCluster(getOption("cl.cores", 8), type = 'PSOCK'))
+clusterExport(clust, 'dfFaRnk')
+clusterEvalQ(clust, library(glmmTMB))
+
+gMod.coc.sig1 <- dredge(gMod.coc.sig1,
+                        m.lim = c(0, 3),
+                        fixed = 'cond(offset(Area))',
+                        trace = 2,
+                        cluster = clust)
+Cocc.sig2.dredge <- dredge(gMod.coc.sig2,
+                           m.lim = c(0, 3),
+                           fixed = 'cond(offset(Area))',
+                           trace = 2,
+                           cluster = clust)
+Cocc.sig3.dredge <- dredge(gMod.coc.sig3,
+                           m.lim = c(0, 3),
+                           fixed = 'cond(offset(Area))',
+                           trace = 2,
+                           cluster = clust)
+Cocc.sig4.dredge <- dredge(gMod.coc.sig4,
+                           m.lim = c(0, 3),
+                           fixed = 'cond(offset(Area))',
+                           trace = 2,
+                           cluster = clust)
+Cocc.sig5.dredge <- dredge(gMod.coc.sig5,
+                           m.lim = c(0, 3),
+                           fixed = 'cond(offset(Area))',
+                           trace = 2,
+                           cluster = clust)
+Cocc.const.dredge <- dredge(gMod.coc.const,
+                            m.lim = c(0, 3),
+                            fixed = 'cond(offset(Area))',
+                            trace = 2,
+                            cluster = clust)
+Cocc.no.dredge <- dredge(gMod.coc.no,
+                         m.lim = c(0, 3),
+                         fixed = 'cond(offset(Area))',
+                         trace = 2,
+                         cluster = clust)
+# kill cluster
+stopCluster(clust)
+
+# rbind and recalc AIC
+cocc.nb.tab.fa <- rbind(
+  Cocc.sig1.dredge,
+  Cocc.sig2.dredge,
+  Cocc.sig3.dredge,
+  Cocc.sig4.dredge,
+  Cocc.sig5.dredge,
+  Cocc.const.dredge,
+  Cocc.no.dredge)
+
+# view top mods
+cocc.nb.tab.fa %>%
+  tibble %>%
+  filter(delta < 5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+# validate top model
+top.cc.mod.fa <- get.models(cocc.nb.tab, 1)[[1]]
+summary(top.cc.mod) # no random effect variance. essentially equivalent to a
+# fixed effects mod. I checked.
+
+# get fitted values
+dfSpRnk$CoccFit <- predict(top.cc.mod, dfSpRnk, type = 'response')
+# get residuals
+dfSpRnk$CoccPearsResid <- resid(top.cc.mod, type = 'pearson')
+
+# diagnostic plots
+# fitted vs actual
+ggplot(dfFa, aes(Coccinellidae, CoccFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+# residual vs fitted
+ggplot(dfFa, aes(CoccFit, CoccPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# DHARMa residuals
+plot(simulateResiduals(top.cc.mod))
+
+# calculate pseudo-r2
+r2(top.cc.mod) ## okay. this is all I got for now.
+
+## ANTHOCORIDAE ####
+gMod.anth.sig1 <- glmmTMB(Anthocoridae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.anth.sig2 <- glmmTMB(Anthocoridae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.anth.sig3 <- glmmTMB(Anthocoridae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.anth.sig4 <- glmmTMB(Anthocoridae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.anth.sig5 <- glmmTMB(Anthocoridae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.anth.const <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.no <- glmmTMB(Anthocoridae ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = dfSpRnk,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+
+
+# dredge
+Anth.sig1.dredge <- dredge(gMod.anth.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig2.dredge <- dredge(gMod.anth.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig3.dredge <- dredge(gMod.anth.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig4.dredge <- dredge(gMod.anth.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig5.dredge <- dredge(gMod.anth.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.const.dredge <- dredge(gMod.anth.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.no.dredge <- dredge(gMod.anth.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+Anth.nb.tab <- rbind(
+  Anth.sig1.dredge,
+  Anth.sig2.dredge,
+  Anth.sig3.dredge,
+  Anth.sig4.dredge,
+  Anth.sig5.dredge,
+  Anth.const.dredge,
+  Anth.no.dredge)
+# view top mods
+Anth.nb.tab %>%
+  tibble %>%
+  filter(delta < 2) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# validate top model
+top.anth.mod <- get.models(Anth.nb.tab, 1)[[1]]
+summary(top.anth.mod) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfSpRnk$AnthFit <- predict(top.anth.mod, dfSpRnk, type = 'response')
+dfSpRnk$AnthPearsResid <- resid(top.anth.mod, type = 'pearson')
+# fitted vs actual
+ggplot(dfSpRnk, aes(Anthocoridae, AnthFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfSpRnk, aes(AnthFit, AnthPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.anth.mod))
+r2(top.anth.mod) ## okay. this is all I got for now.
+
+## ANTHOCORIDAE FALL ####
+gMod.anth.sig1.f <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig1 +
+                            naturalArid_sig1 +
+                            dirt_sig1 +
+                            ag_sig1 +
+                            impermeable_sig1 +
+                            weedy_sig1 +
+                            water_sig1 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig2.f <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig2 +
+                            naturalArid_sig2 +
+                            dirt_sig2 +
+                            ag_sig2 +
+                            impermeable_sig2 +
+                            weedy_sig2 +
+                            water_sig2 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig3.f <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig3 +
+                            naturalArid_sig3 +
+                            dirt_sig3 +
+                            ag_sig3 +
+                            impermeable_sig3 +
+                            weedy_sig3 +
+                            water_sig3 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig4.f <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig4 +
+                            naturalArid_sig4 +
+                            dirt_sig4 +
+                            ag_sig4 +
+                            impermeable_sig4 +
+                            weedy_sig4 +
+                            water_sig4 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig5.f <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig5 +
+                            naturalArid_sig5 +
+                            dirt_sig5 +
+                            ag_sig5 +
+                            impermeable_sig5 +
+                            weedy_sig5 +
+                            water_sig5 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.const.f <- glmmTMB(Anthocoridae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_const +
+                             naturalArid_const +
+                             dirt_const +
+                             ag_const +
+                             impermeable_const +
+                             weedy_const +
+                             water_const +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfFaRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.anth.no.f <- glmmTMB(Anthocoridae ~
+                          offset(Area) +
+                          log_AllAph +
+                          alfalfa_no +
+                          naturalArid_no +
+                          dirt_no +
+                          ag_no +
+                          impermeable_no +
+                          weedy_no +
+                          water_no +
+                          wateringMethod +
+                          (1|Site/Field), # nested random effects
+                        data = dfFaRnk,
+                        family = 'nbinom2',
+                        na.action = 'na.fail')
+
+
+# dredge
+Anth.sig1.dredge.f <- dredge(gMod.anth.sig1.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig2.dredge.f <- dredge(gMod.anth.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig3.dredge.f <- dredge(gMod.anth.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig4.dredge.f <- dredge(gMod.anth.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig5.dredge.f <- dredge(gMod.anth.sig5.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.const.dredge.f <- dredge(gMod.anth.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.no.dredge.f <- dredge(gMod.anth.no.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+Anth.nb.tab.f <- rbind(
+  Anth.sig1.dredge.f, # conv. error - m.lim reduced
+  Anth.sig2.dredge.f,
+  Anth.sig3.dredge.f,
+  Anth.sig4.dredge.f,
+  Anth.sig5.dredge.f,
+  Anth.const.dredge.f,
+  Anth.no.dredge.f)
+# view top mods
+Anth.nb.tab.f %>%
+  tibble %>%
+  filter(delta < 6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# validate top model
+top.anth.mod.f <- get.models(Anth.nb.tab.f, 1)[[1]]
+summary(top.anth.mod.f) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfFaRnk$AnthFit <- predict(top.anth.mod.f, dfFaRnk, type = 'response')
+dfFaRnk$AnthPearsResid <- resid(top.anth.mod.f, type = 'pearson')
+# fitted vs actual
+ggplot(dfFaRnk, aes(Anthocoridae, AnthFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfFaRnk, aes(AnthFit, AnthPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.anth.mod.f))
+r2(top.anth.mod.f) ## okay. this is all I got for now.
+
+
+
+
+## ARACHNIDA ####
+gMod.ara.sig1 <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig1 +
+                            naturalArid_sig1 +
+                            dirt_sig1 +
+                            ag_sig1 +
+                            impermeable_sig1 +
+                            weedy_sig1 +
+                            water_sig1 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.sig2 <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig2 +
+                            naturalArid_sig2 +
+                            dirt_sig2 +
+                            ag_sig2 +
+                            impermeable_sig2 +
+                            weedy_sig2 +
+                            water_sig2 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.sig3 <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig3 +
+                            naturalArid_sig3 +
+                            dirt_sig3 +
+                            ag_sig3 +
+                            impermeable_sig3 +
+                            weedy_sig3 +
+                            water_sig3 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.sig4 <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig4 +
+                            naturalArid_sig4 +
+                            dirt_sig4 +
+                            ag_sig4 +
+                            impermeable_sig4 +
+                            weedy_sig4 +
+                            water_sig4 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.sig5 <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig5 +
+                            naturalArid_sig5 +
+                            dirt_sig5 +
+                            ag_sig5 +
+                            impermeable_sig5 +
+                            weedy_sig5 +
+                            water_sig5 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.const <- glmmTMB(Arachnida ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_const +
+                             naturalArid_const +
+                             dirt_const +
+                             ag_const +
+                             impermeable_const +
+                             weedy_const +
+                             water_const +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfSpRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ara.no <- glmmTMB(Arachnida ~
+                          offset(Area) +
+                          log_AllAph +
+                          alfalfa_no +
+                          naturalArid_no +
+                          dirt_no +
+                          ag_no +
+                          impermeable_no +
+                          weedy_no +
+                          water_no +
+                          wateringMethod +
+                          (1|Site/Field), # nested random effects
+                       data = dfSpRnk,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+ara.sig1.dredge <- dredge(gMod.ara.sig1, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig2.dredge <- dredge(gMod.ara.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig3.dredge <- dredge(gMod.ara.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig4.dredge <- dredge(gMod.ara.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig5.dredge <- dredge(gMod.ara.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.const.dredge <- dredge(gMod.ara.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.no.dredge <- dredge(gMod.ara.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ara.nb.tab <- rbind(
+  ara.sig1.dredge, # convergence errors, m.lim reduced
+  ara.sig2.dredge,
+  ara.sig3.dredge,
+  ara.sig4.dredge,
+  ara.sig5.dredge,
+  ara.const.dredge,
+  ara.no.dredge)
+# view top mods
+ara.nb.tab %>%
+  tibble %>%
+  filter(delta < 2) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ara.mod <- get.models(ara.nb.tab, 1)[[1]]
+summary(top.ara.mod) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfSpRnk$araFit <- predict(top.ara.mod, dfSpRnk, type = 'response')
+dfSpRnk$araPearsResid <- resid(top.ara.mod, type = 'pearson')
+# fitted vs actual
+ggplot(dfSpRnk, aes(Arachnida, araFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfSpRnk, aes(araFit, araPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ara.mod))
+r2(top.ara.mod) ## okay. this is all I got for now.
+
+
+## ARACHNIDA FALL ####
+gMod.ara.sig1.f <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig2.f <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig3.f <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig4.f <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig5.f <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.const.f <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.no.f <- glmmTMB(Arachnida ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = dfFaRnk,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+ara.sig1.dredge.f <- dredge(gMod.ara.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig2.dredge.f <- dredge(gMod.ara.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig3.dredge.f <- dredge(gMod.ara.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig4.dredge.f <- dredge(gMod.ara.sig4.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig5.dredge.f <- dredge(gMod.ara.sig5.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.const.dredge.f <- dredge(gMod.ara.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.no.dredge.f <- dredge(gMod.ara.no.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ara.nb.tab.f <- rbind(
+  ara.sig1.dredge.f,
+  ara.sig2.dredge.f,
+  ara.sig3.dredge.f,
+  ara.sig4.dredge.f, # convergence errors, m.lim reduced
+  ara.sig5.dredge.f,
+  ara.const.dredge.f,
+  ara.no.dredge.f)
+# view top mods
+ara.nb.tab.f %>%
+  tibble %>%
+  filter(delta < 2) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ara.mod.f <- get.models(ara.nb.tab.f, 1)[[1]]
+summary(top.ara.mod.f) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfFaRnk$araFit <- predict(top.ara.mod.f, dfFaRnk, type = 'response')
+dfFaRnk$araPearsResid <- resid(top.ara.mod.f, type = 'pearson')
+# fitted vs actual
+ggplot(dfFaRnk, aes(Arachnida, araFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfFaRnk, aes(araFit, araPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ara.mod.f))
+r2(top.ara.mod.f) ## okay. this is all I got for now.
+
+
+
+
+## ICHNEUMONOIDEA #####
+gMod.ich.sig1 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig2 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig3 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig4 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig5 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.const <- glmmTMB(Ichneumonoidea ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ich.no <- glmmTMB(Ichneumonoidea ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = dfSpRnk,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+ich.sig1.dredge <- dredge(gMod.ich.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig2.dredge <- dredge(gMod.ich.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig3.dredge <- dredge(gMod.ich.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig4.dredge <- dredge(gMod.ich.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig5.dredge <- dredge(gMod.ich.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.const.dredge <- dredge(gMod.ich.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.no.dredge <- dredge(gMod.ich.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ich.nb.tab <- rbind(
+  ich.sig1.dredge,
+  ich.sig2.dredge,
+  ich.sig3.dredge,
+  ich.sig4.dredge,
+  ich.sig5.dredge,
+  ich.const.dredge,
+  ich.no.dredge)
+# view top mods
+ich.nb.tab %>%
+  tibble %>%
+  filter(delta < 6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ich.mod <- get.models(ich.nb.tab, 1)[[1]]
+summary(top.ich.mod) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfSpRnk$ichFit <- predict(top.ich.mod, dfSpRnk, type = 'response')
+dfSpRnk$ichPearsResid <- resid(top.ich.mod, type = 'pearson')
+# fitted vs actual
+ggplot(dfSpRnk, aes(Ichneumonoidea, ichFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfSpRnk, aes(ichFit, ichPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ich.mod))
+r2(top.ich.mod) ## okay. this is all I got for now.
+
+## ICHNEUMONOIDEA FALL #####
+
+gMod.ich.sig1.f <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig2.f <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig3.f <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig4.f <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig5.f <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.const.f <- glmmTMB(Ichneumonoidea ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfFaRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ich.no.f <- glmmTMB(Ichneumonoidea ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = dfFaRnk,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+ich.sig1.dredge.f <- dredge(gMod.ich.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig2.dredge.f <- dredge(gMod.ich.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig3.dredge.f <- dredge(gMod.ich.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig4.dredge.f <- dredge(gMod.ich.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig5.dredge.f <- dredge(gMod.ich.sig5.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.const.dredge.f <- dredge(gMod.ich.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.no.dredge.f <- dredge(gMod.ich.no.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ich.nb.tab.f <- rbind(
+  ich.sig1.dredge.f,
+  ich.sig2.dredge.f,
+  ich.sig3.dredge.f,
+  ich.sig4.dredge.f,
+  ich.sig5.dredge.f,
+  ich.const.dredge.f,
+  ich.no.dredge.f)
+# view top mods
+ich.nb.tab.f %>%
+  tibble %>%
+  filter(delta < 6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ich.mod.f <- get.models(ich.nb.tab.f, 1)[[1]]
+summary(top.ich.mod.f) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfFaRnk$ichFit <- predict(top.ich.mod.f, dfFaRnk, type = 'response')
+dfFaRnk$ichPearsResid <- resid(top.ich.mod.f, type = 'pearson')
+# fitted vs actual
+ggplot(dfFaRnk, aes(Ichneumonoidea, ichFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfFaRnk, aes(ichFit, ichPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ich.mod.f))
+r2(top.ich.mod.f) ## okay. this is all I got for now.
+
+
+
+## GEOCORIS #####
+gMod.geo.sig1 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig2 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig3 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig4 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig5 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfSpRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.const <- glmmTMB(Geocoris ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = dfSpRnk,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.geo.no <- glmmTMB(Geocoris ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = dfSpRnk,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+geo.sig1.dredge <- dredge(gMod.geo.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig2.dredge <- dredge(gMod.geo.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig3.dredge <- dredge(gMod.geo.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig4.dredge <- dredge(gMod.geo.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig5.dredge <- dredge(gMod.geo.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.const.dredge <- dredge(gMod.geo.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.no.dredge <- dredge(gMod.geo.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+geo.nb.tab <- rbind(
+  geo.sig1.dredge,
+  geo.sig2.dredge,
+  geo.sig3.dredge,
+  geo.sig4.dredge,
+  geo.sig5.dredge,
+  geo.const.dredge,
+  geo.no.dredge)
+# view top mods
+geo.nb.tab %>%
+  tibble %>%
+  filter(delta < 4) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.geo.mod <- get.models(geo.nb.tab, 1)[[1]]
+summary(top.geo.mod) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfSpRnk$geoFit <- predict(top.geo.mod, dfSpRnk, type = 'response')
+dfSpRnk$geoPearsResid <- resid(top.geo.mod, type = 'pearson')
+# fitted vs actual
+ggplot(dfSpRnk, aes(Geocoris, geoFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfSpRnk, aes(geoFit, geoPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.geo.mod))
+r2(top.geo.mod) ## okay. this is all I got for now.
+
+## GEOCORIS FALL #####
+
+gMod.geo.sig1.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig1 +
+                             naturalArid_sig1 +
+                             dirt_sig1 +
+                             ag_sig1 +
+                             impermeable_sig1 +
+                             weedy_sig1 +
+                             water_sig1 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfFaRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig2.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig2 +
+                             naturalArid_sig2 +
+                             dirt_sig2 +
+                             ag_sig2 +
+                             impermeable_sig2 +
+                             weedy_sig2 +
+                             water_sig2 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfFaRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig3.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig3 +
+                             naturalArid_sig3 +
+                             dirt_sig3 +
+                             ag_sig3 +
+                             impermeable_sig3 +
+                             weedy_sig3 +
+                             water_sig3 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfFaRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig4.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig4 +
+                             naturalArid_sig4 +
+                             dirt_sig4 +
+                             ag_sig4 +
+                             impermeable_sig4 +
+                             weedy_sig4 +
+                             water_sig4 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfFaRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig5.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig5 +
+                             naturalArid_sig5 +
+                             dirt_sig5 +
+                             ag_sig5 +
+                             impermeable_sig5 +
+                             weedy_sig5 +
+                             water_sig5 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = dfFaRnk,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.const.f <- glmmTMB(Geocoris ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_const +
+                              naturalArid_const +
+                              dirt_const +
+                              ag_const +
+                              impermeable_const +
+                              weedy_const +
+                              water_const +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = dfFaRnk,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.geo.no.f <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_no +
+                           naturalArid_no +
+                           dirt_no +
+                           ag_no +
+                           impermeable_no +
+                           weedy_no +
+                           water_no +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = dfFaRnk,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+# dredge
+geo.sig1.dredge.f <- dredge(gMod.geo.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig2.dredge.f <- dredge(gMod.geo.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig3.dredge.f <- dredge(gMod.geo.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig4.dredge.f <- dredge(gMod.geo.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig5.dredge.f <- dredge(gMod.geo.sig5.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+geo.const.dredge.f <- dredge(gMod.geo.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.no.dredge.f <- dredge(gMod.geo.no.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+geo.nb.tab.f <- rbind(
+  geo.sig1.dredge.f,
+  geo.sig2.dredge.f,
+  geo.sig3.dredge.f,
+  geo.sig4.dredge.f,
+  geo.sig5.dredge.f, # convergence error. mlim reduced.
+  geo.const.dredge.f,
+  geo.no.dredge.f) # convergence error. mlim reduced.
+# view top mods
+geo.nb.tab.f %>%
+  tibble %>%
+  filter(delta < 6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.geo.mod.f <- get.models(geo.nb.tab.f, 1)[[1]]
+summary(top.geo.mod.f) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+dfFaRnk$geoFit <- predict(top.geo.mod.f, dfFaRnk, type = 'response')
+dfFaRnk$geoPearsResid <- resid(top.geo.mod.f, type = 'pearson')
+# fitted vs actual
+ggplot(dfFaRnk, aes(Geocoris, geoFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(dfFaRnk, aes(geoFit, geoPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.geo.mod.f))
+r2(top.geo.mod.f) ## okay. this is all I got for now.
+
+
+## summaries of all mods ####
+summary(top.cc.mod)
+summary(top.cc.mod.f)
+summary(top.anth.mod)
+summary(top.anth.mod.f)
+summary(top.ara.mod)
+summary(top.ara.mod.f)
+summary(top.geo.mod)
+summary(top.geo.mod.f)
+summary(top.ich.mod)
+summary(top.ich.mod.f)
+
+# REPEAT FOR SCALED VARS ####
+
+
+
+## COCCINELLIDAE ####
+gMod.coc.sig1 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig2 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig3 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig4 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.sig5 <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.coc.const <- glmmTMB(Coccinellidae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.coc.no <- glmmTMB(Coccinellidae ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = springDat,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+
+
+# dredge
+Cocc.sig1.dredge <- dredge(gMod.coc.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig2.dredge <- dredge(gMod.coc.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig3.dredge <- dredge(gMod.coc.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig4.dredge <- dredge(gMod.coc.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig5.dredge <- dredge(gMod.coc.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.const.dredge <- dredge(gMod.coc.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.no.dredge <- dredge(gMod.coc.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+cocc.nb.tab.scaled <- rbind(
+  Cocc.sig1.dredge,
+  Cocc.sig2.dredge,
+  Cocc.sig3.dredge,
+  Cocc.sig4.dredge,
+  Cocc.sig5.dredge,
+  Cocc.const.dredge,
+  Cocc.no.dredge)
+# view top mods
+cocc.nb.tab.scaled %>%
+  tibble %>%
+  filter(delta < 7) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# validate top model
+top.cc.mod.scaled <- get.models(cocc.nb.tab.scaled, 1)[[1]]
+summary(top.cc.mod.scaled) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+springDat$CoccFit <- predict(top.cc.mod.scaled, springDat, type = 'response')
+springDat$CoccPearsResid <- resid(top.cc.mod.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(springDat, aes(Coccinellidae, CoccFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+# residual vs fitted
+ggplot(springDat, aes(CoccFit, CoccPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+
+plot(simulateResiduals(top.cc.mod.scaled))
+
+r2(top.cc.mod.scaled) ## okay. this is all I got for now.
+
+## COCCINELLIDAE FALL####
+gMod.coc.sig1.f <- glmmTMB(Coccinellidae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig1 +
+                             naturalArid_sig1 +
+                             dirt_sig1 +
+                             ag_sig1 +
+                             impermeable_sig1 +
+                             weedy_sig1 +
+                             water_sig1 +
+                             wateringMethod, # won't fit with random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.coc.sig2.f <- glmmTMB(Coccinellidae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig2 +
+                             naturalArid_sig2 +
+                             dirt_sig2 +
+                             ag_sig2 +
+                             impermeable_sig2 +
+                             weedy_sig2 +
+                             water_sig2 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.coc.sig3.f <- glmmTMB(Coccinellidae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig3 +
+                             naturalArid_sig3 +
+                             dirt_sig3 +
+                             ag_sig3 +
+                             impermeable_sig3 +
+                             weedy_sig3 +
+                             water_sig3 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.coc.sig4.f <- glmmTMB(Coccinellidae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig4 +
+                             naturalArid_sig4 +
+                             dirt_sig4 +
+                             ag_sig4 +
+                             impermeable_sig4 +
+                             weedy_sig4 +
+                             water_sig4 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.coc.sig5.f <- glmmTMB(Coccinellidae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig5 +
+                             naturalArid_sig5 +
+                             dirt_sig5 +
+                             ag_sig5 +
+                             impermeable_sig5 +
+                             weedy_sig5 +
+                             water_sig5 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.coc.const.f <- glmmTMB(Coccinellidae ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_const +
+                              naturalArid_const +
+                              dirt_const +
+                              ag_const +
+                              impermeable_const +
+                              weedy_const +
+                              water_const +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.coc.no.f <- glmmTMB(Coccinellidae ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_no +
+                           naturalArid_no +
+                           dirt_no +
+                           ag_no +
+                           impermeable_no +
+                           weedy_no +
+                           water_no +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = fallDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+
+
+# dredge
+Cocc.sig1.dredge.f <- dredge(gMod.coc.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig2.dredge.f <- dredge(gMod.coc.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig3.dredge.f <- dredge(gMod.coc.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig4.dredge.f <- dredge(gMod.coc.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.sig5.dredge.f <- dredge(gMod.coc.sig5.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.const.dredge.f <- dredge(gMod.coc.const.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+Cocc.no.dredge.f <- dredge(gMod.coc.no.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+cocc.nb.tab.f.scaled <- rbind(
+  Cocc.sig1.dredge.f,
+  Cocc.sig2.dredge.f,
+  Cocc.sig3.dredge.f,
+  Cocc.sig4.dredge.f, # convergence errors, m.lim reduced
+  Cocc.sig5.dredge.f, # convergence errors, m.lim reduced
+  Cocc.const.dredge.f, # convergence errors, m.lim reduced
+  Cocc.no.dredge.f)
+# view top mods
+cocc.nb.tab.f.scaled %>%
+  tibble %>%
+  filter(delta < 3) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# validate top model
+top.cc.mod.f.scaled <- get.models(cocc.nb.tab.f.scaled, 1)[[1]]
+summary(top.cc.mod.f.scaled) # Convergence problems
+
+fallDat$CoccFit <- predict(top.cc.mod.f.scaled, fallDat, type = 'response')
+fallDat$CoccPearsResid <- resid(top.cc.mod.f.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(fallDat, aes(Coccinellidae, CoccFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+# residual vs fitted
+ggplot(fallDat, aes(CoccFit, CoccPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+
+plot(simulateResiduals(top.cc.mod.f.scaled))
+
+r2(top.cc.mod.f.scaled) ## okay. this is all I got for now.
+
+
+
+## ANTHOCORIDAE ####
+gMod.anth.sig1 <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig1 +
+                            naturalArid_sig1 +
+                            dirt_sig1 +
+                            ag_sig1 +
+                            impermeable_sig1 +
+                            weedy_sig1 +
+                            water_sig1 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig2 <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig2 +
+                            naturalArid_sig2 +
+                            dirt_sig2 +
+                            ag_sig2 +
+                            impermeable_sig2 +
+                            weedy_sig2 +
+                            water_sig2 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig3 <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig3 +
+                            naturalArid_sig3 +
+                            dirt_sig3 +
+                            ag_sig3 +
+                            impermeable_sig3 +
+                            weedy_sig3 +
+                            water_sig3 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig4 <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig4 +
+                            naturalArid_sig4 +
+                            dirt_sig4 +
+                            ag_sig4 +
+                            impermeable_sig4 +
+                            weedy_sig4 +
+                            water_sig4 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.sig5 <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_sig5 +
+                            naturalArid_sig5 +
+                            dirt_sig5 +
+                            ag_sig5 +
+                            impermeable_sig5 +
+                            weedy_sig5 +
+                            water_sig5 +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.anth.const <- glmmTMB(Anthocoridae ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_const +
+                             naturalArid_const +
+                             dirt_const +
+                             ag_const +
+                             impermeable_const +
+                             weedy_const +
+                             water_const +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = springDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.anth.no <- glmmTMB(Anthocoridae ~
+                          offset(Area) +
+                          log_AllAph +
+                          alfalfa_no +
+                          naturalArid_no +
+                          dirt_no +
+                          ag_no +
+                          impermeable_no +
+                          weedy_no +
+                          water_no +
+                          wateringMethod +
+                          (1|Site/Field), # nested random effects
+                        data = springDat,
+                        family = 'nbinom2',
+                        na.action = 'na.fail')
+
+
+# dredge
+Anth.sig1.dredge <- dredge(gMod.anth.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig2.dredge <- dredge(gMod.anth.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig3.dredge <- dredge(gMod.anth.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig4.dredge <- dredge(gMod.anth.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig5.dredge <- dredge(gMod.anth.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.const.dredge <- dredge(gMod.anth.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.no.dredge <- dredge(gMod.anth.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+Anth.nb.tab.scaled <- rbind(
+  Anth.sig1.dredge,
+  Anth.sig2.dredge,
+  Anth.sig3.dredge,
+  Anth.sig4.dredge,
+  Anth.sig5.dredge,
+  Anth.const.dredge,
+  Anth.no.dredge)
+# view top mods
+Anth.nb.tab.scaled %>%
+  tibble %>%
+  filter(delta < 6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# validate top model
+top.anth.mod.scaled <- get.models(Anth.nb.tab.scaled, 1)[[1]]
+summary(top.anth.mod) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+springDat$AnthFit <- predict(top.anth.mod.scaled, springDat, type = 'response')
+springDat$AnthPearsResid <- resid(top.anth.mod.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(springDat, aes(Anthocoridae, AnthFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(springDat, aes(AnthFit, AnthPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.anth.mod.scaled))
+r2(top.anth.mod.scaled) ## okay. this is all I got for now.
+
+## ANTHOCORIDAE FALL ####
+gMod.anth.sig1.f <- glmmTMB(Anthocoridae ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_sig1 +
+                              naturalArid_sig1 +
+                              dirt_sig1 +
+                              ag_sig1 +
+                              impermeable_sig1 +
+                              weedy_sig1 +
+                              water_sig1 +
+                              wateringMethod, # won't fit with random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.anth.sig2.f <- glmmTMB(Anthocoridae ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_sig2 +
+                              naturalArid_sig2 +
+                              dirt_sig2 +
+                              ag_sig2 +
+                              impermeable_sig2 +
+                              weedy_sig2 +
+                              water_sig2 +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.anth.sig3.f <- glmmTMB(Anthocoridae ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_sig3 +
+                              naturalArid_sig3 +
+                              dirt_sig3 +
+                              ag_sig3 +
+                              impermeable_sig3 +
+                              weedy_sig3 +
+                              water_sig3 +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.anth.sig4.f <- glmmTMB(Anthocoridae ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_sig4 +
+                              naturalArid_sig4 +
+                              dirt_sig4 +
+                              ag_sig4 +
+                              impermeable_sig4 +
+                              weedy_sig4 +
+                              water_sig4 +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.anth.sig5.f <- glmmTMB(Anthocoridae ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_sig5 +
+                              naturalArid_sig5 +
+                              dirt_sig5 +
+                              ag_sig5 +
+                              impermeable_sig5 +
+                              weedy_sig5 +
+                              water_sig5 +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.anth.const.f <- glmmTMB(Anthocoridae ~
+                               offset(Area) +
+                               log_AllAph +
+                               alfalfa_const +
+                               naturalArid_const +
+                               dirt_const +
+                               ag_const +
+                               impermeable_const +
+                               weedy_const +
+                               water_const +
+                               wateringMethod +
+                               (1|Site/Field), # nested random effects
+                             data = fallDat,
+                             family = 'nbinom2',
+                             na.action = 'na.fail')
+gMod.anth.no.f <- glmmTMB(Anthocoridae ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_no +
+                            naturalArid_no +
+                            dirt_no +
+                            ag_no +
+                            impermeable_no +
+                            weedy_no +
+                            water_no +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = fallDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+
+
+# dredge
+Anth.sig1.dredge.f <- dredge(gMod.anth.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig2.dredge.f <- dredge(gMod.anth.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig3.dredge.f <- dredge(gMod.anth.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig4.dredge.f <- dredge(gMod.anth.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.sig5.dredge.f <- dredge(gMod.anth.sig5.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.const.dredge.f <- dredge(gMod.anth.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+Anth.no.dredge.f <- dredge(gMod.anth.no.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+Anth.nb.tab.f.scaled <- rbind(
+  Anth.sig1.dredge.f,
+  Anth.sig2.dredge.f,
+  Anth.sig3.dredge.f,
+  Anth.sig4.dredge.f,
+  Anth.sig5.dredge.f,
+  Anth.const.dredge.f,
+  Anth.no.dredge.f)
+# view top mods
+Anth.nb.tab.f.scaled %>%
+  tibble %>%
+  filter(delta < 2) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# validate top model
+top.anth.mod.f.scaled <- get.models(Anth.nb.tab.f.scaled, 1)[[1]]
+summary(top.anth.mod.f) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+fallDat$AnthFit <- predict(top.anth.mod.f.scaled, fallDat, type = 'response')
+fallDat$AnthPearsResid <- resid(top.anth.mod.f.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(fallDat, aes(Anthocoridae, AnthFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(fallDat, aes(AnthFit, AnthPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.anth.mod.f.scaled))
+r2(top.anth.mod.f.scaled) ## okay. this is all I got for now.
+
+
+
+
+## ARACHNIDA ####
+gMod.ara.sig1 <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig2 <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig3 <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig4 <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.sig5 <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ara.const <- glmmTMB(Arachnida ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ara.no <- glmmTMB(Arachnida ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = springDat,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+ara.sig1.dredge <- dredge(gMod.ara.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig2.dredge <- dredge(gMod.ara.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig3.dredge <- dredge(gMod.ara.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig4.dredge <- dredge(gMod.ara.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig5.dredge <- dredge(gMod.ara.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.const.dredge <- dredge(gMod.ara.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.no.dredge <- dredge(gMod.ara.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ara.nb.tab.scaled <- rbind(
+  ara.sig1.dredge, # convergence errors, m.lim reduced
+  ara.sig2.dredge,
+  ara.sig3.dredge,
+  ara.sig4.dredge,
+  ara.sig5.dredge,
+  ara.const.dredge,
+  ara.no.dredge)
+# view top mods
+ara.nb.tab.scaled %>%
+  tibble %>%
+  filter(delta < 3) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ara.mod.scaled <- get.models(ara.nb.tab.scaled, 1)[[1]]
+summary(top.ara.mod) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+springDat$araFit <- predict(top.ara.mod.scaled, springDat, type = 'response')
+springDat$araPearsResid <- resid(top.ara.mod.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(springDat, aes(Arachnida, araFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(springDat, aes(araFit, araPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ara.mod.scaled))
+r2(top.ara.mod.scaled) ## okay. this is all I got for now.
+
+
+## ARACHNIDA FALL ####
+gMod.ara.sig1.f <- glmmTMB(Arachnida ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig1 +
+                             naturalArid_sig1 +
+                             dirt_sig1 +
+                             ag_sig1 +
+                             impermeable_sig1 +
+                             weedy_sig1 +
+                             water_sig1 +
+                             wateringMethod, # won't fit with random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ara.sig2.f <- glmmTMB(Arachnida ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig2 +
+                             naturalArid_sig2 +
+                             dirt_sig2 +
+                             ag_sig2 +
+                             impermeable_sig2 +
+                             weedy_sig2 +
+                             water_sig2 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ara.sig3.f <- glmmTMB(Arachnida ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig3 +
+                             naturalArid_sig3 +
+                             dirt_sig3 +
+                             ag_sig3 +
+                             impermeable_sig3 +
+                             weedy_sig3 +
+                             water_sig3 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ara.sig4.f <- glmmTMB(Arachnida ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig4 +
+                             naturalArid_sig4 +
+                             dirt_sig4 +
+                             ag_sig4 +
+                             impermeable_sig4 +
+                             weedy_sig4 +
+                             water_sig4 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ara.sig5.f <- glmmTMB(Arachnida ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig5 +
+                             naturalArid_sig5 +
+                             dirt_sig5 +
+                             ag_sig5 +
+                             impermeable_sig5 +
+                             weedy_sig5 +
+                             water_sig5 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ara.const.f <- glmmTMB(Arachnida ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_const +
+                              naturalArid_const +
+                              dirt_const +
+                              ag_const +
+                              impermeable_const +
+                              weedy_const +
+                              water_const +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.ara.no.f <- glmmTMB(Arachnida ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_no +
+                           naturalArid_no +
+                           dirt_no +
+                           ag_no +
+                           impermeable_no +
+                           weedy_no +
+                           water_no +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = fallDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+# dredge
+ara.sig1.dredge.f <- dredge(gMod.ara.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig2.dredge.f <- dredge(gMod.ara.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig3.dredge.f <- dredge(gMod.ara.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig4.dredge.f <- dredge(gMod.ara.sig4.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+ara.sig5.dredge.f <- dredge(gMod.ara.sig5.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.const.dredge.f <- dredge(gMod.ara.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ara.no.dredge.f <- dredge(gMod.ara.no.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ara.nb.tab.f.scaled <- rbind(
+  ara.sig1.dredge.f,
+  ara.sig2.dredge.f,
+  ara.sig3.dredge.f,
+  ara.sig4.dredge.f, # convergence errors, m.lim reduced
+  ara.sig5.dredge.f,
+  ara.const.dredge.f,
+  ara.no.dredge.f)
+# view top mods
+ara.nb.tab.f.scaled %>%
+  tibble %>%
+  filter(delta < 4) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ara.mod.f.scaled <- get.models(ara.nb.tab.f.scaled, 1)[[1]]
+summary(top.ara.mod.f.scaled) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+fallDat$araFit <- predict(top.ara.mod.f.scaled, fallDat, type = 'response')
+fallDat$araPearsResid <- resid(top.ara.mod.f.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(fallDat, aes(Arachnida, araFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(fallDat, aes(araFit, araPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ara.mod.f.scaled))
+r2(top.ara.mod.f.scaled) ## okay. this is all I got for now.
+
+
+
+
+## ICHNEUMONOIDEA #####
+gMod.ich.sig1 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig2 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig3 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig4 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.sig5 <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.ich.const <- glmmTMB(Ichneumonoidea ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.ich.no <- glmmTMB(Ichneumonoidea ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = springDat,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+ich.sig1.dredge <- dredge(gMod.ich.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig2.dredge <- dredge(gMod.ich.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig3.dredge <- dredge(gMod.ich.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig4.dredge <- dredge(gMod.ich.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig5.dredge <- dredge(gMod.ich.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.const.dredge <- dredge(gMod.ich.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.no.dredge <- dredge(gMod.ich.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ich.nb.tab.scaled <- rbind(
+  ich.sig1.dredge,
+  ich.sig2.dredge,
+  ich.sig3.dredge,
+  ich.sig4.dredge,
+  ich.sig5.dredge,
+  ich.const.dredge,
+  ich.no.dredge)
+# view top mods
+ich.nb.tab.scaled %>%
+  tibble %>%
+  filter(delta < 5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+# validate top model
+top.ich.mod.scaled <- get.models(ich.nb.tab.scaled, 1)[[1]]
+summary(top.ich.mod.scaled) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+springDat$ichFit <- predict(top.ich.mod.scaled, springDat, type = 'response')
+springDat$ichPearsResid <- resid(top.ich.mod.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(springDat, aes(Ichneumonoidea, ichFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(springDat, aes(ichFit, ichPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ich.mod.scaled))
+r2(top.ich.mod.scaled) ## okay. this is all I got for now.
+
+## ICHNEUMONOIDEA FALL #####
+
+gMod.ich.sig1.f <- glmmTMB(Ichneumonoidea ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig1 +
+                             naturalArid_sig1 +
+                             dirt_sig1 +
+                             ag_sig1 +
+                             impermeable_sig1 +
+                             weedy_sig1 +
+                             water_sig1 +
+                             wateringMethod, # random effects won't fit
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ich.sig2.f <- glmmTMB(Ichneumonoidea ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig2 +
+                             naturalArid_sig2 +
+                             dirt_sig2 +
+                             ag_sig2 +
+                             impermeable_sig2 +
+                             weedy_sig2 +
+                             water_sig2 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ich.sig3.f <- glmmTMB(Ichneumonoidea ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig3 +
+                             naturalArid_sig3 +
+                             dirt_sig3 +
+                             ag_sig3 +
+                             impermeable_sig3 +
+                             weedy_sig3 +
+                             water_sig3 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ich.sig4.f <- glmmTMB(Ichneumonoidea ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig4 +
+                             naturalArid_sig4 +
+                             dirt_sig4 +
+                             ag_sig4 +
+                             impermeable_sig4 +
+                             weedy_sig4 +
+                             water_sig4 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ich.sig5.f <- glmmTMB(Ichneumonoidea ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig5 +
+                             naturalArid_sig5 +
+                             dirt_sig5 +
+                             ag_sig5 +
+                             impermeable_sig5 +
+                             weedy_sig5 +
+                             water_sig5 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.ich.const.f <- glmmTMB(Ichneumonoidea ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_const +
+                              naturalArid_const +
+                              dirt_const +
+                              ag_const +
+                              impermeable_const +
+                              weedy_const +
+                              water_const +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.ich.no.f <- glmmTMB(Ichneumonoidea ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_no +
+                           naturalArid_no +
+                           dirt_no +
+                           ag_no +
+                           impermeable_no +
+                           weedy_no +
+                           water_no +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = fallDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+# dredge
+ich.sig1.dredge.f <- dredge(gMod.ich.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig2.dredge.f <- dredge(gMod.ich.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig3.dredge.f <- dredge(gMod.ich.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig4.dredge.f <- dredge(gMod.ich.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.sig5.dredge.f <- dredge(gMod.ich.sig5.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.const.dredge.f <- dredge(gMod.ich.const.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+ich.no.dredge.f <- dredge(gMod.ich.no.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+ich.nb.tab.f.scaled <- rbind(
+  ich.sig1.dredge.f,
+  ich.sig2.dredge.f,
+  ich.sig3.dredge.f,
+  ich.sig4.dredge.f,
+  ich.sig5.dredge.f,
+  ich.const.dredge.f,
+  ich.no.dredge.f)
+# view top mods
+ich.nb.tab.f.scaled %>%
+  tibble %>%
+  filter(delta < 9) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.ich.mod.f.scaled <- get.models(ich.nb.tab.f.scaled, 1)[[1]]
+summary(top.ich.mod.f.scaled) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+fallDat$ichFit <- predict(top.ich.mod.f.scaled, fallDat, type = 'response')
+fallDat$ichPearsResid <- resid(top.ich.mod.f.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(fallDat, aes(Ichneumonoidea, ichFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(fallDat, aes(ichFit, ichPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.ich.mod.f.scaled))
+r2(top.ich.mod.f.scaled) ## okay. this is all I got for now.
+
+
+
+## GEOCORIS #####
+gMod.geo.sig1 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig1 +
+                           naturalArid_sig1 +
+                           dirt_sig1 +
+                           ag_sig1 +
+                           impermeable_sig1 +
+                           weedy_sig1 +
+                           water_sig1 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig2 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig2 +
+                           naturalArid_sig2 +
+                           dirt_sig2 +
+                           ag_sig2 +
+                           impermeable_sig2 +
+                           weedy_sig2 +
+                           water_sig2 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig3 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig3 +
+                           naturalArid_sig3 +
+                           dirt_sig3 +
+                           ag_sig3 +
+                           impermeable_sig3 +
+                           weedy_sig3 +
+                           water_sig3 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig4 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig4 +
+                           naturalArid_sig4 +
+                           dirt_sig4 +
+                           ag_sig4 +
+                           impermeable_sig4 +
+                           weedy_sig4 +
+                           water_sig4 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.sig5 <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_sig5 +
+                           naturalArid_sig5 +
+                           dirt_sig5 +
+                           ag_sig5 +
+                           impermeable_sig5 +
+                           weedy_sig5 +
+                           water_sig5 +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = springDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+gMod.geo.const <- glmmTMB(Geocoris ~
+                            offset(Area) +
+                            log_AllAph +
+                            alfalfa_const +
+                            naturalArid_const +
+                            dirt_const +
+                            ag_const +
+                            impermeable_const +
+                            weedy_const +
+                            water_const +
+                            wateringMethod +
+                            (1|Site/Field), # nested random effects
+                          data = springDat,
+                          family = 'nbinom2',
+                          na.action = 'na.fail')
+gMod.geo.no <- glmmTMB(Geocoris ~
+                         offset(Area) +
+                         log_AllAph +
+                         alfalfa_no +
+                         naturalArid_no +
+                         dirt_no +
+                         ag_no +
+                         impermeable_no +
+                         weedy_no +
+                         water_no +
+                         wateringMethod +
+                         (1|Site/Field), # nested random effects
+                       data = springDat,
+                       family = 'nbinom2',
+                       na.action = 'na.fail')
+# dredge
+geo.sig1.dredge <- dredge(gMod.geo.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig2.dredge <- dredge(gMod.geo.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig3.dredge <- dredge(gMod.geo.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig4.dredge <- dredge(gMod.geo.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig5.dredge <- dredge(gMod.geo.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.const.dredge <- dredge(gMod.geo.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.no.dredge <- dredge(gMod.geo.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+geo.nb.tab.scaled <- rbind(
+  geo.sig1.dredge,
+  geo.sig2.dredge,
+  geo.sig3.dredge,
+  geo.sig4.dredge,
+  geo.sig5.dredge,
+  geo.const.dredge,
+  geo.no.dredge)
+# view top mods
+geo.nb.tab.scaled %>%
+  tibble %>%
+  filter(delta < 8) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+
+# validate top model
+top.geo.mod.scaled <- get.models(geo.nb.tab.scaled, 1)[[1]]
+summary(top.geo.mod.scaled) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+springDat$geoFit <- predict(top.geo.mod.scaled, springDat, type = 'response')
+springDat$geoPearsResid <- resid(top.geo.mod.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(springDat, aes(Geocoris, geoFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(springDat, aes(geoFit, geoPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.geo.mod.scaled))
+r2(top.geo.mod.scaled) ## okay. this is all I got for now.
+
+## GEOCORIS FALL #####
+
+gMod.geo.sig1.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig1 +
+                             naturalArid_sig1 +
+                             dirt_sig1 +
+                             ag_sig1 +
+                             impermeable_sig1 +
+                             weedy_sig1 +
+                             water_sig1 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig2.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig2 +
+                             naturalArid_sig2 +
+                             dirt_sig2 +
+                             ag_sig2 +
+                             impermeable_sig2 +
+                             weedy_sig2 +
+                             water_sig2 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig3.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig3 +
+                             naturalArid_sig3 +
+                             dirt_sig3 +
+                             ag_sig3 +
+                             impermeable_sig3 +
+                             weedy_sig3 +
+                             water_sig3 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig4.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig4 +
+                             naturalArid_sig4 +
+                             dirt_sig4 +
+                             ag_sig4 +
+                             impermeable_sig4 +
+                             weedy_sig4 +
+                             water_sig4 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.sig5.f <- glmmTMB(Geocoris ~
+                             offset(Area) +
+                             log_AllAph +
+                             alfalfa_sig5 +
+                             naturalArid_sig5 +
+                             dirt_sig5 +
+                             ag_sig5 +
+                             impermeable_sig5 +
+                             weedy_sig5 +
+                             water_sig5 +
+                             wateringMethod +
+                             (1|Site/Field), # nested random effects
+                           data = fallDat,
+                           family = 'nbinom2',
+                           na.action = 'na.fail')
+gMod.geo.const.f <- glmmTMB(Geocoris ~
+                              offset(Area) +
+                              log_AllAph +
+                              alfalfa_const +
+                              naturalArid_const +
+                              dirt_const +
+                              ag_const +
+                              impermeable_const +
+                              weedy_const +
+                              water_const +
+                              wateringMethod +
+                              (1|Site/Field), # nested random effects
+                            data = fallDat,
+                            family = 'nbinom2',
+                            na.action = 'na.fail')
+gMod.geo.no.f <- glmmTMB(Geocoris ~
+                           offset(Area) +
+                           log_AllAph +
+                           alfalfa_no +
+                           naturalArid_no +
+                           dirt_no +
+                           ag_no +
+                           impermeable_no +
+                           weedy_no +
+                           water_no +
+                           wateringMethod +
+                           (1|Site/Field), # nested random effects
+                         data = fallDat,
+                         family = 'nbinom2',
+                         na.action = 'na.fail')
+# dredge
+geo.sig1.dredge.f <- dredge(gMod.geo.sig1.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig2.dredge.f <- dredge(gMod.geo.sig2.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig3.dredge.f <- dredge(gMod.geo.sig3.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig4.dredge.f <- dredge(gMod.geo.sig4.f, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2)
+geo.sig5.dredge.f <- dredge(gMod.geo.sig5.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+geo.const.dredge.f <- dredge(gMod.geo.const.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+geo.no.dredge.f <- dredge(gMod.geo.no.f, m.lim = c(0, 2), fixed = 'cond(offset(Area))', trace = 2)
+# rbind and recalc AIC
+geo.nb.tab.f.scaled <- rbind(
+  geo.sig1.dredge.f,
+  geo.sig2.dredge.f,
+  geo.sig3.dredge.f,
+  geo.sig4.dredge.f,
+  geo.sig5.dredge.f, # convergence error. mlim reduced.
+  geo.const.dredge.f,
+  geo.no.dredge.f) # convergence error. mlim reduced.
+# view top mods
+geo.nb.tab.f.scaled %>%
+  tibble %>%
+  filter(delta < 6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+
+
+# validate top model
+top.geo.mod.f.scaled <- get.models(geo.nb.tab.f.scaled, 1)[[1]]
+summary(top.geo.mod.f.scaled) # no random effect variance. essentially equivalent to a fixed effects mod. I checked.
+fallDat$geoFit <- predict(top.geo.mod.f.scaled, fallDat, type = 'response')
+fallDat$geoPearsResid <- resid(top.geo.mod.f.scaled, type = 'pearson')
+# fitted vs actual
+ggplot(fallDat, aes(Geocoris, geoFit)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+# residual vs fitted
+ggplot(fallDat, aes(geoFit, geoPearsResid)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = F)
+
+plot(simulateResiduals(top.geo.mod.f.scaled))
+r2(top.geo.mod.f.scaled) ## okay. this is all I got for now.
+
+
+
+
+
+
+## SUMMARIES ####
+## Coccinellidae
+### Spring
+cocc.nb.tab %>% tibble %>% filter(delta<2) %>% select(where(~!all(is.na(.x)))) %>% View
+cocc.nb.tab.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# spring: top two models nearly the same (first is the exact same formula),
+# bigger delta between 1 and 2 with scaling
+r2(top.cc.mod) #0.199
+r2(top.cc.mod.scaled) #0.270
+
+
+### Fall
+cocc.nb.tab.f %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x)))) %>% View
+cocc.nb.tab.f.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# fall: top models are completely different. rank transform favors
+# -impermeable_no, +wM with large delta to next mod. Scaling favors + alfalfa,
+# maybe + ag but with no clear best model.
+r2(top.cc.mod.f) #0.306
+r2(top.cc.mod.f.scaled) #0.176
+
+## Anthocoridae
+### Spring
+Anth.nb.tab %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+Anth.nb.tab.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# top models are the same. rank transform shows consistency of -alfalfa_no
+# effect across scales. scaling shows bigger delta between top mod and others.
+r2(top.anth.mod) #0.436
+r2(top.anth.mod.scaled) #0.472
+
+### Fall
+Anth.nb.tab.f %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+Anth.nb.tab.f.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# consistent +aphid effect in both tables. landcover factors vary in tables.
+# bigger delta between top mod and others when using rank transform.
+r2(top.anth.mod.f) #0.344
+r2(top.anth.mod.f.scaled) #0.336
+
+
+
+## Arachnida
+### Spring
+ara.nb.tab %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+ara.nb.tab.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# landcover factors differ, and neither top models carry much weight. difficult
+# to summarize.
+r2(top.ara.mod) #0.156
+r2(top.ara.mod.scaled) #0.216
+
+
+### Fall
+ara.nb.tab.f %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+ara.nb.tab.f.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# top mods seem to show +weedy at intermediate/large scales and +aphids. Top
+# mods have little weight in both tables.
+r2(top.ara.mod.f) #0.354
+r2(top.ara.mod.f.scaled) #0.406
+
+
+
+## Ichneumonidae
+### Spring
+ich.nb.tab %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+ich.nb.tab.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# Both tabs have -impermeable_sig1 in the top model. larger weight top mod in
+# rank transform table. Rank transform table also has +weedy_sig1 effect in top
+# mod.
+r2(top.ich.mod) #0.281/0.590
+r2(top.ich.mod.scaled) #0.184/0.702
+
+
+### Fall
+ich.nb.tab.f %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+ich.nb.tab.f.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# both mod tables have top mods with huge weight. it's +ag_sig1+allaph model.
+# AllAph coeff is huge in both models.
+r2(top.ich.mod.f) #0.638
+r2(top.ich.mod.f.scaled) #0.670
+
+
+
+
+# Geocoris
+### Spring
+geo.nb.tab %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+geo.nb.tab.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# top rank transform mods have very little weight and no consistent factors
+# except impermeable_sig3. Scaled table has two top models with high weight:
+# -alfalfa5-impermeable5 and -alfalfaconst-impermeableconst
+r2(top.geo.mod) #0.413
+r2(top.geo.mod.scaled) #0.573
+
+
+
+### Fall
+geo.nb.tab.f %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+geo.nb.tab.f.scaled %>% tibble %>% filter(delta<2)%>% select(where(~!all(is.na(.x))))  %>% View
+# rank transform table is inconsistent, top mods have low weight. Scaled modtab
+# suggests -impermeable_no, which is confirmed in the ranked tab.
+r2(top.geo.mod.f) #0.253
+r2(top.geo.mod.f.scaled) #0.477
+
+
+## summary from hand-typed collection of modtab stats
+mtStats <- read_csv('modTab_stats.csv')
+
+ggplot(mtStats, aes(`Best model R2`, y =`Scaled v. ranked`)) +
+  geom_violin() +
+  geom_point()
+
+mtStats %>%
+  select(Species, Season, `Scaled v. ranked`, `Best model R2`) %>%
+  pivot_wider(names_from = `Scaled v. ranked`,
+              values_from = `Best model R2`) %>%
+  ggplot(aes(Scaled, Rank)) +
+  geom_point() +
+  geom_smooth(method = 'lm')
+
+mtStats %>%
+  select(Species, Season, `Scaled v. ranked`, `Best model R2`, `2nd best delta`) %>%
+  ggplot(aes(`Best model R2`, `2nd best delta`))+
+  geom_point() +
+  geom_smooth(method = 'lm')
+
+mtStats %>%
+  select(Species, Season, `Scaled v. ranked`, `Best model R2`,
+         `N models with delta<2`) %>%
+  ggplot(aes(`Best model R2`, `N models with delta<2`))+
+  geom_point()
+
+
+
+
+# following Zuur 2009 ####
 # Cleveland dotplot
 dotchart(subplotData$AllAph,
          groups = factor(subplotData$Season))
@@ -542,7 +3868,422 @@ for (i in 1:4){
 text(GLMERdata$AllAph, GLMERdata$Coccinellidae, GLMERdata$fSite, cex = 0.9)
 # obviously very silly fit here.
 
-# Top-down effect ####
+# what about a poisson model?
+M.pois <- glm(Coccinellidae ~ log(AllAph+1), GLMERdata, family = 'poisson')
+summary(M.pois)
+# not a good fit at all!
+plot(M.pois, which = 1)
+hist(resid(M.pois)) # this is supposed to look poisson distributed, right?
+
+# maybe try poisson with raw data
+M.pois2 <- glm(Coccinellidae ~ AllAph, GLMERdata, family = 'poisson')
+summary(M.pois2) # even worse.
+
+# maybe add season factor
+M.pois3<- glm(Coccinellidae ~ log(AllAph+1) + Season,
+              GLMERdata, family = 'poisson')
+summary(M.pois3) # better!
+plot(M.pois3, which = 1) # a little odd
+hist(resid(M.pois3))
+# plot (base r, following Zuur)
+MyData <- data.frame(AllAph = seq(0, 6000, by = 1), Season = rep('Spring', 6001))
+MyData2 <- data.frame(AllAph = seq(0, 6000, by = 1), Season = rep('Fall', 6001))
+G <- predict(M.pois3, newdata = MyData, type = 'link', se = T)
+Sp <- exp(G$fit)
+Q <- predict(M.pois3, newdata = MyData2, type = 'link', se = T)
+Fa <- exp(Q$fit)
+plot(GLMERdata$AllAph, GLMERdata$Coccinellidae)
+lines(MyData$AllAph, Sp)
+lines(MyData$AllAph, Fa)
+# ok, this doesn't look like a great fit, but it works!
+# now check overdispersion?
+# residual deviance / df should be about 1
+224.09/123 # 1.82. maybe?
+install.packages('AER')
+library(AER)
+dispersiontest(M.pois3) # ok definitely overdispersed according to this.
+# can try neg bin, or try adding covariates. Missing covariates can create
+# overdispersion.
+# try adding site factor.
+M.pois4 <- glm(Coccinellidae ~ log(AllAph+1) + Season + Site,
+               GLMERdata, family = 'poisson')
+summary(M.pois4) # residual deviance dropping again
+anova(M.pois3, M.pois4)
+# maunally calculate p - difference in deviance is chi-sq, 3 df
+1-pchisq(224.09-204.16, 3) # very small p
+# still overdispersed?
+204.16/120 # slighly less?
+dispersiontest(M.pois4) # yeah, still overdispersed.
+# try adding site*field factors.
+GLMERdata %<>% mutate(SiteField = paste0(Site, Field))
+M.pois5 <- glm(Coccinellidae ~ log(AllAph+1) + Season + SiteField,
+               GLMERdata, family = 'poisson')
+summary(M.pois5) # residual deviance dropping again
+184.48/112
+dispersiontest(M.pois5) # closer, but still overdispersed. try quasipoisson.
+
+M.qPois <- glm(Coccinellidae ~ log(AllAph+1) + Season,
+               GLMERdata, family = 'quasipoisson')
+summary(M.qPois) # se must be multiplied by the sqrt(phi). loss of power.
+plot(M.qPois, which = 1)
+MyData <- data.frame(AllAph = seq(0, 6000, by = 1), Season = rep('Spring', 6001))
+MyData2 <- data.frame(AllAph = seq(0, 6000, by = 1), Season = rep('Fall', 6001))
+G <- predict(M.qPois, newdata = MyData, type = 'link', se = T)
+Sp <- exp(G$fit)
+Q <- predict(M.qPois, newdata = MyData2, type = 'link', se = T)
+Fa <- exp(Q$fit)
+plot(GLMERdata$AllAph, GLMERdata$Coccinellidae)
+lines(MyData$AllAph, Sp)
+lines(MyData$AllAph, Fa)
+SpSeUp <- exp(G$fit + 1.96 * G$se.fit)
+SpSeLow <- exp(G$fit - 1.96 * G$se.fit)
+FaSeUp <- exp(Q$fit + 1.96 * Q$se.fit)
+FaSeLow <- exp(Q$fit - 1.96 * Q$se.fit)
+lines(MyData$AllAph, SpSeUp, lty = 2)
+lines(MyData$AllAph, SpSeLow, lty = 2)
+lines(MyData$AllAph, FaSeUp, lty = 2)
+lines(MyData$AllAph, FaSeLow, lty = 2)
+# model validation - look for patterns in residuals
+# predicted response
+mu <- predict(M.qPois, type = 'response')
+# get pearson residuals (scaled by variance)
+EP <- resid(M.qPois, type = 'pearson')
+# correct for dispersion param
+EPc <- EP/sqrt(2.173939*mu)
+# deviance residuals (similar to pearson)
+ED <- resid(M.qPois, type = 'deviance')
+# plot
+plot(M.qPois, which = 1, main = 'response residuals')
+plot(mu, EP, main = 'pearson residuals')
+plot(mu, EPc, main = 'pearson (scaled) residuals')
+plot(mu, ED, main = 'deviance residuals')
+# some clear patters due to site effects here.
+# not fitting zeros well.
+
+# what if aphids are just a proxy for site (eg pesticides!)
+M.qPois2 <- glm(Coccinellidae ~ Season + Site,
+                GLMERdata, family = 'quasipoisson')
+summary(M.qPois2)
+M.qPoisNull <- glm(Coccinellidae ~ Season,
+                GLMERdata, family = 'quasipoisson')
+anova(M.qPoisNull, M.qPois2)
+1-pchisq(231.66-218.12, 3) # very small p.
+
+# try neg bin model
+library(MASS)
+M.nb <- glm.nb(Coccinellidae ~ Season + log(AllAph+1),
+               GLMERdata, link = 'log')
+summary(M.nb)
+anova(M.nb)
+M.nb2 <- glm.nb(Coccinellidae ~ Season + Site,
+                GLMERdata)
+summary(M.nb2)
+anova(M.nb2)
+
+# validate M.nb
+MyData <- data.frame(AllAph = seq(0, 6000, by = 1), Season = rep('Spring', 6001))
+MyData2 <- data.frame(AllAph = seq(0, 6000, by = 1), Season = rep('Fall', 6001))
+G <- predict(M.nb, newdata = MyData, type = 'link', se = T)
+Sp <- exp(G$fit)
+Q <- predict(M.nb, newdata = MyData2, type = 'link', se = T)
+Fa <- exp(Q$fit)
+plot(GLMERdata$AllAph, GLMERdata$Coccinellidae)
+lines(MyData$AllAph, Sp)
+lines(MyData$AllAph, Fa)
+SpSeUp <- exp(G$fit + 1.96 * G$se.fit)
+SpSeLow <- exp(G$fit - 1.96 * G$se.fit)
+FaSeUp <- exp(Q$fit + 1.96 * Q$se.fit)
+FaSeLow <- exp(Q$fit - 1.96 * Q$se.fit)
+lines(MyData$AllAph, SpSeUp, lty = 2)
+lines(MyData$AllAph, SpSeLow, lty = 2)
+lines(MyData$AllAph, FaSeUp, lty = 2)
+lines(MyData$AllAph, FaSeLow, lty = 2)
+# model validation - look for patterns in residuals
+# predicted response
+mu <- predict(M.nb, type = 'response')
+# get pearson residuals (scaled by variance)
+EP <- resid(M.nb, type = 'pearson')
+# deviance residuals (similar to pearson)
+ED <- resid(M.nb, type = 'deviance')
+# plot
+plot(M.nb, which = 1, main = 'response residuals')
+plot(mu, EP, main = 'pearson residuals')
+plot(mu, ED, main = 'deviance residuals')
+# some clear patterns - probably not due to site effects,
+# more likely just due to discrete values of Coccinellidae.
+# not fitting zeros well.
+summary(M.nb)
+
+M.nbSpring <- glm.nb(Coccinellidae ~
+                       log(AllAph+1),
+                     data = GLMERdata %>% filter(Season=='Spring'))
+summary(M.nbSpring)
+muSpring <- predict(M.nbSpring, type = 'response')
+EDSpring <- resid(M.nbSpring, type = 'deviance')
+plot(muSpring, EDSpring, main = 'spring: deviance residuals')
+
+# notes, following Zuur ####
+
+# Seemingly poisson or neg bin will be the best, but should also try zero-inf.
+# One method: choose distribution for pred models with site:field random effects
+# structure, not including any landcover factors initially. After this, you can
+# include landcover factors and drop random effects structures (assuming random
+# factor variance collapses to zero).
+
+# so, compare poisson, negbin, zero-inf with random factors and AIC.
+# must do once for each taxon, and keep seasons separate.
+# check predlist
+predlist
+# make season datasets
+GLMERdata %>% View # all integers. "Pre-" data is already out.
+spGLMERdata <- GLMERdata %>% filter(Season == 'Spring')
+faGLMERdata <- GLMERdata %>% filter(Season == 'Fall')
+# spring mods
+# poisson
+M.pois.Anthocoridae.sp <- glmer(Anthocoridae ~ log(AllAph + 1) + (1|Site:Field),
+                                data = spGLMERdata,
+                                family = 'poisson')
+M.pois.Arachnida.sp <- glmer(Arachnida ~ log(AllAph + 1) + (1|Site:Field),
+                             data = spGLMERdata,
+                             family = 'poisson')
+M.pois.Coccinellidae.sp <- glmer(Coccinellidae ~ log(AllAph + 1) + (1|Site:Field),
+                                 data = spGLMERdata,
+                                 family = 'poisson')
+M.pois.Geocoris.sp <- glmer(Geocoris ~ log(AllAph + 1) + (1|Site:Field),
+                            data = spGLMERdata,
+                            family = 'poisson')
+M.pois.Ichneumonoidea.sp <- glmer(Ichneumonoidea ~ log(AllAph + 1) + (1|Site:Field),
+                                  data = spGLMERdata,
+                                  family = 'poisson')
+M.pois.Nabis.sp <- glmer(Nabis ~ log(AllAph + 1) + (1|Site:Field),
+                         data = spGLMERdata,
+                         family = 'poisson')
+# negative binomial
+M.nb.Anthocoridae.sp <- glmer.nb(Anthocoridae ~ log(AllAph + 1) + (1|Site:Field),
+                                data = spGLMERdata)
+M.nb.Arachnida.sp <- glmer.nb(Arachnida ~ log(AllAph + 1) + (1|Site:Field),
+                             data = spGLMERdata)
+M.nb.Coccinellidae.sp <- glmer.nb(Coccinellidae ~ log(AllAph + 1) + (1|Site:Field),
+                                 data = spGLMERdata)
+M.nb.Geocoris.sp <- glmer.nb(Geocoris ~ log(AllAph + 1) + (1|Site:Field),
+                            data = spGLMERdata)
+M.nb.Ichneumonoidea.sp <- glmer.nb(Ichneumonoidea ~ log(AllAph + 1) + (1|Site:Field),
+                                  data = spGLMERdata)
+M.nb.Nabis.sp <- glmer.nb(Nabis ~ log(AllAph + 1) + (1|Site:Field),
+                         data = spGLMERdata)
+
+# zero-inf poisson
+install.packages('glmmTMB')
+library(glmmTMB)
+M.Zpois.Anthocoridae.sp <- glmmTMB(Anthocoridae ~ log(AllAph + 1) + (1|Site/Field),
+                                   data = spGLMERdata,
+                                   family = 'compois', #poisson not able to fit
+                                   ziformula = ~ .,
+                                   REML = TRUE)
+summary(M.Zpois.Anthocoridae.sp)
+M.Zpois.Arachnida.sp <- glmmTMB(Arachnida ~ log(AllAph + 1) + (1|Site/Field),
+                                   data = spGLMERdata,
+                                   family = 'compois',
+                                   ziformula = ~ .,
+                                   REML = TRUE)
+# specification of random effects? site+sitefield vs site:field
+summary(M.Zpois.Arachnida.sp)
+
+M.Zpois.Coccinellidae.sp <- glmmTMB(Coccinellidae ~ log(AllAph + 1) + (1|Site/Field),
+                                data = spGLMERdata,
+                                family = 'poisson',
+                                ziformula = ~ log(AllAph + 1) + (1|Site),
+                                REML = TRUE)
+summary(M.Zpois.Coccinellidae.sp)
+
+# workflow:
+# for each species, work simple to complex
+# gaussian > poisson > negbin > zinf gaussian > zinf ...
+# fit all in glmmTMB
+#
+# # basic gaussian model:
+# glmmTMB(log(pred +1) ~ log(AllAph+1)+(1|Site/Field),
+#         data = spGLMERdata,
+#         family = 'gaussian',
+#         ziformula = ~0)
+# # basic generalized linear model:
+# glmmTMB(pred ~ log(AllAph+1)+(1|Site/Field),
+#         data = spGLMERdata,
+#         family = 'poisson',
+#         ziformula = ~0)
+
+# Spring
+## Anthocoridae
+## check response dist.
+dotchart(spGLMERdata$Anthocoridae)
+dotchart(log(spGLMERdata$Anthocoridae+1))
+# check n zeroes
+sum(spGLMERdata$Anthocoridae == 0) # 6 total.
+sum(spGLMERdata$Anthocoridae == 0)/nrow(spGLMERdata) # 8%.
+
+## simplest model: gaussian
+Sp.Gaus.Anth <- lmer(log(Anthocoridae +1) ~ log(AllAph+1)+(log(AllAph+1)|Site/Field),
+        data = spGLMERdata)
+
+## check summary
+summary(Sp.Gaus.Anth) # singular covariance matrix?
+## check resids
+Sp.Gaus.Anth.Dresid <- simulateResiduals(Sp.Gaus.Anth, 1000, integerResponse = T)
+
+plot(Sp.Gaus.Anth.Dresid, rank = F, quantreg = T)
+
+
+## check histogram of residuals - should be normal
+plot(hist(resid(Sp.Gaus.Anth))) # little bit left skewed. could be worse.
+## check residuals vs fitted - are there patterns?
+plot(Sp.Gaus.Anth) # not really
+## check residuals by site
+plot(spGLMERdata$Site, resid(Sp.Gaus.Anth)) # not bad
+## check by site and field
+spGLMERdata$Sp.Gaus.Anth.resid<-resid(Sp.Gaus.Anth)
+spGLMERdata$Sp.Gaus.Anth <- predict(Sp.Gaus.Anth)
+ggplot(data = spGLMERdata, aes(reorder(SiteField, Sp.Gaus.Anth),
+                               Sp.Gaus.Anth.resid)) +
+  geom_boxplot() # higher residual with higher predicted value.
+                 # model invalid.
+ggplot(data = spGLMERdata, aes(reorder(Site, Sp.Gaus.Anth),
+                               Sp.Gaus.Anth.resid)) +
+  geom_boxplot() # checking site only. looks ok.
+
+
+
+
+## check by missing covariate: treatment
+plot(spGLMERdata$Treatment, resid(Sp.Gaus.Anth)) # alright i suppose
+## ok, I think I'm good with the validity of this model. Look at fit?
+# predict data
+install.packages('moderndive')
+library(moderndive)
+ggplot(data = spGLMERdata,
+       aes(log(Acyrthosiphon+1),
+           log(Anthocoridae+1),
+           color = SiteField)) +
+  geom_point() +
+  geom_parallel_slopes()# not bad. moderndive is so nice!!
+
+## this might work? move on to next model.
+Sp.Pois.Anth <- glmer(Anthocoridae ~ log(Acyrthosiphon+1)+(1|Site/Field),
+                      family = 'poisson',
+                      data = spGLMERdata)
+summary(Sp.Pois.Anth)
+420/68 # overdispersion if >1. way over.
+## next model.
+Sp.Nb.Anth <- glmer.nb(Anthocoridae ~ log(Acyrthosiphon+1)+(1|Site/Field),
+                       data = spGLMERdata)
+plot(Sp.Nb.Anth) # ok. but what is this?
+spGLMERdata$Sp.Nb.Anth <- predict(Sp.Nb.Anth)
+spGLMERdata$Sp.Nb.Anth.resid <- resid(Sp.Nb.Anth, type = 'deviance')
+# plot by factors
+ggplot(spGLMERdata, aes(log(Acyrthosiphon+1), Sp.Nb.Anth.resid))+
+  geom_point() # ok!!
+ggplot(spGLMERdata, aes(reorder(Site, Sp.Nb.Anth), Sp.Nb.Anth.resid))+
+  geom_boxplot() # ok!!
+ggplot(spGLMERdata, aes(reorder(SiteField, Sp.Nb.Anth), Sp.Nb.Anth.resid))+
+  geom_boxplot() # not great.
+## next model.
+Sp.ZNb.Anth <- glmmTMB(Anthocoridae ~ (log(Acyrthosiphon+1)|Site/Field),
+                       data = spGLMERdata,
+                       family = 'truncated_nbinom2',
+                       ziformula =~SiteField) # no convergence.
+summary(Sp.ZNb.Anth)
+plot(simulateResiduals(Sp.ZNb.Anth))
+# Arachnida
+# dotplot
+dotchart(spGLMERdata$Arachnida) # lots of zeroes
+dotchart(log(spGLMERdata$Arachnida+1)) # not really helping
+sum(spGLMERdata$Arachnida == 0)/sum(nrow(spGLMERdata)) # 40% zeroes!
+# linear mod not likely to work, will try anyway
+Sp.Gaus.Ara <-  lmer(log(Arachnida +1) ~ log(AllAph+1)+(1|Site/Field),
+                     data = spGLMERdata)
+summary(Sp.Gaus.Ara)
+plot(hist(resid(Sp.Gaus.Ara))) # not bad!
+plot(Sp.Gaus.Ara) # weird striping due to low counts
+## check residuals by site
+plot(spGLMERdata$Site, resid(Sp.Gaus.Ara)) # not bad
+## check by missing covariate: treatment
+plot(spGLMERdata$Treatment, resid(Sp.Gaus.Anth)) # alright i suppose
+## check by site and field
+spGLMERdata$Sp.Gaus.Ara.resid<-resid(Sp.Gaus.Ara)
+ggplot(data = spGLMERdata, aes(reorder(SiteField, Sp.Gaus.Ara), Sp.Gaus.Ara.resid)) +
+  geom_boxplot() # higher resids in sites with higher predicted spiders.
+                 # model invalid.
+
+# try predicting data
+spGLMERdata$Sp.Gaus.Ara <- predict(Sp.Gaus.Ara)
+ggplot(data = spGLMERdata,
+       aes(log(Acyrthosiphon+1),
+           Sp.Gaus.Ara,
+           color = SiteField)) +
+  geom_parallel_slopes(se = FALSE)+
+  geom_point(aes(y = log(Arachnida+1)))
+
+
+
+
+
+Sp.Pois.Anth <- glmmTMB(Anthocoridae ~ log(AllAph+1)+(1|Site/Field),
+        data = spGLMERdata,
+        family = 'poisson',
+        ziformula = ~0)
+Sp.Nb.Anth <- glmmTMB(Anthocoridae ~ log(AllAph+1)+(1|Site/Field),
+                        data = spGLMERdata,
+                        family = 'nbinom2',
+                        ziformula = ~0)
+Sp.ZGaus.Anth <- glmmTMB(log(Anthocoridae +1) ~ log(AllAph+1)+(1|Site/Field),
+                        data = spGLMERdata,
+                        family = 'gaussian',
+                        ziformula = ~.)
+Sp.ZPois.Anth <- glmmTMB(Anthocoridae ~ log(AllAph+1)+(1|Site/Field),
+                        data = spGLMERdata,
+                        family = 'poisson',
+                        ziformula = ~.)
+Sp.ZNb.Anth <- glmmTMB(Anthocoridae ~ log(AllAph+1)+(1|Site/Field),
+                      data = spGLMERdata,
+                      family = 'nbinom2',
+                      ziformula = ~.)
+### Convergence?
+summary(Sp.Gaus.Anth)
+summary(Sp.Pois.Anth)
+summary(Sp.Nb.Anth)
+summary(Sp.ZGaus.Anth) # NO
+summary(Sp.ZPois.Anth)
+summary(Sp.ZNb.Anth)
+
+### Validation
+plot(predict(Sp.Gaus.Anth), resid(Sp.Gaus.Anth))
+install.packages('DHARMa')
+library(DHARMa)
+plot(simulateResiduals(Sp.Gaus.Anth))
+plot(simulateResiduals(Sp.Pois.Anth))
+plot(simulateResiduals(Sp.Nb.Anth))
+plot(simulateResiduals(Sp.ZGaus.Anth))
+plot(simulateResiduals(Sp.ZPois.Anth))
+plot(simulateResiduals(Sp.ZNb.Anth))
+
+## STEP 1. Find a distribution with land cover in random factors
+# 1. fit poisson glm
+# # if no convergence, try 'compois' # or not, this is ridiculous
+# # if no convergence, try 'poisson' + drop a random factor
+# # if no convergence, try 'compois' + drop a random factor
+# 2. fit zinf poisson glm
+# # if no convergence, try 'compois'
+# # if no convergence, try 'poisson' + drop a random factor
+# # if no convergence, try 'compois' + drop a random factor
+# 3. fit negbin glm
+# # if no convergence, try 'compois'
+# # if no convergence, try 'poisson' + drop a random factor
+# # if no convergence, try 'compois' + drop a random factor
+## STEP 2. Use model selection, removing random factors
+# 1. fit model with best distibution from step 1.
+
+
+
+  # Top-down effect ####
 # START HERE########### ####
 
 # To assess the top-down effect of predators on aphids, we need a predator

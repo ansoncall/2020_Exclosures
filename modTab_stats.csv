@@ -1,0 +1,21 @@
+Species,Season,Scaled v. ranked,Best model R2,2nd best delta,3rd best delta,N models with delta<2,Notes
+Coccinellidae,Spring,Rank,0.199,1.373663,2.463499,2,
+Coccinellidae,Spring,Scaled,0.270,4.229154,4.251116,1,
+Coccinellidae,Fall,Rank,0.306,3.656824,4.068721,1,
+Coccinellidae,Fall,Scaled,0.176,1.256611,1.256611,5,"2nd and 3rd mods are essentially the same, because ranking at two different scales is the same. "
+Anthocoridae,Spring,Rank,0.436,0.9866552,1.496638,4,
+Anthocoridae,Spring,Scaled,0.472,1.573532,2.215214,1,
+Anthocoridae,Fall,Rank,0.344,1.25524,0.4444379,1,
+Anthocoridae,Fall,Scaled,0.336,0.0134068,0.09471909,17,
+Arachnida,Spring,Rank,0.156,0.9866552,1.496638,7,
+Arachnida,Spring,Scaled,0.216,1.573532,2.215214,2,
+Arachnida,Fall,Rank,0.354,1.25524,1.3927,4,
+Arachnida,Fall,Scaled,0.406,0.4444379,1.4945692,5,
+Ichneumonidae,Spring,Rank,0.281,3.907207,4.274792,1,best model has conditional r2
+Ichneumonidae,Spring,Scaled,0.184,1.573532,2.215214,7,best model has conditional r2
+Ichneumonidae,Fall,Rank,0.638,3.907207,4.274792,1,
+Ichneumonidae,Fall,Scaled,0.670,0.9780738,1.5432151,1,
+Geocoris,Spring,Rank,0.413,0.06062115,0.55639206,5,
+Geocoris,Spring,Scaled,0.573,0.5200064,3.8227887,2,
+Geocoris,Fall,Rank,0.253,1.294749,1.956545,3,
+Geocoris,Fall,Scaled,0.477,0.8860405,2.0672381,2,

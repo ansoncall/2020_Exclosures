@@ -1145,6 +1145,30 @@ subplotData <- data_long %>%
   # join vegetation data
   left_join(field_margins, by = c('siteId', 'Season')) %>%
   select(-siteId, -site, -field)
+## same, but don't div pre/3
+subplotDataRaw <- data_long %>%
+  select(-Vial) %>%
+  # # divide 'Pre-' values by 3 to account for unequal sampling area
+  # mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
+  #                            Treatment !='Pre-' ~ Density)) %>%
+  # create watering method column
+  mutate(wateringMethod = case_when(Site %in% c('Fallon', 'Lovelock') ~
+                                      'Flooding',
+                                    Site == 'Minden' ~
+                                      'Sprinklers',
+                                    Site == 'Yerington' & Field %in% c(2, 3) ~
+                                      'Flooding',
+                                    Site == 'Yerington' & Field == 1 ~
+                                      'Sprinklers')) %>%
+  pivot_wider(names_from = Taxa, values_from = Density) %>%
+  # make siteId column for joining landcover data
+  mutate(siteId = paste0(Site, '0', Field), .before = everything()) %>%
+  # join landcover data
+  left_join(landcoverBinned, by = 'siteId') %>%
+  # join vegetation data
+  left_join(field_margins, by = c('siteId', 'Season')) %>%
+  select(-siteId, -site, -field)
 
 ## final export ####
 write_csv(subplotData, 'tidy_data/subplotData.csv')
+write_csv(subplotDataRaw, 'tidy_data/subplotDataRaw.csv')

@@ -533,10 +533,18 @@ dotchart(sort(dfFa$log_AllAph))
 
 
 ## SOURCE ####
-## source glm.R to build model selection tables
-source('glm.R', echo = TRUE)
+## source external scripts to build model selection tables
+# glmer, negative binomial, scaled vars
+source('nbMixed.R', echo = TRUE)
+# glmer, negative binomial, ranked vars
+### TO DO ######
+### CHECK THAT THE GLOBAL MODS FIT IN ALL THE FOLLOWING SCRIPTS
+### ALSO CHECK M.LIM PARAMETER IN DREDGES
+source('nbMixedRanked.R', echo = TRUE)
+source('poisMixed.R', echo = TRUE)
+source('poisMixedRanked.R', echo = TRUE)
 
-tab.nb.anth.fa.scaled %>% View
+nb.scaled$tab.nb.anth.sp.scaled
 
 # split spring and fall data
 dfSp <- subplotDataRaw %>%

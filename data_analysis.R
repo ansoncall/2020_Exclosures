@@ -534,14 +534,15 @@ dotchart(sort(dfFa$log_AllAph))
 
 ## SOURCE ####
 ## source external scripts to build model selection tables
+## set number of cores to be used in parallel processing
+n.cores <- detectCores() - 6
 # glmer, negative binomial, scaled vars
 source('nbMixed.R', echo = TRUE)
 # glmer, negative binomial, ranked vars
-### TO DO ######
-### CHECK THAT THE GLOBAL MODS FIT IN ALL THE FOLLOWING SCRIPTS
-### ALSO CHECK M.LIM PARAMETER IN DREDGES
 source('nbMixedRanked.R', echo = TRUE)
+# glmer, poisson, scaled vars
 source('poisMixed.R', echo = TRUE)
+# glmer, poisson, ranked vars
 source('poisMixedRanked.R', echo = TRUE)
 
 nb.scaled$tab.nb.anth.sp.scaled

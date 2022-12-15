@@ -10,7 +10,7 @@
 # set global NA action
 options(na.action = 'na.fail')
 # make it parallel
-clust <- try(makeCluster(getOption("cl.cores", 12), type = 'PSOCK'))
+clust <- try(makeCluster(getOption("cl.cores", n.cores), type = 'PSOCK'))
 clusterExport(clust, 'dfSpRnk')
 clusterExport(clust, 'dfFaRnk')
 clusterEvalQ(clust, library(glmmTMB))
@@ -60,13 +60,13 @@ tab.pois.anth.sp.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge
 
 ## Fall ####
 gMod.sig1 <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1, # landcover effects
-                     # nested random effects not fitting.
-                     data = dfFaRnk, family = poisson())
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
+                       (1|Site/Field), # nested random effects
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig2 <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig3 <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
                        (1|Site/Field), # nested random effects
@@ -74,11 +74,11 @@ gMod.sig3 <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod +
 gMod.sig4 <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig5 <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.const <- glmmTMB(Anthocoridae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                         alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
                         (1|Site/Field), # nested random effects
@@ -115,19 +115,19 @@ gMod.sig2 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # 
 gMod.sig3 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfSpRnk, family = poisson())
+                     data = dfSpRnk, family = poisson()) # convergence warning
 gMod.sig4 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfSpRnk, family = poisson())
+                     data = dfSpRnk, family = poisson()) # convergence warning
 gMod.sig5 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfSpRnk, family = poisson())
+                     data = dfSpRnk, family = poisson()) # convergence warning
 gMod.const <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                         alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
                         (1|Site/Field), # nested random effects
-                      data = dfSpRnk, family = poisson())
+                      data = dfSpRnk, family = poisson()) # convergence warning
 gMod.no <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                      alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
                      (1|Site/Field), # nested random effects
@@ -147,8 +147,8 @@ tab.pois.ara.sp.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,
 
 ## Fall ####
 gMod.sig1 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1, # landcover effects
-                     # nested random effects not fitted.
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
+                       (1|Site/Field), # nested random effects
                      data = dfFaRnk, family = poisson())
 gMod.sig2 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
@@ -157,11 +157,11 @@ gMod.sig2 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # 
 gMod.sig3 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig4 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig5 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
                        (1|Site/Field), # nested random effects
@@ -169,7 +169,7 @@ gMod.sig5 <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # 
 gMod.const <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                         alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
                         (1|Site/Field), # nested random effects
-                      data = dfFaRnk, family = poisson())
+                      data = dfFaRnk, family = poisson()) # convergence warning
 gMod.no <- glmmTMB(Arachnida ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                      alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
                      (1|Site/Field), # nested random effects
@@ -233,8 +233,8 @@ tab.pois.cocc.sp.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge
 
 ## Fall ####
 gMod.sig1 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1, # landcover effects
-                     # nested random effects not fitted
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
+                       (1|Site/Field), # nested random effects
                      data = dfFaRnk, family = poisson())
 gMod.sig2 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
@@ -243,19 +243,19 @@ gMod.sig2 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod 
 gMod.sig3 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig4 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig5 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.const <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                         alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
                         (1|Site/Field), # nested random effects
-                      data = dfFaRnk, family = poisson())
+                      data = dfFaRnk, family = poisson()) # convergence warning
 gMod.no <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                      alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
                      (1|Site/Field), # nested random effects
@@ -282,7 +282,7 @@ tab.pois.cocc.fa.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge
 gMod.sig1 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfSpRnk, family = poisson())
+                     data = dfSpRnk, family = poisson()) # convergence warning
 gMod.sig2 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
                        (1|Site/Field), # nested random effects
@@ -324,31 +324,31 @@ tab.pois.geo.sp.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,
 gMod.sig1 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig2 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig3 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig4 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig5 <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.const <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                         alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
                         (1|Site/Field), # nested random effects
-                      data = dfFaRnk, family = poisson())
+                      data = dfFaRnk, family = poisson()) # convergence warning
 gMod.no <- glmmTMB(Geocoris ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                      alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
                      (1|Site/Field), # nested random effects
-                   data = dfFaRnk, family = poisson())
+                   data = dfFaRnk, family = poisson()) # convergence warning
 
 # dredging
 sig1.dredge <- dredge(gMod.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
@@ -412,8 +412,8 @@ tab.pois.ich.sp.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,
 
 ## Fall ####
 gMod.sig1 <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1, # landcover effects
-                     # nested random effects not fitted.
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
+                       (1|Site/Field), # nested random effects
                      data = dfFaRnk, family = poisson())
 gMod.sig2 <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
@@ -422,23 +422,23 @@ gMod.sig2 <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod
 gMod.sig3 <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig4 <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
                        (1|Site/Field), # nested random effects
-                     data = dfFaRnk, family = poisson())
+                     data = dfFaRnk, family = poisson()) # convergence warning
 gMod.sig5 <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
-                       (1|Site/Field), # nested random effects
+                       (1|Site), # nested random effects NOT fitted (convergence error). Simplifying to Site only.
                      data = dfFaRnk, family = poisson())
 gMod.const <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                         alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
-                        (1|Site/Field), # nested random effects
+                        (1|Site), # nested random effects NOT fitted (convergence error). Simplifying to Site only.
                       data = dfFaRnk, family = poisson())
 gMod.no <- glmmTMB(Ichneumonoidea ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
                      alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
                      (1|Site/Field), # nested random effects
-                   data = dfFaRnk, family = poisson())
+                   data = dfFaRnk, family = poisson()) # convergence warning
 
 # dredging
 sig1.dredge <- dredge(gMod.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)

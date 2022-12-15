@@ -455,7 +455,7 @@ tab.pois.ich.fa.ranked <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,
 stopCluster(clust)
 
 # put all tabs in lists
-nb.ranked <- list(
+pois.ranked <- list(
   'tab.pois.anth.sp.ranked'=tab.pois.anth.sp.ranked,
   'tab.pois.anth.fa.ranked'=tab.pois.anth.fa.ranked,
   'tab.pois.ara.sp.ranked'=tab.pois.ara.sp.ranked,

@@ -455,7 +455,7 @@ tab.pois.ich.fa.scaled <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,
 stopCluster(clust)
 
 # put all tabs in lists
-nb.scaled <- list(
+pois.scaled <- list(
   'tab.pois.anth.sp.scaled'=tab.pois.anth.sp.scaled,
   'tab.pois.anth.fa.scaled'=tab.pois.anth.fa.scaled,
   'tab.pois.ara.sp.scaled'=tab.pois.ara.sp.scaled,

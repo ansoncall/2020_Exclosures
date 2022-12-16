@@ -535,7 +535,7 @@ dotchart(sort(dfFa$log_AllAph))
 ## SOURCE ####
 ## source external scripts to build model selection tables
 ## set number of cores to be used in parallel processing
-n.cores <- detectCores() - 6
+n.cores <- detectCores() - 4
 # glmer, negative binomial, scaled vars
 source('nbMixed.R', echo = TRUE)
 # glmer, negative binomial, ranked vars
@@ -545,157 +545,138 @@ source('poisMixed.R', echo = TRUE)
 # glmer, poisson, ranked vars
 source('poisMixedRanked.R', echo = TRUE)
 
-nb.scaled$tab.nb.anth.sp.scaled
-
-# split spring and fall data
-dfSp <- subplotDataRaw %>%
-  # spring only
-  filter(Season == 'Spring') %>%
-  # "regular" landcover only
-  select(!contains('fix')) %>%
-  # log AllAph col
-  mutate(log_AllAph = log(AllAph +1)) %>%
-  # center and scale (not needed with rank transform)
-  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
-                .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
-  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
-                          Treatment != 'Pre-' ~ 1))
-
-dfFa <- subplotDataRaw %>%
-  # spring only
-  filter(Season == 'Fall') %>%
-  # "regular" landcover only
-  select(!contains('fix')) %>%
-  # log AllAph col
-  mutate(log_AllAph = log(AllAph +1)) %>%
-  # center and scale (not needed with rank transform)
-  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
-                .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
-  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
-                          Treatment != 'Pre-' ~ 1))
-
-# use rank transform on landcover vars
-dfSpRnk <- subplotDataRaw %>%
-  # spring only
-  filter(Season == 'Spring') %>%
-  # "regular" landcover only
-  select(!contains('fix')) %>%
-  # rank transform landcover to uniformly distribute
-  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
-                .fns = ~dense_rank(.x))) %>%
-  # log AllAph col
-  mutate(log_AllAph = log(AllAph +1)) %>%
-  # # center and scale (not needed with rank transform)
-  # mutate(across(.cols = contains('_'), # all landcover + log_AllAph
-  #               .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
-  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
-                          Treatment != 'Pre-' ~ 1))
-
-dfFaRnk <- subplotDataRaw %>%
-  # spring only
-  filter(Season == 'Fall') %>%
-  # "regular" landcover only
-  select(!contains('fix')) %>%
-  # rank transform landcover to uniformly distribute
-  mutate(across(.cols = contains('_'), # all landcover + log_AllAph
-                .fns = ~dense_rank(.x))) %>%
-  # log AllAph col
-  mutate(log_AllAph = log(AllAph +1)) %>%
-  # # center and scale (not needed with rank transform)
-  # mutate(across(.cols = contains('_'), # all landcover + log_AllAph
-  #               .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
-  mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
-                          Treatment != 'Pre-' ~ 1))
-
-# make data again, this time with scaled and centered vars
-# reset data
-# note: data varnames reused. only modtabs and top mods renamed.
 
 
-# example dotcharts - shows distribution of explanatory variables
-dotchart(sort(dfSpRnk$AllAph))
-dotchart(sort(dfSp$log_AllAph))
-dotchart(sort(dfFa$log_AllAph))
-
-
-# Note: the following is highly redundant. Var names are often reused. Only
-# model selection tables are saved. Code is condensed for space saving.
-
-# set global NA action
-options(na.action = 'na.fail')
-
-## COCCINELLIDAE ####
-
-
-# build global mods (condensed for space)
-gMod.sig1 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-gMod.sig2 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-gMod.sig3 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-gMod.sig4 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-gMod.sig5 <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-gMod.const <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_const + naturalArid_const + dirt_const +ag_const + impermeable_const + weedy_const + water_const + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-gMod.no <- glmmTMB(Coccinellidae ~ offset(Area) + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_no + naturalArid_no + dirt_no +ag_no + impermeable_no + weedy_no + water_no + # landcover effects
-                       (1|Site/Field), # nested random effects
-                     data = dfSp, family = 'nbinom2')
-
-# dredge
-# make it parallel
-clust <- try(makeCluster(getOption("cl.cores", 8), type = 'PSOCK'))
-clusterExport(clust, 'dfSp')
-clusterEvalQ(clust, library(glmmTMB))
-
-# dredging
-sig1.dredge <- dredge(gMod.sig1, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-sig2.dredge <- dredge(gMod.sig2, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-sig3.dredge <- dredge(gMod.sig3, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-sig4.dredge <- dredge(gMod.sig4, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-sig5.dredge <- dredge(gMod.sig5, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-const.dredge <- dredge(gMod.const, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-no.dredge <- dredge(gMod.no, m.lim = c(0, 3), fixed = 'cond(offset(Area))', trace = 2, cluster = clust)
-
-# kill cluster
-stopCluster(clust)
-
-# rbind and recalc AIC
-cocc.nb.tab <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge,sig5.dredge,const.dredge,no.dredge)
-
-
-
-
-### SAVE THIS STUFF FOR LATER #####
-# view top mods
-cocc.nb.tab %>%
+# review mod tables and top mods
+nb.scaled$tab.nb.cocc.sp.scaled %>%
   tibble %>%
-  filter(delta < 5) %>% # can change how inclusive this is
+  slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
 
 # validate top model
-top.cc.mod <- get.models(cocc.nb.tab, 1)[[1]]
-summary(top.cc.mod) # no random effect variance. essentially equivalent to a
-                    # fixed effects mod. I checked.
+top.cocc.mod.sp <- get.models(nb.scaled$tab.nb.cocc.sp.scaled, 1)[[1]]
+# show summary
+summary(top.cocc.mod.sp) # no random effect variance. essentially equivalent to
+                         # a fixed effects mod. I checked.
+# basic effects plots
+plot(allEffects(top.cocc.mod.sp, residuals = T))
+
+# tidy coeffs plot
+library(broom.mixed)
+library(dotwhisker)
+t1 <- tidy(top.cocc.mod.sp, conf.int = T) %>% transform() %>% mutate(model = 1)
+dwplot(t1)
+
+# extract residuals, fitted values
+pearsonRes <- resid(top.cocc.mod.sp, type = 'pearson')
+workingRes <- resid(top.cocc.mod.sp, type = 'working')
+defaultRes <- resid(top.cocc.mod.sp)
+dharmaRes <- simulateResiduals(top.cocc.mod.sp)
+fitted <- fitted(top.cocc.mod.sp)
+
+# basic DHARMa plot
+plot(dharmaRes)
+
+plot(fitted, pearsonRes)
+plot(fitted, defaultRes)
+
+# default residual plot
+plot(dfSp$Coccinellidae, fitted)
+abline(0,1)
+
+plot(fitted, defaultRes)
+
+
+
+# actual vs fitted
+ggplot(dfSp, aes(Coccinellidae, fitted, color = Site)) +
+  geom_point()
+
+# residuals vs fitted (pearson)
+ggplot(dfSp, aes(fitted, pearsonRes, color = Site)) +
+  geom_point()
+
+# residuals vs fitted (DHARMa)
+ggplot(dfSp, aes(Coccinellidae, dharmaRes$scaledResiduals, color = Site)) +
+  geom_point()
+
+
+test.lm <- lm(Anthocoridae ~ wateringMethod + alfalfa_no, data = dfSp)
+
+testResid <- resid(test.lm)
+testFitted <- fitted(test.lm)
+
+
+test.glm <- glmmTMB(Coccinellidae ~ weedy_sig1 + offset(Area) +
+                      (1|Site/Field), data = dfSp,
+                    family = 'nbinom2')
+summary(test.glm)
+
+
+test.glm.resid <- resid(test.glm) # simple ladybug glm
+test.glm.fitted <- fitted(test.glm)
+
+# is it observed - predicted?
+test.glm.ObsPred <- dfSp$Coccinellidae - test.glm.fitted
+
+test.glm.resid == test.glm.ObsPred # all TRUE
+
+
+
+plot(test.glm.fitted, test.glm.resid)
+plot(test.glm.fitted,dfSp$Coccinellidae)
+
+
+#### TEST ####
+library(foreign)
+
+dat <- read.dta("https://stats.idre.ucla.edu/stat/stata/dae/nb_data.dta")
+dat <- within(dat, {
+  prog <- factor(prog, levels = 1:3, labels = c("General", "Academic", "Vocational"))
+  id <- factor(id)
+})
+
+summary(dat)
+
+summary(m1 <- glmmTMB(daysabs ~ math + prog, data = dat, family = 'nbinom2'))
+test.residuals <- residuals(m1)
+test.fitted <- fitted(m1)
+plot(test.fitted, test.residuals)
+abline(0,0)
+
+#### nonzero test #####
+## check that you can build the exact same mod with the full dataset
+testMod2 <- glmmTMB(Coccinellidae ~ Treatment + dirt_sig1 + weedy_sig1 +
+                         (1|Site/Field), data = dfSp, family = 'nbinom2')
+summary(top.cocc.mod.sp)
+summary(originalMod) ## same
+
+# extract residuals, fitted
+Resid <- resid(testMod)
+pearsResid <- resid(testMod, type = 'pearson')
+Fitted <- fitted(testMod)
+
+summary(testMod)
+
+plot(Fitted, Resid)
+abline(0, 0)
+plot(Fitted, pearsResid)
+abline(0, 0)
+plot(dfSp$Coccinellidae, Fitted)
+abline(0,1)
+
+plot(simulateResiduals(testMod))
+plot(simulateResiduals(testMod2))
+
+
+model.sel(testMod, testMod2)
+
+plot(testFitted, testResid)
+abline(0, 0)
+plot(dfSp$Anthocoridae, testFitted)
+abline(0,1)
+
+
 
 # get fitted values
 dfSpRnk$CoccFit <- predict(top.cc.mod, dfSpRnk, type = 'response')

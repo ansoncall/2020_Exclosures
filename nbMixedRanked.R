@@ -242,11 +242,11 @@ gMod.sig2 <- glmmTMB(Coccinellidae ~ Treatment + log_AllAph + wateringMethod + #
                      data = dfFaRnk, family = 'nbinom2')
 gMod.sig3 <- glmmTMB(Coccinellidae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +ag_sig3 + impermeable_sig3 + weedy_sig3 + water_sig3 + # landcover effects
-                       (1|Site/Field), # nested random effects
+                       (1|Site), # nested random effects NOT fitted, simplifying to site only.
                      data = dfFaRnk, family = 'nbinom2')
 gMod.sig4 <- glmmTMB(Coccinellidae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +ag_sig4 + impermeable_sig4 + weedy_sig4 + water_sig4 + # landcover effects
-                       (1|Site/Field), # nested random effects
+                       (1|Site), # nested random effects NOT fitted, simplify to site only
                      data = dfFaRnk, family = 'nbinom2') # convergence warning
 gMod.sig5 <- glmmTMB(Coccinellidae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +ag_sig5 + impermeable_sig5 + weedy_sig5 + water_sig5 + # landcover effects

@@ -60,8 +60,8 @@ tab.pois.anth.sp.scaled <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge
 
 ## Fall ####
 gMod.sig1 <- glmmTMB(Anthocoridae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
-                       (1|Site), # nested random effects NOT fitted - convergence error. Simplified to site only effect.
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1, # landcover effects
+                       # nested random effects NOT fitted
                      data = dfFa, family = poisson())
 gMod.sig2 <- glmmTMB(Anthocoridae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects
@@ -233,8 +233,8 @@ tab.pois.cocc.sp.scaled <- rbind(sig1.dredge,sig2.dredge,sig3.dredge,sig4.dredge
 
 ## Fall ####
 gMod.sig1 <- glmmTMB(Coccinellidae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
-                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1 + # landcover effects
-                       (1|Site), # nested random effects NOT fitted (convergence error). Simplified to include site only.
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +ag_sig1 + impermeable_sig1 + weedy_sig1 + water_sig1, # landcover effects
+                       # nested random effects NOT fitted (convergence error).
                      data = dfFa, family = poisson())
 gMod.sig2 <- glmmTMB(Coccinellidae ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +ag_sig2 + impermeable_sig2 + weedy_sig2 + water_sig2 + # landcover effects

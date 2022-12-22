@@ -612,6 +612,19 @@ ichFams.fa <- model.sel(best.nb.scaled, best.nb.ranked, best.pois.scaled, best.p
 
 # clean env
 rm(best.nb.scaled, best.nb.ranked, best.pois.scaled, best.pois.ranked)
+
+anthFams.sp # nb.scaled by at least delta>2
+anthFams.fa # nb.scaled by delta 1.27. NO RANDOM EFFECT in top mod
+araFams.sp # both pois mods close, and they disagree
+araFams.fa # nb mods agree, pois mods are delta+15
+coccFams.sp # scaled mods agree, ranked mods differ but delta +4 anyway
+coccFams.fa # scaled mods agree, ranked mods differ, ranked have slightly better fit but deltas are close
+geoFams.sp # nb.scaled by delta+13
+geoFams.fa # all mods agree and are generally close
+ichFams.sp # mods mostly agree and deltas are close
+ichFams.fa # nb.scaled by delta+7 NO RANDOM EFFECT in top mod
+
+
 ### done here
 
 

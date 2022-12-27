@@ -9,6 +9,7 @@ library(classInt) # for kmeans clustering
 library(corrr) # for correlation plots of landcover vars
 library(crayon) # for colored terminal outputs
 library(data.table) # for rbindlist() to rbind a list of tables and make id col
+library(DiagrammeR) # for SEM plots
 library(DHARMa) # for simulated residuals
 library(DiagrammeRsvg) # for plotting SEMs
 library(dotwhisker)
@@ -37,6 +38,7 @@ library(plotly) # interactive plots with plotly()
 library(rsvg) # for more SEM plots
 library(sjPlot) # create effects plots on lmer objects, plot tables
 library(tidyselect) # for peek()
+library(tidytable) # for get_dummies to make SEM data
 library(tidytext) # sort ggcols after faceting
 library(tidyverse) # R packages for data science
 library(varhandle) # easily create dummy vars with to.dummy()
@@ -748,6 +750,8 @@ dfSpVD %>% nrow
 dfFa %>% nrow
 dfFaVD %>% nrow
 
+
+
 # add vegdata to top mods, refit
 # spring
 # anth
@@ -861,6 +865,159 @@ statsDf.new %>%
   group_by(Taxon) %>%
   gt
 
+
+## Aphid models ####
+### SOURCE ####
+# nb mixed mods, landcover scaled
+source('aphNbMixed.R', echo = TRUE)
+
+# review mod tables and top mods
+# AllAph spring
+r2(get.models(tab.nb.allaph.sp.scaled,1)[[1]]) # good fit 0.8
+plot(simulateResiduals(get.models(tab.nb.allaph.sp.scaled,1)[[1]])) # ok
+tab.nb.allaph.sp.scaled %>%
+  tibble %>%
+  slice(1:5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# wateringMethod in all top mods, which are close in deltas w/low weights
+# -ag_sig1, +alfalfa_sig1, +Cocc
+
+# Acrythosiphon spring
+r2(get.models(tab.nb.acy.sp.scaled,1)[[1]]) # good fit 0.8
+plot(simulateResiduals(get.models(tab.nb.acy.sp.scaled,1)[[1]])) # ok
+tab.nb.acy.sp.scaled %>%
+  tibble %>%
+  slice(1:5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# top mods generally have different landcover factors, but all at _sig1 scale
+# watering method still in all top mods
+# model average?
+
+# nonacy spring
+r2(get.models(tab.nb.nonacy.sp.scaled,1)[[1]]) # average fit 0.56
+plot(simulateResiduals(get.models(tab.nb.nonacy.sp.scaled,1)[[1]])) # great
+tab.nb.nonacy.sp.scaled %>%
+  tibble %>%
+  slice(1:5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# top mods all include -dirt_no
+
+## SPRING SUMMARY ####
+## SEM should include coccinellidae, wateringmethod for sure.
+## maybe also include ag_sig1, alfalfa_sig1
+
+# AllAph fall
+r2(get.models(tab.nb.allaph.fa.scaled,1)[[1]]) # average fit 0.69
+plot(simulateResiduals(get.models(tab.nb.allaph.fa.scaled,1)[[1]])) # ok
+tab.nb.allaph.fa.scaled %>%
+  tibble %>%
+  slice(1:5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# clear top mod with +ich, -impermeable_sig4, +naturalArid_sig4
+
+# Acyrthosiphon fall
+r2(get.models(tab.nb.acy.fa.scaled,1)[[1]]) # pretty good fit 0.7
+plot(simulateResiduals(get.models(tab.nb.acy.fa.scaled,1)[[1]])) # great
+tab.nb.acy.fa.scaled %>%
+  tibble %>%
+  slice(1:5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# +ich in all mods. -geo in top 3 mods. +naturalArid across scales!
+
+# Nonacy fall
+r2(get.models(tab.nb.nonacy.fa.scaled,1)[[1]]) # pretty good fit 0.65
+plot(simulateResiduals(get.models(tab.nb.nonacy.fa.scaled,1)[[1]])) # kinda wierd
+tab.nb.nonacy.fa.scaled %>%
+  tibble %>%
+  slice(1:5) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+# +ich in all mods. landcover effects varied in top mods,
+# BUT top mod is way better than #2. Includes -impermeable_sig2, +natArid_sig2
+
+## FALL SUMMARY ####
+# strong correlations with ichneumonoidea.
+# natural arid benefits aphid abundance. _sig4 best scale for AllAph.
+
+# spring - #1 mod is inappropriate because it combines wateringmethod and water_sig1
+sp.best <- get.models(tab.nb.allaph.sp.scaled, 2)[[1]]
+fa.best <- get.models(tab.nb.allaph.fa.scaled, 1)[[1]]
+
+
+
+## make aphid modstats table
+aphMods <- list('allaphFA' = sp.best, 'araFA' = fa.best)
+# build empty tibble to hold stats
+statsDf.aph <- tibble(Taxon = c("AllAph", "AllAph"),
+                      Season = c("Spring","Fall"),
+                      MarginalR2 = c(0),
+                      ConditionalR2 = c(0),
+                      effects1 = c('none'),
+                      effects2 = c('none'),
+                      effects3 = c('none'),
+                      coefs1 = c(0),
+                      coefs2 = c(0),
+                      coefs3 = c(0))
+# fill tibble with stats
+for (i in 1:length(aphMods)){
+  statsDf.aph$MarginalR2[[i]] <- r2(aphMods[[i]])[[2]]
+  statsDf.aph$ConditionalR2[[i]] <- r2(aphMods[[i]])[[1]]
+  statsDf.aph$effects1[[i]] <- names(aphMods[[i]]$frame)[2]
+  statsDf.aph$effects2[[i]] <- names(aphMods[[i]]$frame)[3]
+  statsDf.aph$effects3[[i]] <- names(aphMods[[i]]$frame)[4]
+  statsDf.aph$coefs1[[i]] <- fixef(aphMods[[i]])$cond[2]
+  statsDf.aph$coefs2[[i]] <- fixef(aphMods[[i]])$cond[3]
+  statsDf.aph$coefs3[[i]] <- fixef(aphMods[[i]])$cond[4]
+}
+
+library(gt)
+statsDf.aph %>%
+  gt
+
+summary(sp.best)
+
+## try adding vegdata to top mods ####
+
+sp.best
+sp.best.veg <- glmmTMB(AllAph ~ Treatment + ag_sig1 + wateringMethod +
+                         log(Coccinellidae + 1) + shan + rich + totalCover +
+                         (1|Site:Field),
+                       data = dfSpVD,
+                       family = 'nbinom2')
+
+veg.dredge.sp <- dredge(sp.best.veg, fixed='cond(Treatment)', m.lim=c(0,4), trace = 2)
+
+fa.best
+fa.best.veg <- glmmTMB(AllAph ~ Treatment + impermeable_sig4 + naturalArid_sig4 +
+                      log(Ichneumonoidea + 1) + shan + rich + totalCover +
+                      (1|Site:Field),
+                    data = dfFaVD,
+                    family = 'nbinom2')
+
+veg.dredge.fa <- dredge(fa.best.veg, fixed='cond(Treatment)', m.lim=c(0,4), trace = 2)
+veg.dredge.sp %>% View
+# new best mod!! +richness!!
+sp.best.veg <- get.models(veg.dredge.sp, 1)[[1]]
+summary(sp.best.veg)
+r2(sp.best.veg)
+plot(simulateResiduals(sp.best.veg))
+plot(fitted(sp.best.veg), residuals(sp.best.veg, type = 'pearson'))
+plot(dfSpVD$AllAph, fitted(sp.best.veg))
+abline(0,1)
+
+plot(allEffects(sp.best.veg, resid =T))
+
+
+veg.dredge.fa %>% View
+# new best mod!! -shan!!
+fa.best.veg <- get.models(veg.dredge.fa, 1)[[1]]
+summary(fa.best.veg)
+r2(fa.best.veg)
+plot(simulateResiduals(fa.best.veg))
+plot(fitted(fa.best.veg), residuals(fa.best.veg, type = 'pearson'))
+plot(dfFaVD$AllAph, fitted(fa.best.veg))
+abline(0,1)
+
+plot(allEffects(fa.best.veg, resid = T))
 
 ### try a binomial cocc mod for fall (low coc density in fall) ####
 dfFaBin <- dfFa %>%
@@ -1051,7 +1208,7 @@ for (i in 1:6){
 
 }
 
-# Spring
+# Fall
 plotDiff.fa <- plotWDiff %>% filter(Season == 'Fall')
 dAra.mod <- lmer(diffArachnida~1+(1|Site:Field), data = plotDiff.fa)
 dAnt.mod <- lmer(diffAnthocoridae~1+(1|Site:Field), data = plotDiff.fa)
@@ -1078,6 +1235,18 @@ for (i in 1:6){
 
 diffStats.sp # Ara, Coc *; Anth ***
 diffStats.fa # none significant
+summary(dIch.mod)
+#try nb mod for ich in fall ####
+nb.dIch <- glmmTMB(Ichneumonoidea ~ Treatment + (1|Site:Field),
+                     family='nbinom2',
+                     data = subplotDataRaw %>% filter(Season =='Fall',
+                                                      Treatment!='Pre-'))
+summary(pois.dIch)
+summary(nb.dIch)
+
+# this is better I think. could do pois or nb. overdispersion is there but minimal.
+
+
 
 ## make boxplot of diff effects
 # df of asterisks
@@ -1093,7 +1262,7 @@ plotWDiff %>% pivot_longer(contains('diff'),
                            names_to = 'Taxon',
                            values_to = 'Difference') %>%
   mutate(Taxon = str_sub(Taxon, 5)) %>%
-  filter(Taxon %in% c('Anthocoridae', 'Arachnida', 'Coccinellidae', 'Geocoris')) %>%
+  filter(Taxon %in% c('Anthocoridae', 'Arachnida', 'Coccinellidae', 'Geocoris', 'Ichneumonoidea')) %>%
   ggplot(aes(Taxon, Difference)) +
   geom_boxplot() +
   facet_grid(.~Season) +
@@ -1218,17 +1387,38 @@ mDat <- subplotDataRaw %>%
 cocc.eff <- glmmTMB(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
                    data = mDat,
                    family = 'nbinom2')
-summary(cocc.eff) # no apparent effect of sham
+summary(cocc.eff) # -TreatmentSham**
 plot(allEffects(cocc.eff))
 plot(simulateResiduals(cocc.eff))
+
+## try fall effect of ichneumonoida
+mDat.fa <- subplotDataRaw %>%
+  left_join(diffData_wide) %>%
+  filter(Season == 'Fall',
+         Treatment != 'Pre-',
+         diffIchneumonoidea > 40) # no treatment effect, regardless of how strict you are here
+ich.eff <- glmmTMB(AllAph~ Treatment + log(Ichneumonoidea+1) + (1|Site:Field),
+                    data = mDat,
+                    family = 'nbinom2')
+summary(ich.eff) # no apparent effect of sham
+plot(allEffects(ich.eff))
+plot(simulateResiduals(ich.eff))
+
+
+
 
 ## figure for paper (WIP) ####
 library(broom.mixed)
 anth.tidy <- tidy(anth.eff) %>% filter(term == 'TreatmentSham')
 ara.tidy <- tidy(ara.eff) %>% filter(term == 'TreatmentSham')
 cocc.tidy <- tidy(cocc.eff) %>% filter(term == 'TreatmentSham')
-tidy.mods <- rbind(anth.tidy, ara.tidy, cocc.tidy)
-tidy.mods$model <- c("Anthocoridae", "Arachnida", "Coccinellidae")
+ich.tidy <- tidy(ich.eff) %>% filter(term == 'TreatmentSham')
+ncol(anth.tidy)
+ncol(ara.tidy)
+ncol(anth.tidy)
+ncol(anth.tidy)
+tidy.mods <- rbind(anth.tidy, ara.tidy, cocc.tidy, ich.tidy)
+tidy.mods$model <- c("Anthocoridae", "Arachnida", "Coccinellidae", "Ichneumonoidea")
 
 dwplot(tidy.mods) %>%
   relabel_predictors(c(TreatmentSham = "Biocontrol effect")) +
@@ -1258,6 +1448,74 @@ all.eff <- glmmTMB(AllAph~ Treatment + log(Anthocoridae+1) + log(Arachnida+1) + 
 summary(all.eff) # not really informative
 
 
+# SEM ####
+## starting over here
+detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
+
+# prepare data
+semdfSp <- dfSp %>%
+  filter(Treatment != 'Pre-') %>%
+  get_dummies(Treatment) %>%
+  get_dummies(wateringMethod) %>%
+  mutate(logCoccinellidae = log(Coccinellidae+1)) #%>%  this doesn't matter!!
+  # mutate(across(where(is.double) & !c(logCoccinellidae, Coccinellidae, AllAph), # all continuous vars
+  #               .fns = ~as.vector(scale(.))))
+semdfFa <- dfFa %>%
+  filter(Treatment != 'Pre-') %>%
+  get_dummies(Treatment) %>%
+  get_dummies(wateringMethod) %>%
+  mutate(logAllAph = log(AllAph))
+
+# glmer.nb to include random effects
+## Spring ####
+sp.sem <- psem(glmer.nb(AllAph ~ logCoccinellidae + ## cant log transform here without psem throwing up
+                     wateringMethod_Flooding+ag_sig1+Treatment_Sham+(1|Site:Field),
+                   family = 'nbinom2',
+                   data = semdfSp),
+               # debating whether to include alfalfa_sig1 or ag_sig1 above, as
+               # the best model is unclear. (mod 1, with ag but not alfalfa,
+               # should maybe be  discarded bc we shouldn't have wateringMethod
+               # + water_sig1 together as they are colinear).
+               glmer.nb(Coccinellidae ~ Treatment_Sham + weedy_sig1+dirt_sig1+(1|Site:Field),
+                   data = semdfSp,
+                   family = 'nbinom2'),
+               # link coccinellidae vars
+               glm(logCoccinellidae~Coccinellidae, data = semdfSp,
+                   family = gaussian(link = 'identity'))
+)
+summary(sp.sem, conserve = TRUE)
+plot(sp.sem, show = 'unstd')
+rsquared(sp.sem) # no available methods for calculating R2
+
+
+## with glmer.nb
+## Fall ####
+fa.sem <- psem(glmer.nb(AllAph ~ impermeable_sig4 + naturalArid_sig4 + Treatment_Sham + (1|Site:Field),
+                   family = 'nbinom2',
+                   data = semdfFa),
+               # debating whether to include alfalfa_sig1 or ag_sig1 above, as
+               # the best model is unclear. (mod 1, with ag but not alfalfa,
+               # should maybe be  discarded bc we shouldn't have wateringMethod
+               # + water_sig1 together as they are colinear).
+               glmer.nb(Ichneumonoidea ~ Treatment_Sham + ag_sig1 + logAllAph + (1|Site:Field),
+                   data = semdfFa,
+                   family = 'nbinom2'),
+               glm(logAllAph~AllAph, data = semdfFa,
+                   family = gaussian(link = 'identity'))
+)
+
+summary(fa.sem, conserve = TRUE)
+plot(fa.sem, show = 'unstd')
+rsquared(fa.sem)
+
+
+subplotData %>%
+  ggplot(aes(wateringMethod, water_sig1)) +
+  geom_jitter()
+
+install.packages('semPlot')
+library(semPlot)
+semPaths(fit, what = 'std')
 # build ANCOVA models for spring
 
 ## old ####

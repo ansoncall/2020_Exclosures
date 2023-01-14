@@ -1241,9 +1241,9 @@ nb.dIch <- glmmTMB(Ichneumonoidea ~ Treatment + (1|Site:Field),
                      family='nbinom2',
                      data = subplotDataRaw %>% filter(Season =='Fall',
                                                       Treatment!='Pre-'))
-summary(pois.dIch)
-summary(nb.dIch)
 
+summary(nb.dIch)
+exp(0.8307)
 # this is better I think. could do pois or nb. overdispersion is there but minimal.
 
 
@@ -1272,6 +1272,19 @@ plotWDiff %>% pivot_longer(contains('diff'),
   geom_hline(yintercept = 0, color = 'red') +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
+
+# the above plot is ugly. make a better one.
+plotWDiff %>% pivot_longer(contains('diff'),
+                           names_to = 'Taxon',
+                           values_to = 'Difference') %>%
+  mutate(Taxon = str_sub(Taxon, 5)) %>%
+  filter(Taxon %in% c('Ichneumonoidea')) %>%
+  filter(Season == 'Fall') %>%
+  ggplot(aes(y = Taxon, x = Difference)) +
+  geom_density_ridges(scale = 10) +
+  # facet_wrap(~Season) +
+  geom_vline(xintercept = 0, color = 'red') +
+  theme_classic()
 
 # examine top-down effects for preds significantly affected by shams
 # Anthocoridae (spring)
@@ -1468,15 +1481,18 @@ semdfFa <- dfFa %>%
 
 # glmer.nb to include random effects
 ## Spring ####
-sp.sem <- psem(glmer.nb(AllAph ~ logCoccinellidae + ## cant log transform here without psem throwing up
-                     wateringMethod_Flooding+ag_sig1+Treatment_Sham+(1|Site:Field),
+sp.sem <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform here without psem throwing up
+                     wateringMethod_Flooding+ag_sig1+(1|Site:Field),
                    family = 'nbinom2',
                    data = semdfSp),
+               glmer(Treatment_Sham ~ Coccinellidae + (1|Site:Field),
+                        family = binomial(),
+                        data = semdfSp),
                # debating whether to include alfalfa_sig1 or ag_sig1 above, as
                # the best model is unclear. (mod 1, with ag but not alfalfa,
                # should maybe be  discarded bc we shouldn't have wateringMethod
                # + water_sig1 together as they are colinear).
-               glmer.nb(Coccinellidae ~ Treatment_Sham + weedy_sig1+dirt_sig1+(1|Site:Field),
+               glmer.nb(Coccinellidae ~ weedy_sig1+dirt_sig1+(1|Site:Field),
                    data = semdfSp,
                    family = 'nbinom2'),
                # link coccinellidae vars

@@ -1470,7 +1470,8 @@ semdfSp <- dfSp %>%
   filter(Treatment != 'Pre-') %>%
   get_dummies(Treatment) %>%
   get_dummies(wateringMethod) %>%
-  mutate(logCoccinellidae = log(Coccinellidae+1)) #%>%  this doesn't matter!!
+  mutate(logCoccinellidae = log(Coccinellidae+1),
+         logAllAph = log(AllAph+1)) #%>%  this doesn't matter!!
   # mutate(across(where(is.double) & !c(logCoccinellidae, Coccinellidae, AllAph), # all continuous vars
   #               .fns = ~as.vector(scale(.))))
 semdfFa <- dfFa %>%
@@ -1502,10 +1503,124 @@ sp.sem <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform here wit
 summary(sp.sem, conserve = TRUE)
 plot(sp.sem, show = 'unstd')
 rsquared(sp.sem) # no available methods for calculating R2
+## Spring circular version ####
+sp.sem.cyclic <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform here without psem throwing up
+                          wateringMethod_Flooding+ag_sig1+(1|Site:Field),
+                        family = 'nbinom2',
+                        data = semdfSp),
+               glmer(Treatment_Sham ~ Coccinellidae + (1|Site:Field),
+                     family = binomial(),
+                     data = semdfSp),
+               glmer.nb(Coccinellidae ~ logAllAph + weedy_sig1+dirt_sig1+(1|Site:Field),
+                        data = semdfSp,
+                        family = 'nbinom2'),
+               # link coccinellidae vars
+               glm(logCoccinellidae~Coccinellidae, data = semdfSp,
+                   family = gaussian(link = 'identity')),
+               glm(logAllAph~AllAph, data = semdfSp,
+                   family = gaussian(link = 'identity'))
 
+)
 
+# summary(sp.sem.cyclic) # never-ending
+## Spring, leveraging pre-experiment data ####
+semdfSpv2a <- dfSp %>%
+  # filter(Treatment != 'Pre-') %>%
+  get_dummies(Treatment) %>%
+  get_dummies(wateringMethod) %>%
+  mutate(logCoccinellidae = log(Coccinellidae+1),
+         logAllAph = log(AllAph+1))
+
+semdfSpv2a <- dfSp %>%
+  get_dummies(Treatment) %>%
+  get_dummies(wateringMethod) %>%
+  mutate(logCoccinellidae = log(Coccinellidae+1),
+         logAllAph = log(AllAph+1)) %>%
+  filter(Treatment != 'Pre-')
+
+semdfSpv2b <- dfSp %>%
+  get_dummies(Treatment) %>%
+  get_dummies(wateringMethod) %>%
+  mutate(logCoccinellidae = log(Coccinellidae+1),
+         logAllAph = log(AllAph+1)) %>%
+  filter(Treatment == 'Pre-') %>%
+  rename_with(.fn = ~paste0('Pre_', .x), .cols = (Arachnida:NonAcy)) %>%
+  select(Site:Pre_NonAcy, -Treatment, -wateringMethod)
+
+semdfSpv2 <- left_join(semdfSpv2a, semdfSpv2b, by = (c("Site", "Field", "Plot", "Season"))) %>%
+  mutate(logPreAllAph = log(Pre_AllAph +1),
+         logPreCoccinellidae = log(Pre_Coccinellidae+1))
+
+sp.sem.directed <- psem(glmer.nb(Pre_AllAph ~ wateringMethod_Flooding+ag_sig1+ (1|Site:Field),
+                                 family = 'nbinom2',
+                                 data = semdfSpv2),
+                        glmer.nb(Pre_Coccinellidae ~ weedy_sig1+dirt_sig1+(1|Site:Field),
+                                 data = semdfSpv2,
+                                 family = 'nbinom2'),
+                        glm(logPreCoccinellidae~Pre_Coccinellidae, data = semdfSpv2,
+                            family = gaussian(link = 'identity')),
+                        glm(logPreAllAph~Pre_AllAph, data = semdfSpv2,
+                            family = gaussian(link = 'identity')),
+                        glmer.nb(AllAph ~ logPreCoccinellidae + logPreAllAph +wateringMethod_Flooding+ag_sig1+(1|Site:Field),
+                                 family = 'nbinom2',
+                                 data = semdfSpv2),
+                        glmer.nb(Coccinellidae ~ logPreCoccinellidae + logPreAllAph + dirt_sig1 + weedy_sig1 + Treatment_Sham + (1|Site:Field),
+                                 data = semdfSpv2,
+                                 family = 'nbinom2')
+)
+summary(sp.sem.directed, conserve = T)
+plot(sp.sem.directed, show = "unstd")
 ## with glmer.nb
-## Fall ####
+
+
+### after talking to beth...####
+
+# 1. get aphid ladybug relationship
+
+## from prior results....
+## THIS is when the coccinellidae effects show up ####
+library(sjmisc) # to_dummy
+
+
+mDatr <- subplotDataRaw %>%
+  to_dummy(wateringMethod, suffix = 'label') %>%
+  bind_cols(subplotDataRaw)
+mDat <- mDatr %>%
+  to_dummy(Treatment, suffix = "label") %>%
+  bind_cols(mDatr) %>%
+  left_join(diffData_wide) %>%
+  filter(Season == 'Spring',
+         Treatment != 'Pre-',
+         diffCoccinellidae > 0) %>%
+  mutate(logAllAph = log(AllAph +1),
+         logCoccinellidae = log(Coccinellidae+1))# %>%
+  # mutate(diffCoccinellidae = case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
+  #                                      Treatment_Sham == 0 ~ 0))
+
+cocc.eff <- glmmTMB(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
+                    data = mDat,
+                    family = 'nbinom2')
+summary(cocc.eff) # -TreatmentSham**
+plot(allEffects(cocc.eff))
+plot(simulateResiduals(cocc.eff))
+
+
+
+sp.sem.diff5 <- psem(glm(logAllAph ~ wateringMethod_Flooding+ag_sig1+diffCoccinellidae,
+                                 family = 'nbinom2',
+                                 data = mDat),
+                    glm(Coccinellidae ~ weedy_sig1+dirt_sig1+diffCoccinellidae+logAllAph,
+                             family = 'nbinom2',
+                             data = mDat))
+
+summary(sp.sem.diff5, conserve = T)
+plot(sp.sem.diff5, show = "unstd")
+
+
+
+
+
+e## Fall ####
 fa.sem <- psem(glmer.nb(AllAph ~ impermeable_sig4 + naturalArid_sig4 + Treatment_Sham + (1|Site:Field),
                    family = 'nbinom2',
                    data = semdfFa),

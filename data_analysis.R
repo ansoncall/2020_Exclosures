@@ -11,8 +11,8 @@ library(crayon) # for colored terminal outputs
 library(data.table) # for rbindlist() to rbind a list of tables and make id col
 library(DiagrammeR) # for SEM plots
 library(DHARMa) # for simulated residuals
-library(DiagrammeRsvg) # for plotting SEMs
-library(dotwhisker)
+# library(DiagrammeRsvg) # for plotting SEMs
+library(dotwhisker) # for effect size plots
 library(effects) # for effects plots
 library(emmeans) # for computing SEM marginal means
 library(ggeffects) # for easy effects plots
@@ -26,6 +26,8 @@ library(gridExtra) # create multi-panel plots
 library(gtools) # for mixedsort() to arrange factor levels in vegdata tibble
 library(hardhat) # for get_levels to extract factor levels in a tidy way
 library(knitr) # for knitting R markdown docs
+library(lavaan) # for path analysis/SEM
+library(lavaanPlot) # for plotting lavaan models
 library(lme4) # for univariate mixed-effects models
 library(lmerTest) # for lmer with p values
 library(magrittr) # for assignment and exposition pipes
@@ -33,9 +35,9 @@ library(MuMIn) # model selection tools
 library(mvabund) # for building multivariate mods of insect density
 library(parallel) # parallelization of dredge()
 library(performance) # for pseudo-R^2 of GLMERs
-library(piecewiseSEM) # for structural equation modeling
+# library(piecewiseSEM) # for structural equation modeling
 library(plotly) # interactive plots with plotly()
-library(rsvg) # for more SEM plots
+# library(rsvg) # for more SEM plots
 library(sjPlot) # create effects plots on lmer objects, plot tables
 library(tidyselect) # for peek()
 library(tidytable) # for get_dummies to make SEM data
@@ -100,6 +102,10 @@ fieldData <- subplotData %>%
   group_by(Site, Field, Treatment, Season) %>%
   summarize(across(where(is.numeric), .fns = mean), .groups = 'keep')
 
+# raw data from vegetation plots
+vegPlots <- read_csv('tidy_data/vegPlots.csv')
+
+
 # define color palette ####
 # Acyrthosiphon aphids: #548235
 # Non-Acyrthosiphon aphids: #3B3838
@@ -107,6 +113,7 @@ fieldData <- subplotData %>%
 # Fall: #9e3c21
 # Predators: 'Spectral'
 # Sites: 'Set1'
+
 
 # Arthropod data summary ####
 ## Aphid histograms ####
@@ -134,6 +141,23 @@ subplotData %>%
                             "Other taxa")) +
   scale_fill_manual(values = c('#548235', '#3b3838'),
                     guide = 'none')
+
+aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis')
+subplotData %>%
+  # lengthen (predators only)
+  pivot_longer(all_of(aphlist),
+               names_to = 'Taxa',
+               values_to = 'Mean_Density') %>%
+  # log-transform
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
+  # relevel factors
+  mutate(Season = fct_relevel(Season, 'Spring')) %>%
+  ggplot(aes(y = Taxa, x = Mean_Density, fill = Season)) +
+  geom_density_ridges(alpha = 0.6) +
+  labs(title = 'Aphids, Log+1 Transformation, all seasons',
+       subtitle = 'Plot-level density (means of subplots within a plot)',
+       x = 'log(Density + 1)',
+       y = 'Taxon')
 
 # calculate median and mean aphid density in each season
 subplotData %>%
@@ -220,9 +244,6 @@ subplotData %>%
   filter(Season == 'Fall') %>%
   pull(NonAcy) %>% datawizard::skewness(.)
 
-
-
-
 # density boxplot, all aphids combined
 subplotData %>%
   # log-transform
@@ -239,6 +260,8 @@ subplotData %>%
   theme(legend.position = 'none') +
   scale_fill_manual(values = c('#76db91', '#9e3c21'),
                     guide = 'none')
+
+
 
 ## Predator histogram ####
 # define list of predators
@@ -260,25 +283,11 @@ subplotData %>%
   labs(title = 'Predators, Log+1 Transformation, all seasons',
        subtitle = 'Plot-level density (means of subplots within a plot)',
        x = 'log(Density + 1)',
-       y = 'Taxon')
+       y = 'Taxon') +
   # theme(legend.position = 'none') +
-  # scale_fill_brewer(palette = 'Spectral')
-aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis')
-subplotData %>%
-  # lengthen (predators only)
-  pivot_longer(all_of(aphlist),
-               names_to = 'Taxa',
-               values_to = 'Mean_Density') %>%
-  # log-transform
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
-  # relevel factors
-  mutate(Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(y = Taxa, x = Mean_Density, fill = Season)) +
-  geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Predators, Log+1 Transformation, all seasons',
-       subtitle = 'Plot-level density (means of subplots within a plot)',
-       x = 'log(Density + 1)',
-       y = 'Taxon')
+  scale_fill_brewer(palette = 'Spectral')
+
+
 
 
 
@@ -434,8 +443,6 @@ fieldData %>%
 
 # Margin data summary ####
 ## Across sites ####
-# still need to import the vegplots csv for this
-vegPlots <- read_csv('tidy_data/vegPlots.csv')
 # Shannon diversity
 ggplot(data = vegPlots %>% filter(type == 'Margin'),
        aes(x = site, y = shan, fill = season)) +
@@ -464,7 +471,7 @@ ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
 ## etc.
 
 # Predator models ####
-## prepare data
+## Prepare data ####
 # split spring and fall data
 dfSp <- subplotDataRaw %>%
   # spring only
@@ -540,7 +547,7 @@ dotchart(sort(dfFa$log_AllAph))
 ## set number of cores to be used in parallel processing
 n.cores <- detectCores() - 4
 # glmer, negative binomial, scaled vars
-source('nbMixed.R', echo = TRUE)
+source('nbMixed.R', echo = TRUE) # system.time 161 seconds
 # glmer, negative binomial, ranked vars
 source('nbMixedRanked.R', echo = TRUE)
 # glmer, poisson, scaled vars
@@ -548,8 +555,8 @@ source('poisMixed.R', echo = TRUE)
 # glmer, poisson, ranked vars
 source('poisMixedRanked.R', echo = TRUE)
 
-# compare top mods from each model family
-# Spring
+## Collect top models ####
+### Spring ####
 # Anthocoridae
 best.nb.scaled <- get.models(nb.scaled$tab.nb.anth.sp.scaled, 1)[[1]]
 best.nb.ranked <- get.models(nb.ranked$tab.nb.anth.sp.ranked, 1)[[1]]
@@ -581,7 +588,7 @@ best.pois.scaled <- get.models(pois.scaled$tab.pois.ich.sp.scaled, 1)[[1]]
 best.pois.ranked <- get.models(pois.ranked$tab.pois.ich.sp.ranked, 1)[[1]]
 ichFams.sp <- model.sel(best.nb.scaled, best.nb.ranked, best.pois.scaled, best.pois.ranked)
 
-# Fall
+### Fall ####
 # Anthocoridae
 best.nb.scaled <- get.models(nb.scaled$tab.nb.anth.fa.scaled, 1)[[1]]
 best.nb.ranked <- get.models(nb.ranked$tab.nb.anth.fa.ranked, 1)[[1]]
@@ -613,9 +620,10 @@ best.pois.scaled <- get.models(pois.scaled$tab.pois.ich.fa.scaled, 1)[[1]]
 best.pois.ranked <- get.models(pois.ranked$tab.pois.ich.fa.ranked, 1)[[1]]
 ichFams.fa <- model.sel(best.nb.scaled, best.nb.ranked, best.pois.scaled, best.pois.ranked)
 
-# clean env
+## clean env ####
 rm(best.nb.scaled, best.nb.ranked, best.pois.scaled, best.pois.ranked)
 
+## Compare top models ####
 anthFams.sp %>% View # nb.scaled by at least delta>2
 anthFams.fa %>% View # nb.scaled by delta 1.27. NO RANDOM EFFECT in top mod
 araFams.sp %>% View # both pois mods close, and they disagree
@@ -626,9 +634,6 @@ geoFams.sp %>% View # nb.scaled by delta+13
 geoFams.fa %>% View # all mods agree and are generally close
 ichFams.sp %>% View # mods mostly agree and deltas are close
 ichFams.fa %>% View # nb.scaled by delta+7 NO RANDOM EFFECT in top mod
-
-
-### done here
 
 # make table of top nb.scaled models
 # spring
@@ -1616,11 +1621,59 @@ sp.sem.diff5 <- psem(glm(logAllAph ~ wateringMethod_Flooding+ag_sig1+diffCoccine
 summary(sp.sem.diff5, conserve = T)
 plot(sp.sem.diff5, show = "unstd")
 
+## try lavaan ####
+library(lavaan)
+library(lavaanPlot)
 
+mod.spec <- '
+  # direct effects
+    AllAph ~ lcONE*wateringMethod_Flooding + lcTWO*ag_sig1 + b*diffCoccinellidae
+    Coccinellidae ~ lcTHREE*weedy_sig1 + lcFOUR*dirt_sig1
+    diffCoccinellidae ~ c*Coccinellidae + d*Treatment_Sham
+  # mediator
+    # ?
+  # indirect effects
+    # Coccinellidae > diffCoccinellidae > AllAph
+    cb := c*b
+    # Treatment > diffCoccinelliade > AllAph
+    db := d*b
+  # total effects
+    # Treatment > AllAph
+    # tTreat := (d*b)
+    # Coccinellidae > AllAph
+    # ?
+  # covariance ## ERROR - model not identifiable, maybe need to fix a param
+  # AllAph ~~ Coccinellidae
+  # constraints
+    d == 1
+    lcTHREE == 1
+'
 
+# test
+mod.spec <- '
+Coccinellidae ~ b*weedy_sig1 + dirt_sig1
+diffCoccinellidae ~ Coccinellidae + a*Treatment_Sham
+AllAph ~ diffCoccinellidae + wateringMethod_Flooding + ag_sig1
+# constraint
+a == 1
+b == 1
+'
+mod.fit <- sem(mod.spec, data = mDat)
+summary(mod.fit)
+lavaanPlot(model = mod.fit, coefs = T, covs = F, stand = F)
 
+## try mediation ####
+library(mediation)
+mediator.model <- lm(diffCoccinellidae ~ Coccinellidae + offset(1*Treatment_Sham), data = mDat)
+outcome.model <- lm(AllAph ~ diffCoccinellidae + wateringMethod_Flooding + ag_sig1 + offset(0*Coccinellidae), data = mDat)
+summary(mediator.model)
+summary(outcome.model)
+# input models must include direct and indirect effects for this to make sense.
+# direct effect must be freely estimated. Setting offset does not work.
+results <- mediate(mediator.model, outcome.model, treat = 'Coccinellidae', mediator = 'diffCoccinellidae')
+summary(results)
 
-e## Fall ####
+## Fall ####
 fa.sem <- psem(glmer.nb(AllAph ~ impermeable_sig4 + naturalArid_sig4 + Treatment_Sham + (1|Site:Field),
                    family = 'nbinom2',
                    data = semdfFa),

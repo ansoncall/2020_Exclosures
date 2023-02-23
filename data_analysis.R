@@ -4,6 +4,7 @@
 
 # Load packages ####
 library(BAMMtools) # for fast Jenks breaks
+library(broom.mixed) # for tidying model outputs
 library(car) # for Anova() on lmer model objects
 library(classInt) # for kmeans clustering
 library(corrr) # for correlation plots of landcover vars
@@ -38,6 +39,7 @@ library(performance) # for pseudo-R^2 of GLMERs
 # library(piecewiseSEM) # for structural equation modeling
 library(plotly) # interactive plots with plotly()
 # library(rsvg) # for more SEM plots
+library(sjmisc) # for to_dummy function
 library(sjPlot) # create effects plots on lmer objects, plot tables
 library(tidyselect) # for peek()
 library(tidytable) # for get_dummies to make SEM data
@@ -116,359 +118,11 @@ vegPlots <- read_csv('tidy_data/vegPlots.csv')
 
 
 # Arthropod data summary ####
-## Aphid histograms ####
-
-# density plot
-subplotData %>%
-  # lengthen (aphids only)
-  pivot_longer(c(Acyrthosiphon, NonAcy),
-               names_to = 'Taxa',
-               values_to = 'Mean_Density') %>%
-  # log-transform
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
-  # relevel factors
-  mutate(Taxa = fct_relevel(Taxa, 'Acyrthosiphon'),
-         Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(y = Taxa, x = Mean_Density, fill = Taxa)) +
-  geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Aphids, Log+1 Transformation',
-       x = 'log(Density + 1)',
-       y = 'Taxon') +
-  theme(legend.position = 'none') +
-  facet_wrap(~ Season, nrow = 2) +
-  xlim(-1, 10.1) +
-  scale_y_discrete(labels=c("Pea aphids +\n Blue alfalfa aphids",
-                            "Other taxa")) +
-  scale_fill_manual(values = c('#548235', '#3b3838'),
-                    guide = 'none')
-
-aphlist <- c('Acyrthosiphon', 'Aphis', 'Therioaphis')
-subplotData %>%
-  # lengthen (predators only)
-  pivot_longer(all_of(aphlist),
-               names_to = 'Taxa',
-               values_to = 'Mean_Density') %>%
-  # log-transform
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
-  # relevel factors
-  mutate(Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(y = Taxa, x = Mean_Density, fill = Season)) +
-  geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Aphids, Log+1 Transformation, all seasons',
-       subtitle = 'Plot-level density (means of subplots within a plot)',
-       x = 'log(Density + 1)',
-       y = 'Taxon')
-
-# calculate median and mean aphid density in each season
-subplotData %>%
-  # summarize seasons indepentently
-  group_by(Season) %>%
-  # create summary cols
-  summarize(median_AllAph = median(AllAph),
-            median_Acyrthosiphon = median(Acyrthosiphon),
-            median_NonAcy = median(NonAcy),
-            mean_AllAph = mean(AllAph),
-            mean_Acyrthosiphon = mean(Acyrthosiphon),
-            mean_NonAcy = mean(NonAcy),
-            median_Anth = median(Anthocoridae),
-            median_Ara = median(Arachnida),
-            median_Cocc = median(Coccinellidae),
-            median_Geoc = median(Geocoris),
-            median_Ich = median(Ichneumonoidea),
-            median_Nab = median(Nabis),
-            mean_Anth = mean(Anthocoridae),
-            mean_Ara = mean(Arachnida),
-            mean_Cocc = mean(Coccinellidae),
-            mean_Geoc = mean(Geocoris),
-            mean_Ich = mean(Ichneumonoidea),
-            mean_Nab = mean(Nabis)) %>%
-  # move all stats into a single col
-  pivot_longer(starts_with('mean')|starts_with('median'),
-               names_to = 'Taxon', values_to = 'Value') %>%
-  # parse 'Taxon' col
-  separate(Taxon, c('Stat', 'Taxon'), '_', remove = FALSE) %>%
-  # arrange rows
-  arrange(Taxon, Season, Stat) %>%
-  # relocate columns
-  relocate(Taxon, Season, Stat) %>%
-  # print table to viewer
-  tab_df(alternate.rows = TRUE)
-
-# statistical tests
-# aphids
-lm(log(AllAph+1) ~ Season, subplotData) %>% anova
-lm(log(Acyrthosiphon+1) ~ Season, subplotData) %>% summary
-lm(log(NonAcy+1) ~ Season, subplotData) %>% summary
-# predators
-lm(log(Anthocoridae+1) ~ Season, subplotData) %>% summary
-lm(log(Arachnida+1) ~ Season, subplotData) %>% summary
-lm(log(Coccinellidae+1) ~ Season, subplotData) %>% summary
-lm(log(Geocoris+1) ~ Season, subplotData) %>% summary
-lm(log(Ichneumonoidea+1) ~ Season, subplotData) %>% summary
-lm(log(Nabis+1) ~ Season, subplotData) %>% summary
-# print p values with bonferonni correction for predators
-summary(lm(log(Anthocoridae+1) ~ Season, subplotData))$coefficients[2,4] %>%
-  p.adjust('bonferroni', 6)
-summary(lm(log(Arachnida+1) ~ Season, subplotData))$coefficients[2,4] %>%
-  p.adjust('bonferroni', 6)
-summary(lm(log(Coccinellidae+1) ~ Season, subplotData))$coefficients[2,4] %>%
-  p.adjust('bonferroni', 6)
-summary(lm(log(Geocoris+1) ~ Season, subplotData))$coefficients[2,4] %>%
-  p.adjust('bonferroni', 6)
-summary(lm(log(Ichneumonoidea+1) ~ Season, subplotData))$coefficients[2,4] %>%
-  p.adjust('bonferroni', 6)
-summary(lm(log(Nabis+1) ~ Season, subplotData))$coefficients[2,4] %>%
-  p.adjust('bonferroni', 6)
-
-# calculate relative skewness of aphid density across seasons
-# use datawizard package
-# all aphids
-subplotData %>%
-  filter(Season == 'Spring') %>%
-  pull(AllAph) %>% datawizard::skewness(.)
-subplotData %>%
-  filter(Season == 'Fall') %>%
-  pull(AllAph) %>% datawizard::skewness(.)
-# Acyrthosiphon aphids
-subplotData %>%
-  filter(Season == 'Spring') %>%
-  pull(Acyrthosiphon) %>% datawizard::skewness(.)
-subplotData %>%
-  filter(Season == 'Fall') %>%
-  pull(Acyrthosiphon) %>% datawizard::skewness(.)
-# Non-Acyrthosiphon aphids
-subplotData %>%
-  filter(Season == 'Spring') %>%
-  pull(NonAcy) %>% datawizard::skewness(.)
-subplotData %>%
-  filter(Season == 'Fall') %>%
-  pull(NonAcy) %>% datawizard::skewness(.)
-
-# density boxplot, all aphids combined
-subplotData %>%
-  # log-transform
-  mutate(Mean_Density = log(AllAph + 1)) %>%
-  # relevel factors
-  mutate(Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(x = Season, y = Mean_Density, fill = Season)) +
-  geom_boxplot() +
-  labs(title = 'Aphids, Log+1 Transformation',
-       subtitle = 'Pooled across taxa and split by season',
-       x = 'Season',
-       y = 'log(Density + 1)') +
-  ylim(c(0, 9)) +
-  theme(legend.position = 'none') +
-  scale_fill_manual(values = c('#76db91', '#9e3c21'),
-                    guide = 'none')
-
-
-
-## Predator histogram ####
-# define list of predators
-predlist <- c('Arachnida', 'Anthocoridae', 'Nabis', 'Coccinellidae',
-              'Geocoris', 'Ichneumonoidea')
-# build density plot
-# density plot + boxplot
-subplotData %>%
-  # lengthen (predators only)
-  pivot_longer(all_of(predlist),
-               names_to = 'Taxa',
-               values_to = 'Mean_Density') %>%
-  # log-transform
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
-  # relevel factors
-  mutate(Season = fct_relevel(Season, 'Spring')) %>%
-  ggplot(aes(y = Taxa, x = Mean_Density, fill = Season)) +
-  geom_density_ridges(alpha = 0.6) +
-  labs(title = 'Predators, Log+1 Transformation, all seasons',
-       subtitle = 'Plot-level density (means of subplots within a plot)',
-       x = 'log(Density + 1)',
-       y = 'Taxon') +
-  # theme(legend.position = 'none') +
-  scale_fill_brewer(palette = 'Spectral')
-
-
-
-
+source('data_analysis_arthropod_exploration.R', echo = TRUE)
 
 # Landcover data summary ####
-## Effect of "fixing" alfalfa classification on alfalfa areaScore
-fieldData %>%
-  # only need one season
-  filter(Season == "Spring") %>%
-  # calculate change in alfalfa area
-  mutate(Change_sig1 = alfalfa_fix_sig1 - alfalfa_sig1,
-         Change_sig2 = alfalfa_fix_sig2 - alfalfa_sig2,
-         Change_sig3 = alfalfa_fix_sig3 - alfalfa_sig3,
-         Change_sig4 = alfalfa_fix_sig4 - alfalfa_sig4,
-         Change_sig5 = alfalfa_fix_sig5 - alfalfa_sig5,
-         Change_const = alfalfa_fix_const - alfalfa_const,
-         Change_no = alfalfa_fix_no - alfalfa_no) %>%
-  # scale across new cols (must ungroup first)
-  ungroup() %>%
-  mutate(across(contains("Change"), ~as.numeric(scale(.x)))) %>%
-  # pivot longer
-  pivot_longer(contains("Change"),
-               names_to = 'distWeight',
-               values_to = 'Change') %>%
-  # make field id, also trim up values in distWeight column
-  mutate(FieldID = paste0(Site, '0', Field),
-         distWeight = str_extract(distWeight, "_[:alnum:]+")) %>%
-  # reorder_within to make ordered bars within facets of ggplot
-  mutate(FieldID = reorder_within(FieldID,
-                                  desc(Change),
-                                  distWeight,
-                                  sep = '')) %>%
-  ggplot(aes(FieldID, Change)) +
-  geom_col() +
-  facet_wrap(~ distWeight, scales = 'free_x') +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+source('data_analysis_classification_summary.R', echo = TRUE)
 
-## Effect of "fixing" alfalfa classification on weedyWet areaScore
-fieldData %>%
-  # only need one season
-  filter(Season == "Spring", Treatment == 'Control') %>%
-  # calculate change in alfalfa area
-  mutate(Change_sig1 = weedyWet_fix_sig1 - weedyWet_sig1,
-         Change_sig2 = weedyWet_fix_sig2 - weedyWet_sig2,
-         Change_sig3 = weedyWet_fix_sig3 - weedyWet_sig3,
-         Change_sig4 = weedyWet_fix_sig4 - weedyWet_sig4,
-         Change_sig5 = weedyWet_fix_sig5 - weedyWet_sig5,
-         Change_const = weedyWet_fix_const - weedyWet_const,
-         Change_no = weedyWet_fix_no - weedyWet_no) %>%
-  # scale across new cols (must ungroup first)
-  ungroup() %>%
-  mutate(across(contains("Change"), ~as.numeric(scale(.x)))) %>%
-  # pivot longer
-  pivot_longer(contains("Change"),
-               names_to = 'distWeight',
-               values_to = 'Change') %>%
-  # make field id, also trim up values in distWeight column
-  mutate(FieldID = paste0(Site, '0', Field),
-         distWeight = str_extract(distWeight, "_[:alnum:]+")) %>%
-  # reorder_within to make ordered bars within facets of ggplot
-  mutate(FieldID = reorder_within(FieldID,
-                                  desc(Change),
-                                  distWeight,
-                                  sep = '')) %>%
-  ggplot(aes(FieldID, Change)) +
-  geom_col() +
-  facet_wrap(~ distWeight, scales = 'free_x') +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# in summary, manual classification seems to change Yerington the most
-
-## weedy/wet binning effect ####
-# what is the correlation between weedy and wet cover?
-fieldData %>%
-  # only need one season and trt
-  filter(Season == 'Spring', Treatment == 'Control') %>%
-  # focus on weedy vs. wet
-  select(contains(c('weedy', 'wet'))) %>%
-  # drop data from "fixed" classifications, also drop "weedyWet" cols
-  select(-contains(c('fix', 'weedyWet'))) %>%
-  # pivot longer to put all distweights in one col
-  pivot_longer(contains(c('weedy', 'wet'))) %>%
-  # separate klass and distweight in name col
-  separate(name, c('klass', 'distWeight'), "_") %>%
-  # widen
-  pivot_wider(names_from = c(klass), values_from = value) %>%
-  ggplot(aes(x = weedy, y = wet)) +
-  stat_poly_line() +
-  stat_poly_eq() +
-  geom_point() +
-  geom_smooth(method = 'lm') +
-  facet_wrap(~ distWeight, scales = 'free') +
-  labs(title = 'Correlation between "weedy" and "wet" classes',
-       subtitle = 'across all distance weights') +
-  theme(axis.ticks = element_blank(),
-        axis.text = element_blank())
-
-# generally poor correlation between these two classes
-# bin these because they are biologically similar, not because they are
-# correlated
-
-# wet and water correlation
-fieldData %>%
-  # only need one season and trt
-  filter(Season == 'Spring', Treatment == 'Control') %>%
-  # focus on weedy vs. wet
-  select(contains(c('water', 'wet'))) %>%
-  # drop data from "fixed" classifications, also drop "weedyWet" cols
-  select(-contains(c('fix'))) %>%
-  # pivot longer to put all distweights in one col
-  pivot_longer(contains(c('water', 'wet'))) %>%
-  # separate klass and distweight in name col
-  separate(name, c('klass', 'distWeight'), "_") %>%
-  # widen
-  pivot_wider(names_from = c(klass), values_from = value) %>%
-  ggplot(aes(x = wet, y = water)) +
-  geom_point() +
-  stat_poly_line() +
-  stat_poly_eq() +
-  facet_wrap(~ distWeight, scales = 'free') +
-  labs(title = 'Correlation between "wet" and "water" classes',
-       subtitle = 'across all distance weights') +
-  theme(axis.ticks = element_blank(),
-        axis.text = element_blank())
-# moderate correlation here. this breaks down when using weedyWet (7-class)
-fieldData %>%
-  # only need one season and trt
-  filter(Season == 'Spring', Treatment == 'Control') %>%
-  # focus on weedy vs. wet
-  select(contains(c('water', 'weedyWet'))) %>%
-  # drop data from "fixed" classifications, also drop "weedyWet" cols
-  select(-contains(c('fix'))) %>%
-  # pivot longer to put all distweights in one col
-  pivot_longer(contains(c('water', 'weedyWet'))) %>%
-  # separate klass and distweight in name col
-  separate(name, c('klass', 'distWeight'), "_") %>%
-  # widen
-  pivot_wider(names_from = c(klass), values_from = value) %>%
-  ggplot(aes(x = weedyWet, y = water)) +
-  geom_point() +
-  stat_poly_line() +
-  stat_poly_eq() +
-  facet_wrap(~ distWeight, scales = 'free') +
-  labs(title = 'Correlation between "weedyWet" and "water" classes',
-       subtitle = 'across all distance weights') +
-  theme(axis.ticks = element_blank(),
-        axis.text = element_blank())
-
-
-## pca ####
-
-# Not wanting to fix this right now. Used to have pca plot for every combination
-# of distWeight, nClasses (7 or 8), and fixed vs. non-fixed
-
-# Margin data summary ####
-## Across sites ####
-# Shannon diversity
-ggplot(data = vegPlots %>% filter(type == 'Margin'),
-       aes(x = site, y = shan, fill = season)) +
-  geom_boxplot() +
-  labs(title = 'Shannon diversity index',
-       x = 'Site', y = 'Diversity') +
-  scale_fill_manual(values = c('#76db91', '#9e3c21'))
-# Plant species richness
-ggplot(data = vegPlots %>% filter(type == 'Margin'),
-       aes(x = site, y = rich, fill = season)) +
-  geom_boxplot() +
-  labs(title = 'Plant species richness',
-       x = 'Site', y = 'Richness') +
-  scale_fill_manual(values = c('#76db91', '#9e3c21'))
-# Total plant cover
-ggplot(data = vegPlots %>% filter(type == 'Margin') %>%
-         mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)),
-       aes(x = site, y = total_cover, fill = season)) +
-  geom_boxplot() +
-  labs(title = 'Plant cover %',
-       x = 'Site', y = '%') +
-  scale_fill_manual(values = c('#76db91', '#9e3c21'))
-### Notes ####
-## Not seeing much variation here. May want to shaw by field.
-## Remember, Yerington will always be missing. Need to fix colors, factor order,
-## etc.
 
 # Predator models ####
 ## Prepare data ####
@@ -629,14 +283,16 @@ anthFams.fa %>% View # nb.scaled by delta 1.27. NO RANDOM EFFECT in top mod
 araFams.sp %>% View # both pois mods close, and they disagree
 araFams.fa %>% View # nb mods agree, pois mods are delta+15
 coccFams.sp %>% View # scaled mods agree, ranked mods differ but delta +4 anyway
-coccFams.fa %>% View # scaled mods agree, ranked mods differ, ranked have slightly better fit but deltas are close
+coccFams.fa %>% View # scaled mods agree, ranked mods differ,
+                     # ranked have slightly better fit but deltas are close
 geoFams.sp %>% View # nb.scaled by delta+13
 geoFams.fa %>% View # all mods agree and are generally close
 ichFams.sp %>% View # mods mostly agree and deltas are close
 ichFams.fa %>% View # nb.scaled by delta+7 NO RANDOM EFFECT in top mod
 
-# make table of top nb.scaled models
-# spring
+## Make table of top nb.scaled models ####
+### Spring ####
+# make list of best models
 bestModList <- list(
   'best.ant.sp' = get.models(nb.scaled$tab.nb.anth.sp.scaled, 1)[[1]],
   'best.ara.sp' = get.models(nb.scaled$tab.nb.ara.sp.scaled, 1)[[1]],
@@ -650,10 +306,6 @@ bestModList <- list(
   'best.ich.fa' = get.models(nb.scaled$tab.nb.ich.fa.scaled, 1)[[1]]
 )
 
-broom.mixed::tidy(bestModList[[1]])
-fixef(bestModList[[1]])$cond %>% str
-fixef(bestModList[[1]])$cond
-fixef(bestModList[[1]])$cond[2:3]
 # build empty tibble to hold stats
 statsDf <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                                 "Geocoris", "Ichneumodoidea"), 2),
@@ -664,6 +316,7 @@ statsDf <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                   effects2 = c('none'),
                   coefs1 = c(0),
                   coefs2 = c(0))
+
 # fill tibble with stats
 for (i in 1:length(bestModList)){
   statsDf$MarginalR2[[i]] <- r2(bestModList[[i]])[[2]]
@@ -675,90 +328,60 @@ for (i in 1:length(bestModList)){
 }
 
 
-statsDf %>%
-  group_by(Taxon) %>%
-  gt
-# install.packages('gt')
-# library(gt)
-statsDf %>%
-  gt() %>%
-  tab_row_group(label = 'Spring',
-                rows = Season == 'Spring') %>%
-  tab_row_group(label = 'Fall',
-                rows = Season == 'Fall')
-gt(statsDf) %>%
+#### TODO - Export table ####
+# viewing table here, may need to export to excel for cleanup
+statsDf %>% group_by(Season) %>% tab_df
 
-
-statsDf2 <- statsDf %>%
-  # separate effects into unique cols
-  separate(effects,
-           into = c('effects1', 'effects2', 'effects3'),
-           sep = '#')
-# add more stats
-for (i in 1:length(bestModList)){
-  tidyTab <- broom.mixed::tidy(bestModList[[1]])
-
-  statsDf2 <- left_join(tidyTab)
-
-  statsDf$MarginalR2[[i]] <- r2(bestModList[[i]])[[2]]
-  statsDf$ConditionalR2[[i]] <- r2(bestModList[[i]])[[1]]
-  statsDf$effects[[i]] <- paste0(names(bestModList[[i]]$frame)[2:3],
-                                 collapse = "#")
-}
-
-
-
-# review mod tables and top mods
+#### Review models ####
+# review mod table
 nb.scaled$tab.nb.cocc.sp.scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
 
+# choose model to review
+review.mod <- get.models(nb.scaled$tab.nb.cocc.sp.scaled, 1)[[1]]
 
-
-
-
-# validate top model
-top.cocc.mod.sp <- get.models(nb.scaled$tab.nb.cocc.sp.scaled, 1)[[1]]
 # show summary
-summary(top.cocc.mod.sp) # no random effect variance. essentially equivalent to
+summary(review.mod) # no random effect variance. essentially equivalent to
                          # a fixed effects mod. I checked.
 # basic effects plots
-plot(allEffects(top.cocc.mod.sp, residuals = T))
+plot(allEffects(review.mod, residuals = T))
 
 # tidy coeffs plot
-library(broom.mixed)
-library(dotwhisker)
-t1 <- tidy(top.cocc.mod.sp, conf.int = T) %>% transform() %>% mutate(model = 1)
-dwplot(t1)
+tidy(review.mod, conf.int = T) %>%
+  # needs "model" column for dwplot
+  mutate(model = 1) %>%
+  dwplot
+
 
 # extract residuals, fitted values
-pearsonRes <- resid(top.cocc.mod.sp, type = 'pearson')
-workingRes <- resid(top.cocc.mod.sp, type = 'working')
-defaultRes <- resid(top.cocc.mod.sp)
-dharmaRes <- simulateResiduals(top.cocc.mod.sp)
-fitted <- fitted(top.cocc.mod.sp)
+pearsonRes <- resid(review.mod, type = 'pearson')
+workingRes <- resid(review.mod, type = 'working')
+defaultRes <- resid(review.mod)
+dharmaRes <- simulateResiduals(review.mod)
+fitted <- fitted(review.mod)
 
 # basic DHARMa plot
 plot(dharmaRes)
 
+# other residual plots
 plot(fitted, pearsonRes)
 plot(fitted, defaultRes)
 
 
-# ADDING VEGDATA ####
-# check data - must drop yerington
+# Predator models with vegdata ####
+# drop Yerington (NA vegdata values)
 dfSpVD <- dfSp %>% filter(!is.na(shan))
 dfFaVD <- dfFa %>% filter(!is.na(shan))
-dfSp %>% nrow
-dfSpVD %>% nrow
-dfFa %>% nrow
-dfFaVD %>% nrow
+# # Check nrow
+# dfSp %>% nrow
+# dfSpVD %>% nrow
+# dfFa %>% nrow
+# dfFaVD %>% nrow
 
-
-
-# add vegdata to top mods, refit
-# spring
+## Add vegdata to top mods ####
+### Spring ####
 # anth
 bestModList$best.ant.sp
 global.ant.sp.vd <- glmmTMB(Anthocoridae ~ Treatment+ag_sig1+impermeable_sig1+(1|Site:Field)+shan+rich+totalCover, data = dfSpVD, family = 'nbinom2')
@@ -799,7 +422,7 @@ r2(bestModList$best.ich.sp)
 r2(best.ich.sp.vd) ## new model has one less factor. new has better marginal r2 but worse cond. r2
 # vedict - keep original
 
-# fall
+### Fall ####
 # anth
 bestModList$best.ant.fa
 global.ant.fa.vd <- glmmTMB(Anthocoridae ~ Treatment+alfalfa_sig1+dirt_sig1+(1|Site:Field)+shan+rich+totalCover, data = dfFaVD, family = 'nbinom2')
@@ -841,7 +464,9 @@ r2(bestModList$best.ich.fa)
 r2(best.ich.fa.vd) ## same models. original has better marginal r2
 ## verdict - keep original
 
+### Summary ####
 newMods <- list('antFA' = best.ant.fa.vd, 'araFA' = best.ara.fa.vd)
+
 # build empty tibble to hold stats
 statsDf.new <- tibble(Taxon = c("Anthocoridae", "Arachnida"),
                   Season = rep("Fall", 2),
@@ -851,6 +476,7 @@ statsDf.new <- tibble(Taxon = c("Anthocoridae", "Arachnida"),
                   effects2 = c('none'),
                   coefs1 = c(0),
                   coefs2 = c(0))
+
 # fill tibble with stats
 for (i in 1:length(newMods)){
   statsDf.new$MarginalR2[[i]] <- r2(newMods[[i]])[[2]]
@@ -861,22 +487,24 @@ for (i in 1:length(newMods)){
   statsDf.new$coefs2[[i]] <- fixef(newMods[[i]])$cond[3]
 }
 
-
+#### TODO - Export table ####
+# plot table for now
 statsDf.new %>%
   mutate(effects2 = case_when(Taxon == 'Anthocoridae' ~ 'None',
                               Taxon != 'Anthocoridae' ~  effects2,)) %>%
   mutate(coefs2 = case_when(Taxon == 'Anthocoridae' ~ 0,
                               Taxon != 'Anthocoridae' ~  coefs2,)) %>%
   group_by(Taxon) %>%
-  gt
+  tab_df
 
 
-## Aphid models ####
-### SOURCE ####
+# Aphid models ####
+## SOURCE ####
 # nb mixed mods, landcover scaled
 source('aphNbMixed.R', echo = TRUE)
 
-# review mod tables and top mods
+## Review models ####
+### Spring ####
 # AllAph spring
 r2(get.models(tab.nb.allaph.sp.scaled,1)[[1]]) # good fit 0.8
 plot(simulateResiduals(get.models(tab.nb.allaph.sp.scaled,1)[[1]])) # ok
@@ -907,10 +535,11 @@ tab.nb.nonacy.sp.scaled %>%
   select(where(~!all(is.na(.x)))) %>% View
 # top mods all include -dirt_no
 
-## SPRING SUMMARY ####
+### Spring Summary ####
 ## SEM should include coccinellidae, wateringmethod for sure.
 ## maybe also include ag_sig1, alfalfa_sig1
 
+### Fall ####
 # AllAph fall
 r2(get.models(tab.nb.allaph.fa.scaled,1)[[1]]) # average fit 0.69
 plot(simulateResiduals(get.models(tab.nb.allaph.fa.scaled,1)[[1]])) # ok
@@ -918,6 +547,7 @@ tab.nb.allaph.fa.scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
+
 # clear top mod with +ich, -impermeable_sig4, +naturalArid_sig4
 
 # Acyrthosiphon fall
@@ -939,15 +569,16 @@ tab.nb.nonacy.fa.scaled %>%
 # +ich in all mods. landcover effects varied in top mods,
 # BUT top mod is way better than #2. Includes -impermeable_sig2, +natArid_sig2
 
-## FALL SUMMARY ####
+### Fall Summary ####
 # strong correlations with ichneumonoidea.
 # natural arid benefits aphid abundance. _sig4 best scale for AllAph.
 
+## Review best models ####
 # spring - #1 mod is inappropriate because it combines wateringmethod and water_sig1
 sp.best <- get.models(tab.nb.allaph.sp.scaled, 2)[[1]]
 fa.best <- get.models(tab.nb.allaph.fa.scaled, 1)[[1]]
-
-
+summary(sp.best)
+summary(fa.best)
 
 ## make aphid modstats table
 aphMods <- list('allaphFA' = sp.best, 'araFA' = fa.best)
@@ -974,14 +605,16 @@ for (i in 1:length(aphMods)){
   statsDf.aph$coefs3[[i]] <- fixef(aphMods[[i]])$cond[4]
 }
 
-library(gt)
+### TODO - Export table ####
+# plot table for now
 statsDf.aph %>%
-  gt
+  tab_df
 
-summary(sp.best)
-
-## try adding vegdata to top mods ####
-
+# Aphid models with vegdata ####
+# recall vegdata from predator modeling
+dfSpVD
+dfFaVD
+# add vegdata to top mods
 sp.best
 sp.best.veg <- glmmTMB(AllAph ~ Treatment + ag_sig1 + wateringMethod +
                          log(Coccinellidae + 1) + shan + rich + totalCover +
@@ -999,6 +632,9 @@ fa.best.veg <- glmmTMB(AllAph ~ Treatment + impermeable_sig4 + naturalArid_sig4 
                     family = 'nbinom2')
 
 veg.dredge.fa <- dredge(fa.best.veg, fixed='cond(Treatment)', m.lim=c(0,4), trace = 2)
+
+# review model selection tables and best models
+## Spring ####
 veg.dredge.sp %>% View
 # new best mod!! +richness!!
 sp.best.veg <- get.models(veg.dredge.sp, 1)[[1]]
@@ -1011,7 +647,7 @@ abline(0,1)
 
 plot(allEffects(sp.best.veg, resid =T))
 
-
+## Fall ####
 veg.dredge.fa %>% View
 # new best mod!! -shan!!
 fa.best.veg <- get.models(veg.dredge.fa, 1)[[1]]
@@ -1024,7 +660,8 @@ abline(0,1)
 
 plot(allEffects(fa.best.veg, resid = T))
 
-### try a binomial cocc mod for fall (low coc density in fall) ####
+# Extra ladybug model ####
+# try a binomial cocc mod for fall (low coc density in fall)
 dfFaBin <- dfFa %>%
   mutate(CBinary = case_when(Coccinellidae == 0 ~ 0,
                              Coccinellidae > 0 ~ 1))
@@ -1075,7 +712,8 @@ allBinMods <- rbind(dr.sig1,
                     dr.const,
                     dr.no)
 
-allBinMods %>% View
+# # check mod table
+# allBinMods %>% View
 
 # review mod tables and top mods
 allBinMods %>%
@@ -1084,42 +722,9 @@ allBinMods %>%
   select(where(~!all(is.na(.x)))) %>% View
 
 # Top-down effect ####
-# START HERE########### ####
-## maybe starting over once more?
-# subplot-level data, all vars
-# pre- data not /3, can use area offset to correct.
-# No transformations have been applied
-subplotDataRaw
+## Identify sham-attracted preds ####
+### Prepare data ####
 
-# To assess the top-down effect of predators on aphids, we need a predator
-# manipulation treatment. It is clear that, although predator exclusion did not
-# work as intended, we did attract some predators with the use of the sham
-# treatments. So, we will focus on these treatments as "predator addition"
-# treatments.
-
-# Per Beth's advice, we will assess the effect of the sham treatment conditional
-# to the broader, plot-level effect of differing site/plot/field characteristics
-# on aphid densities. In other words, we will use ANCOVA to estimate the SHAM
-# treatment effect on aphid densities, with predator densities as a covariate.
-# This enables us to account for the fact that some fields are just "buggier"
-# than others.
-
-# I'm still not sure whether a mixed model is appropriate or better than a
-# regular ANCOVA model. I have NOT explored the mixed-model option yet.
-
-# strip out "Pre-" measurements
-noPre <- subplotDataRaw %>% filter(Treatment!='Pre-', Season == 'Spring')
-# try a simple mixed model
-sp.allaph <- glmmTMB(AllAph ~ Treatment + Coccinellidae + (1|Site:Field), data = noPre)
-plot(allEffects(sp.allaph))
-summary(sp.allaph)
-
-## Prepare data ####
-
-# We will use log-transformed response variables and we will NOT be removing any
-# outliers.
-
-# diffData_wide
 # this df contains plot-level DIFFERENCES between sham and control
 # this must use UNLOGGED data because subtraction on the log scale doesn't make
 # sense
@@ -1173,24 +778,23 @@ dotchart(plotWDiff$diffGeocoris)
 dotchart(plotWDiff$diffIchneumonoidea)
 dotchart(plotWDiff$diffAllAph)
 
-
-# Do sham treatments attract arthropods?
+### Make models ####
+# Mixed effects needed?
 # linear and linear mixed-effects often give different results.
 # must use mixed effects to account for non-independence
-lmer(diffArachnida~1+(1|Site:Field), data = plotWDiff) %>% summary()
+lmer(diffArachnida~1+(1|Site:Field), data = plotWDiff) %>% summary() # no
 t.test(plotWDiff$diffArachnida) # same
-lmer(diffAnthocoridae~1+(1|Site:Field), data = plotWDiff) %>% summary()
-t.test(plotWDiff$diffAnthocoridae) # not the same!
-lmer(diffCoccinellidae~1+(1|Site:Field), data = plotWDiff) %>% summary()
+lmer(diffAnthocoridae~1+(1|Site:Field), data = plotWDiff) %>% summary() # yes
+t.test(plotWDiff$diffAnthocoridae) # still yes, but not the same!
+lmer(diffCoccinellidae~1+(1|Site:Field), data = plotWDiff) %>% summary() # yes
 t.test(plotWDiff$diffCoccinellidae) # same
-lmer(diffGeocoris~1+(1|Site:Field), data = plotWDiff) %>% summary()
-t.test(plotWDiff$diffGeocoris) # not the same!
-lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotWDiff) %>% summary()
-t.test(plotWDiff$diffIchneumonoidea) # not the same!
+lmer(diffGeocoris~1+(1|Site:Field), data = plotWDiff) %>% summary() # no
+t.test(plotWDiff$diffGeocoris) # still no, but not the same!
+lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotWDiff) %>% summary() # no
+t.test(plotWDiff$diffIchneumonoidea) # still no, but not the same!
 
-# which effects are large or significant?
 # positive coeff means shams ATTRACT
-# Spring
+#### Spring ####
 plotDiff.sp <- plotWDiff %>% filter(Season == 'Spring')
 dAra.mod <- lmer(diffArachnida~1+(1|Site:Field), data = plotDiff.sp)
 dAnt.mod <- lmer(diffAnthocoridae~1+(1|Site:Field), data = plotDiff.sp)
@@ -1198,7 +802,7 @@ dCoc.mod <- lmer(diffCoccinellidae~1+(1|Site:Field), data = plotDiff.sp)
 dGeo.mod <- lmer(diffGeocoris~1+(1|Site:Field), data = plotDiff.sp)
 dIch.mod <- lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotDiff.sp)
 dAph.mod <- lmer(diffAllAph~1+(1|Site:Field), data = plotDiff.sp)
-summary(dAra.mod)
+
 # collect stats from these mods
 diffMods <- list(dAra.mod, dAnt.mod, dCoc.mod, dGeo.mod, dIch.mod, dAph.mod)
 diffStats.sp <- tibble(Taxon = c('Ara', 'Ant', 'Coc', 'Geo', 'Ich', 'Aph'),
@@ -1213,7 +817,7 @@ for (i in 1:6){
 
 }
 
-# Fall
+#### Fall ####
 plotDiff.fa <- plotWDiff %>% filter(Season == 'Fall')
 dAra.mod <- lmer(diffArachnida~1+(1|Site:Field), data = plotDiff.fa)
 dAnt.mod <- lmer(diffAnthocoridae~1+(1|Site:Field), data = plotDiff.fa)
@@ -1221,7 +825,7 @@ dCoc.mod <- lmer(diffCoccinellidae~1+(1|Site:Field), data = plotDiff.fa)
 dGeo.mod <- lmer(diffGeocoris~1+(1|Site:Field), data = plotDiff.fa)
 dIch.mod <- lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotDiff.fa)
 dAph.mod <- lmer(diffAllAph~1+(1|Site:Field), data = plotDiff.fa)
-summary(dAra.mod)
+
 # collect stats from these mods
 diffMods <- list(dAra.mod, dAnt.mod, dCoc.mod, dGeo.mod, dIch.mod, dAph.mod)
 diffStats.fa <- tibble(Taxon = c('Ara', 'Ant', 'Coc', 'Geo', 'Ich', 'Aph'),
@@ -1236,12 +840,13 @@ for (i in 1:6){
 
 }
 
-
-
+### Examine models ####
 diffStats.sp # Ara, Coc *; Anth ***
 diffStats.fa # none significant
+
+#### Examine Ichneumonidae ####
 summary(dIch.mod)
-#try nb mod for ich in fall ####
+#try nb mod for ich in fall
 nb.dIch <- glmmTMB(Ichneumonoidea ~ Treatment + (1|Site:Field),
                      family='nbinom2',
                      data = subplotDataRaw %>% filter(Season =='Fall',
@@ -1249,11 +854,12 @@ nb.dIch <- glmmTMB(Ichneumonoidea ~ Treatment + (1|Site:Field),
 
 summary(nb.dIch)
 exp(0.8307)
-# this is better I think. could do pois or nb. overdispersion is there but minimal.
+# this is better I think. could do pois or nb model. Overdispersion is there,
+# but minimal.
 
 
 
-## make boxplot of diff effects
+### Boxplot of sham effects ####
 # df of asterisks
 sigs1.sp <- tibble(Taxon = c('Anthocoridae'),
                Difference = rep(16, 1),
@@ -1291,10 +897,10 @@ plotWDiff %>% pivot_longer(contains('diff'),
   geom_vline(xintercept = 0, color = 'red') +
   theme_classic()
 
-# examine top-down effects for preds significantly affected by shams
-# Anthocoridae (spring)
+## Top-down effs of key preds ####
 mDat <- subplotDataRaw %>% filter(Season == 'Spring',
                                   Treatment != 'Pre-')
+# Anthocoridae (spring)
 anth.eff <- glmmTMB(AllAph~ Treatment + log(Anthocoridae+1) + (1|Site:Field),
                     data = mDat,
                     family = 'nbinom2')
@@ -1396,7 +1002,7 @@ summary(cocc.eff) # no apparent effect of sham
 plot(allEffects(cocc.eff))
 # literally no effect of sham in any of these models
 # constrain data to when sham diff is +0
-## THIS is when the coccinellidae effects show up ####
+### THIS is when the coccinellidae effects show up ####
 mDat <- subplotDataRaw %>%
   left_join(diffData_wide) %>%
   filter(Season == 'Spring',
@@ -1426,15 +1032,16 @@ plot(simulateResiduals(ich.eff))
 
 
 ## figure for paper (WIP) ####
-library(broom.mixed)
 anth.tidy <- tidy(anth.eff) %>% filter(term == 'TreatmentSham')
 ara.tidy <- tidy(ara.eff) %>% filter(term == 'TreatmentSham')
-cocc.tidy <- tidy(cocc.eff) %>% filter(term == 'TreatmentSham')
-ich.tidy <- tidy(ich.eff) %>% filter(term == 'TreatmentSham')
+cocc.tidy <- tidy(cocc.eff) %>% filter(term == 'TreatmentSham') %>%
+  select(term:p.value)
+ich.tidy <- tidy(ich.eff) %>% filter(term == 'TreatmentSham') %>%
+  select(term:p.value)
 ncol(anth.tidy)
 ncol(ara.tidy)
-ncol(anth.tidy)
-ncol(anth.tidy)
+ncol(cocc.tidy)
+ncol(ich.tidy)
 tidy.mods <- rbind(anth.tidy, ara.tidy, cocc.tidy, ich.tidy)
 tidy.mods$model <- c("Anthocoridae", "Arachnida", "Coccinellidae", "Ichneumonoidea")
 
@@ -1442,32 +1049,10 @@ dwplot(tidy.mods) %>%
   relabel_predictors(c(TreatmentSham = "Biocontrol effect")) +
   geom_vline(xintercept = 0, color = 'red') +
   theme_classic()
-# try lmer vers
-cocc.eff <- lmer(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
-                data = mDat)
-summary(cocc.eff) # no apparent effect of sham
-plot(allEffects(cocc.eff))
-plot(cocc.eff) # problems
-# try lm vers
-cocc.eff <- lm(log(AllAph+1)~ Treatment + log(Coccinellidae+1),
-              data = mDat)
-summary(cocc.eff) # no apparent effect of sham
-plot(allEffects(cocc.eff))
-plot(cocc.eff)
-
-## all in one?
-mDat <- subplotDataRaw %>%
-  left_join(diffData_wide) %>%
-  filter(Season == 'Spring',
-         Treatment != 'Pre-')
-all.eff <- glmmTMB(AllAph~ Treatment + log(Anthocoridae+1) + log(Arachnida+1) + log(Coccinellidae+1) + (1|Site:Field),
-                    data = mDat,
-                    family = 'nbinom2', na.action = 'na.fail')
-summary(all.eff) # not really informative
 
 
-# SEM ####
-## starting over here
+
+# PSEM-OLD ####
 detach("package:lmerTest", unload=TRUE) # this fucks with psem for some reason
 
 # prepare data
@@ -1486,7 +1071,7 @@ semdfFa <- dfFa %>%
   mutate(logAllAph = log(AllAph))
 
 # glmer.nb to include random effects
-## Spring ####
+## Spring ###
 sp.sem <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform here without psem throwing up
                      wateringMethod_Flooding+ag_sig1+(1|Site:Field),
                    family = 'nbinom2',
@@ -1508,7 +1093,7 @@ sp.sem <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform here wit
 summary(sp.sem, conserve = TRUE)
 plot(sp.sem, show = 'unstd')
 rsquared(sp.sem) # no available methods for calculating R2
-## Spring circular version ####
+## Spring circular version ###
 sp.sem.cyclic <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform here without psem throwing up
                           wateringMethod_Flooding+ag_sig1+(1|Site:Field),
                         family = 'nbinom2',
@@ -1528,7 +1113,7 @@ sp.sem.cyclic <- psem(glmer.nb(AllAph ~ Treatment_Sham + ## cant log transform h
 )
 
 # summary(sp.sem.cyclic) # never-ending
-## Spring, leveraging pre-experiment data ####
+## Spring, leveraging pre-experiment data ###
 semdfSpv2a <- dfSp %>%
   # filter(Treatment != 'Pre-') %>%
   get_dummies(Treatment) %>%
@@ -1578,14 +1163,13 @@ plot(sp.sem.directed, show = "unstd")
 ## with glmer.nb
 
 
+# SEM-LAVAAN ####
 ### after talking to beth...####
 
 # 1. get aphid ladybug relationship
 
 ## from prior results....
-## THIS is when the coccinellidae effects show up ####
 library(sjmisc) # to_dummy
-
 
 mDatr <- subplotDataRaw %>%
   to_dummy(wateringMethod, suffix = 'label') %>%

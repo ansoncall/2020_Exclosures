@@ -209,6 +209,11 @@ source('poisMixed.R', echo = TRUE)
 # glmer, poisson, ranked vars
 source('poisMixedRanked.R', echo = TRUE)
 
+save.image(file = 'analysis_env.RData')
+
+# Optional: start here ####
+load('analysis_env.RData')
+
 ## Collect top models ####
 ### Spring ####
 # Anthocoridae

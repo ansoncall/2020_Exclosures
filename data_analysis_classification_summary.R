@@ -168,8 +168,8 @@ ggplot(data = vegPlots %>% filter(type == "Margin"),
 # Total plant cover
 vegPlots %>%
   filter(type == "Margin") %>%
-  mutate(total_cover = select(., 12:132)) %>%
-  rowSums(na.rm = TRUE) %>%
+  mutate(total_cover = select(., 12:132) %>%
+           rowSums(na.rm = TRUE)) %>%
   ggplot(aes(x = site, y = total_cover, fill = season)) +
   geom_boxplot() +
   labs(title = "Plant cover %",

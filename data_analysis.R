@@ -204,7 +204,7 @@ if (rebuild == TRUE){
 
   ## source external scripts to build model selection tables
   ## set number of cores to be used in parallel processing
-  n.cores <- detectCores() - 4
+  n_cores <- detectCores() - 4
   # glmer, negative binomial, scaled vars
   source('nbMixed.R', echo = TRUE) # system.time 161 seconds
   # glmer, negative binomial, ranked vars
@@ -233,31 +233,31 @@ if (rebuild == TRUE){
 source('collectMods_preds.R', echo = TRUE)
 
 # # Compare top predator models
-# anthFams.sp %>% View # nb.scaled by at least delta>2
-# anthFams.fa %>% View # nb.scaled by delta 1.27. NO RANDOM EFFECT in top mod
-# araFams.sp %>% View # both pois mods close, and they disagree
-# araFams.fa %>% View # nb mods agree, pois mods are delta+15
-# coccFams.sp %>% View # scaled mods agree, ranked mods differ but delta +4 anyway
-# coccFams.fa %>% View # scaled mods agree, ranked mods differ,
+# anth_fams_sp %>% View # nb_scaled by at least delta>2
+# anth_fams_fa %>% View # nb_scaled by delta 1.27. NO RANDOM EFFECT in top mod
+# ara_fams_sp %>% View # both pois mods close, and they disagree
+# ara_fams_fa %>% View # nb mods agree, pois mods are delta+15
+# cocc_fams_sp %>% View # scaled mods agree, ranked mods differ but delta +4 anyway
+# cocc_fams_fa %>% View # scaled mods agree, ranked mods differ,
 #                      # ranked have slightly better fit but deltas are close
-# geoFams.sp %>% View # nb.scaled by delta+13
-# geoFams.fa %>% View # all mods agree and are generally close
-# ichFams.sp %>% View # mods mostly agree and deltas are close
-# ichFams.fa %>% View # nb.scaled by delta+7 NO RANDOM EFFECT in top mod
+# geo_fams_sp %>% View # nb_scaled by delta+13
+# geo_fams_fa %>% View # all mods agree and are generally close
+# ich_fams_sp %>% View # mods mostly agree and deltas are close
+# ich_fams_fa %>% View # nb_scaled by delta+7 NO RANDOM EFFECT in top mod
 
 # Make table of top (no veg) predator models ####
 # make list of best models
 bestModList <- list(
-  'best.ant.sp' = get.models(nb.scaled$tab.nb.anth.sp.scaled, 1)[[1]],
-  'best.ara.sp' = get.models(nb.scaled$tab.nb.ara.sp.scaled, 1)[[1]],
-  'best.coc.sp' = get.models(nb.scaled$tab.nb.cocc.sp.scaled, 1)[[1]],
-  'best.geo.sp' = get.models(nb.scaled$tab.nb.geo.sp.scaled, 1)[[1]],
-  'best.ich.sp' = get.models(nb.scaled$tab.nb.ich.sp.scaled, 1)[[1]],
-  'best.ant.fa' = get.models(nb.scaled$tab.nb.anth.fa.scaled, 1)[[1]],
-  'best.ara.fa' = get.models(nb.scaled$tab.nb.ara.fa.scaled, 1)[[1]],
-  'best.coc.fa' = get.models(nb.scaled$tab.nb.cocc.fa.scaled, 1)[[1]],
-  'best.geo.fa' = get.models(nb.scaled$tab.nb.geo.fa.scaled, 1)[[1]],
-  'best.ich.fa' = get.models(nb.scaled$tab.nb.ich.fa.scaled, 1)[[1]]
+  'best.ant.sp' = get.models(nb_scaled$tab_nb_anth_sp_scaled, 1)[[1]],
+  'best.ara.sp' = get.models(nb_scaled$tab_nb_ara_sp_scaled, 1)[[1]],
+  'best.coc.sp' = get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]],
+  'best.geo.sp' = get.models(nb_scaled$tab_nb_geo_sp_scaled, 1)[[1]],
+  'best.ich.sp' = get.models(nb_scaled$tab_nb_ich_sp_scaled, 1)[[1]],
+  'best.ant.fa' = get.models(nb_scaled$tab_nb_anth_fa_scaled, 1)[[1]],
+  'best.ara.fa' = get.models(nb_scaled$tab_nb_ara_fa_scaled, 1)[[1]],
+  'best.coc.fa' = get.models(nb_scaled$tab_nb_cocc_fa_scaled, 1)[[1]],
+  'best.geo.fa' = get.models(nb_scaled$tab_nb_geo_fa_scaled, 1)[[1]],
+  'best.ich.fa' = get.models(nb_scaled$tab_nb_ich_fa_scaled, 1)[[1]]
 )
 
 # build empty tibble to hold stats
@@ -292,13 +292,13 @@ statsDf %>%
 # best to review these by hand. change input models manually.
 
 # # optional: review a single mod table
-# nb.scaled$tab.nb.cocc.sp.scaled %>%
+# nb_scaled$tab_nb_cocc_sp_scaled %>%
 #   tibble %>%
 #   slice(1:5) %>% # can change how inclusive this is
 #   select(where(~!all(is.na(.x)))) %>% View
 
 # choose model to review
-review.mod <- get.models(nb.scaled$tab.nb.cocc.sp.scaled, 1)[[1]]
+review.mod <- get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]]
 
 # show summary
 summary(review.mod) # no random effect variance. essentially equivalent to
@@ -430,19 +430,19 @@ source("coccinellidae_binomial.R", echo = TRUE)
 # # check mod table
 # all_bin_mods %>% View
 
-# review mod tables and top mods
-all_bin_mods %>%
-  tibble %>%
-  slice(1:5) %>% # can change how inclusive this is
-  select(where(~!all(is.na(.x)))) %>% View
+# # review mod tables and top mods
+# all_bin_mods %>%
+#   tibble %>%
+#   slice(1:5) %>% # can change how inclusive this is
+#   select(where(~!all(is.na(.x)))) %>% View
 
 
 # Aphid models ####
 ## Spring
 # AllAph spring
-r2(get.models(tab.nb.allaph.sp.scaled,1)[[1]]) # good fit 0.8
-plot(simulateResiduals(get.models(tab.nb.allaph.sp.scaled,1)[[1]])) # ok
-tab.nb.allaph.sp.scaled %>%
+r2(get.models(tab_nb_allaph_sp_scaled,1)[[1]]) # good fit 0.8
+plot(simulateResiduals(get.models(tab_nb_allaph_sp_scaled,1)[[1]])) # ok
+tab_nb_allaph_sp_scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
@@ -450,9 +450,9 @@ tab.nb.allaph.sp.scaled %>%
 # -ag_sig1, +alfalfa_sig1, +Cocc
 
 # Acrythosiphon spring
-r2(get.models(tab.nb.acy.sp.scaled,1)[[1]]) # good fit 0.8
-plot(simulateResiduals(get.models(tab.nb.acy.sp.scaled,1)[[1]])) # ok
-tab.nb.acy.sp.scaled %>%
+r2(get.models(tab_nb_acy_sp_scaled,1)[[1]]) # good fit 0.8
+plot(simulateResiduals(get.models(tab_nb_acy_sp_scaled,1)[[1]])) # ok
+tab_nb_acy_sp_scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
@@ -461,9 +461,9 @@ tab.nb.acy.sp.scaled %>%
 # model average?
 
 # nonacy spring
-r2(get.models(tab.nb.nonacy.sp.scaled,1)[[1]]) # average fit 0.56
-plot(simulateResiduals(get.models(tab.nb.nonacy.sp.scaled,1)[[1]])) # great
-tab.nb.nonacy.sp.scaled %>%
+r2(get.models(tab_nb_nonacy_sp_scaled,1)[[1]]) # average fit 0.56
+plot(simulateResiduals(get.models(tab_nb_nonacy_sp_scaled,1)[[1]])) # great
+tab_nb_nonacy_sp_scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
@@ -475,9 +475,9 @@ tab.nb.nonacy.sp.scaled %>%
 
 ### Fall
 # AllAph fall
-r2(get.models(tab.nb.allaph.fa.scaled,1)[[1]]) # average fit 0.69
-plot(simulateResiduals(get.models(tab.nb.allaph.fa.scaled,1)[[1]])) # ok
-tab.nb.allaph.fa.scaled %>%
+r2(get.models(tab_nb_allaph_fa_scaled,1)[[1]]) # average fit 0.69
+plot(simulateResiduals(get.models(tab_nb_allaph_fa_scaled,1)[[1]])) # ok
+tab_nb_allaph_fa_scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
@@ -485,18 +485,18 @@ tab.nb.allaph.fa.scaled %>%
 # clear top mod with +ich, -impermeable_sig4, +naturalArid_sig4
 
 # Acyrthosiphon fall
-r2(get.models(tab.nb.acy.fa.scaled,1)[[1]]) # pretty good fit 0.7
-plot(simulateResiduals(get.models(tab.nb.acy.fa.scaled,1)[[1]])) # great
-tab.nb.acy.fa.scaled %>%
+r2(get.models(tab_nb_acy_fa_scaled,1)[[1]]) # pretty good fit 0.7
+plot(simulateResiduals(get.models(tab_nb_acy_fa_scaled,1)[[1]])) # great
+tab_nb_acy_fa_scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
 # +ich in all mods. -geo in top 3 mods. +naturalArid across scales!
 
 # Nonacy fall
-r2(get.models(tab.nb.nonacy.fa.scaled,1)[[1]]) # pretty good fit 0.65
-plot(simulateResiduals(get.models(tab.nb.nonacy.fa.scaled,1)[[1]])) # weird?
-tab.nb.nonacy.fa.scaled %>%
+r2(get.models(tab_nb_nonacy_fa_scaled,1)[[1]]) # pretty good fit 0.65
+plot(simulateResiduals(get.models(tab_nb_nonacy_fa_scaled,1)[[1]])) # weird?
+tab_nb_nonacy_fa_scaled %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
@@ -510,8 +510,8 @@ tab.nb.nonacy.fa.scaled %>%
 # Review aphid models ####
 # spring - #1 mod is inappropriate because it combines wateringmethod and
 # water_sig1
-sp.best <- get.models(tab.nb.allaph.sp.scaled, 2)[[1]]
-fa.best <- get.models(tab.nb.allaph.fa.scaled, 1)[[1]]
+sp.best <- get.models(tab_nb_allaph_sp_scaled, 2)[[1]]
+fa.best <- get.models(tab_nb_allaph_fa_scaled, 1)[[1]]
 summary(sp.best)
 summary(fa.best)
 

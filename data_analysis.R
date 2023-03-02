@@ -428,10 +428,10 @@ statsDf.new %>%
 source("coccinellidae_binomial.R", echo = TRUE)
 
 # # check mod table
-# allBinMods %>% View
+# all_bin_mods %>% View
 
 # review mod tables and top mods
-allBinMods %>%
+all_bin_mods %>%
   tibble %>%
   slice(1:5) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
@@ -644,7 +644,10 @@ plotWDiff %>% pivot_longer(contains('diff'),
                            names_to = 'Taxon',
                            values_to = 'Difference') %>%
   mutate(Taxon = str_sub(Taxon, 5)) %>%
-  filter(Taxon %in% c('Anthocoridae', 'Arachnida', 'Coccinellidae', 'Geocoris')) %>%
+  filter(Taxon %in% c('Anthocoridae',
+                      'Arachnida',
+                      'Coccinellidae',
+                      'Geocoris')) %>%
   ggplot(aes(Taxon, Difference)) +
   geom_boxplot() +
   facet_grid(.~Season) +
@@ -660,7 +663,10 @@ plotWDiff %>% pivot_longer(contains('diff'),
                            names_to = 'Taxon',
                            values_to = 'Difference') %>%
   mutate(Taxon = str_sub(Taxon, 5)) %>%
-  filter(Taxon %in% c('Anthocoridae', 'Arachnida', 'Coccinellidae', 'Geocoris')) %>%
+  filter(Taxon %in% c('Anthocoridae',
+                      'Arachnida',
+                      'Coccinellidae',
+                      'Geocoris')) %>%
   filter(Season == 'Fall') %>%
   ggplot(aes(y = Taxon, x = Difference)) +
   geom_density_ridges(scale = 1.5) +
@@ -676,9 +682,9 @@ source("top_down.R", echo = TRUE)
 # SEM-LAVAAN ####
 ### after talking to beth...####
 
-# 1. get aphid ladybug relationship
 
-## from prior results....
+
+# 1. prepare data
 library(sjmisc) # to_dummy
 
 mDatr <- subplotDataRaw %>%
@@ -696,6 +702,9 @@ mDat <- mDatr %>%
   # mutate(diffCoccinellidae = case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
   #                                      Treatment_Sham == 0 ~ 0))
 
+
+# 2. review aphid ladybug relationship
+## from prior results....
 cocc.eff <- glmmTMB(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
                     data = mDat,
                     family = 'nbinom2')
@@ -704,17 +713,7 @@ plot(allEffects(cocc.eff))
 plot(simulateResiduals(cocc.eff))
 
 
-
-sp.sem.diff5 <- psem(glm(logAllAph ~ wateringMethod_Flooding+ag_sig1+diffCoccinellidae,
-                                 family = 'nbinom2',
-                                 data = mDat),
-                    glm(Coccinellidae ~ weedy_sig1+dirt_sig1+diffCoccinellidae+logAllAph,
-                             family = 'nbinom2',
-                             data = mDat))
-
-summary(sp.sem.diff5, conserve = T)
-plot(sp.sem.diff5, show = "unstd")
-
+# 3. build SEM
 ## try lavaan ####
 library(lavaan)
 library(lavaanPlot)
@@ -755,6 +754,10 @@ b == 1
 mod.fit <- sem(mod.spec, data = mDat)
 summary(mod.fit)
 lavaanPlot(model = mod.fit, coefs = T, covs = F, stand = F)
+
+### TODO - understand scale of coeffs. Check that constraints are appropriate ####
+
+
 
 ## try mediation ####
 library(mediation)

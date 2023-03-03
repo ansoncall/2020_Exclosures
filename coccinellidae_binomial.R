@@ -1,7 +1,7 @@
 # build and dredge binomial models of coccinellidae presence / absence and
 # dredge.
 
-df_fa_bin <- dfFa %>%
+df_fa_bin <- df_fa %>%
   mutate(CBinary = case_when(Coccinellidae == 0 ~ 0,
                              Coccinellidae > 0 ~ 1))
 

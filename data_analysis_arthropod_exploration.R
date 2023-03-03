@@ -2,7 +2,7 @@
 ## Aphid histograms ####
 
 # density plot
-subplotData %>%
+subplot_data %>%
   # lengthen (aphids only)
   pivot_longer(c(Acyrthosiphon, NonAcy),
                names_to = "Taxa",
@@ -26,7 +26,7 @@ subplotData %>%
                     guide = "none")
 
 aphlist <- c("Acyrthosiphon", "Aphis", "Therioaphis")
-subplotData %>%
+subplot_data %>%
   # lengthen (predators only)
   pivot_longer(all_of(aphlist),
                names_to = "Taxa",
@@ -43,7 +43,7 @@ subplotData %>%
        y = "Taxon")
 
 # calculate median and mean aphid density in each season
-subplotData %>%
+subplot_data %>%
   # summarize seasons indepentently
   group_by(Season) %>%
   # create summary cols
@@ -79,64 +79,64 @@ subplotData %>%
 
 # statistical tests
 # aphids
-lm(log(AllAph + 1) ~ Season, subplotData) %>% anova
-lm(log(Acyrthosiphon + 1) ~ Season, subplotData) %>% summary
-lm(log(NonAcy + 1) ~ Season, subplotData) %>% summary
+lm(log(AllAph + 1) ~ Season, subplot_data) %>% anova
+lm(log(Acyrthosiphon + 1) ~ Season, subplot_data) %>% summary
+lm(log(NonAcy + 1) ~ Season, subplot_data) %>% summary
 # predators
-lm(log(Anthocoridae + 1) ~ Season, subplotData) %>% summary
-lm(log(Arachnida + 1) ~ Season, subplotData) %>% summary
-lm(log(Coccinellidae + 1) ~ Season, subplotData) %>% summary
-lm(log(Geocoris + 1) ~ Season, subplotData) %>% summary
-lm(log(Ichneumonoidea + 1) ~ Season, subplotData) %>% summary
-lm(log(Nabis + 1) ~ Season, subplotData) %>% summary
+lm(log(Anthocoridae + 1) ~ Season, subplot_data) %>% summary
+lm(log(Arachnida + 1) ~ Season, subplot_data) %>% summary
+lm(log(Coccinellidae + 1) ~ Season, subplot_data) %>% summary
+lm(log(Geocoris + 1) ~ Season, subplot_data) %>% summary
+lm(log(Ichneumonoidea + 1) ~ Season, subplot_data) %>% summary
+lm(log(Nabis + 1) ~ Season, subplot_data) %>% summary
 # print p values with bonferonni correction for predators
-summary(lm(log(Anthocoridae + 1) ~ Season, subplotData))$coefficients[2, 4] %>%
+summary(lm(log(Anthocoridae + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
   p.adjust("bonferroni", 6)
-summary(lm(log(Arachnida + 1) ~ Season, subplotData))$coefficients[2, 4] %>%
+summary(lm(log(Arachnida + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
   p.adjust("bonferroni", 6)
-summary(lm(log(Coccinellidae + 1) ~ Season, subplotData))$coefficients[2, 4] %>%
+summary(lm(log(Coccinellidae + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
   p.adjust("bonferroni", 6)
-summary(lm(log(Geocoris + 1) ~ Season, subplotData))$coefficients[2, 4] %>%
+summary(lm(log(Geocoris + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
   p.adjust("bonferroni", 6)
 summary(lm(log(Ichneumonoidea + 1) ~ Season,
-           subplotData))$coefficients[2, 4] %>%
+           subplot_data))$coefficients[2, 4] %>%
   p.adjust("bonferroni", 6)
 summary(lm(log(Nabis + 1) ~ Season,
-           subplotData))$coefficients[2, 4] %>%
+           subplot_data))$coefficients[2, 4] %>%
   p.adjust("bonferroni", 6)
 
 # calculate relative skewness of aphid density across seasons
 # use datawizard package
 # all aphids
-subplotData %>%
+subplot_data %>%
   filter(Season == "Spring") %>%
   pull(AllAph) %>%
   datawizard::skewness(.)
-subplotData %>%
+subplot_data %>%
   filter(Season == "Fall") %>%
   pull(AllAph) %>%
   datawizard::skewness(.)
 # Acyrthosiphon aphids
-subplotData %>%
+subplot_data %>%
   filter(Season == "Spring") %>%
   pull(Acyrthosiphon) %>%
   datawizard::skewness(.)
-subplotData %>%
+subplot_data %>%
   filter(Season == "Fall") %>%
   pull(Acyrthosiphon) %>%
   datawizard::skewness(.)
 # Non-Acyrthosiphon aphids
-subplotData %>%
+subplot_data %>%
   filter(Season == "Spring") %>%
   pull(NonAcy) %>%
   datawizard::skewness(.)
-subplotData %>%
+subplot_data %>%
   filter(Season == "Fall") %>%
   pull(NonAcy) %>%
   datawizard::skewness(.)
 
 # density boxplot, all aphids combined
-subplotData %>%
+subplot_data %>%
   # log-transform
   mutate(Mean_Density = log(AllAph + 1)) %>%
   # relevel factors
@@ -160,7 +160,7 @@ predlist <- c("Arachnida", "Anthocoridae", "Nabis", "Coccinellidae",
               "Geocoris", "Ichneumonoidea")
 # build density plot
 # density plot + boxplot
-subplotData %>%
+subplot_data %>%
   # lengthen (predators only)
   pivot_longer(all_of(predlist),
                names_to = "Taxa",

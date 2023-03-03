@@ -7,10 +7,10 @@
 
 # Spring ####
 ## Anthocoridae
-bestModList$best.ant.sp
+best_mod_list$best.ant.sp
 global.ant.sp.vd <- glmmTMB(Anthocoridae ~ Treatment+ag_sig1 +
                               impermeable_sig1 + (1|Site:Field) + shan + rich +
-                              totalCover, data = dfSpVD,
+                              totalCover, data = df_sp_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 ant.sp.vd.tab <- dredge(global.ant.sp.vd,
@@ -20,10 +20,10 @@ ant.sp.vd.tab <- dredge(global.ant.sp.vd,
 best.ant.sp.vd <- get.models(ant.sp.vd.tab, 1)[[1]]
 
 ## Arachnida
-bestModList$best.ara.sp
+best_mod_list$best.ara.sp
 global.ara.sp.vd <- glmmTMB(Arachnida ~ Treatment + dirt_sig1 + weedy_sig1 +
                               (1|Site:Field) + shan + rich + totalCover,
-                            data = dfSpVD,
+                            data = df_sp_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 ara.sp.vd.tab <- dredge(global.ara.sp.vd,
@@ -33,10 +33,10 @@ ara.sp.vd.tab <- dredge(global.ara.sp.vd,
 best.ara.sp.vd <- get.models(ara.sp.vd.tab, 1)[[1]]
 
 ## Coccinellidae
-bestModList$best.coc.sp
+best_mod_list$best.coc.sp
 global.coc.sp.vd <- glmmTMB(Coccinellidae ~ Treatment + dirt_sig1 + weedy_sig1 +
                               (1|Site:Field) + shan + rich + totalCover,
-                            data = dfSpVD,
+                            data = df_sp_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 coc.sp.vd.tab <- dredge(global.coc.sp.vd,
@@ -46,11 +46,11 @@ coc.sp.vd.tab <- dredge(global.coc.sp.vd,
 best.coc.sp.vd <- get.models(coc.sp.vd.tab, 1)[[1]]
 
 ## Ichneumonoidea
-bestModList$best.ich.sp
+best_mod_list$best.ich.sp
 global.ich.sp.vd <- glmmTMB(Ichneumonoidea ~ Treatment + impermeable_sig1 +
                               log(AllAph + 1) + (1|Site:Field) + shan + rich +
                               totalCover,
-                            data = dfSpVD,
+                            data = df_sp_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 ich.sp.vd.tab <- dredge(global.ich.sp.vd,
@@ -61,11 +61,11 @@ best.ich.sp.vd <- get.models(ich.sp.vd.tab, 1)[[1]]
 
 # Fall ####
 # Anthocoridae
-bestModList$best.ant.fa
+best_mod_list$best.ant.fa
 global.ant.fa.vd <- glmmTMB(Anthocoridae ~ Treatment + alfalfa_sig1 +
                               dirt_sig1 + (1|Site:Field) + shan + rich +
                               totalCover,
-                            data = dfFaVD,
+                            data = df_fa_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 ant.fa.vd.tab <- dredge(global.ant.fa.vd,
@@ -75,10 +75,10 @@ ant.fa.vd.tab <- dredge(global.ant.fa.vd,
 best.ant.fa.vd <- get.models(ant.fa.vd.tab, 1)[[1]]
 
 # Arachnida
-bestModList$best.ara.fa
+best_mod_list$best.ara.fa
 global.ara.fa.vd <- glmmTMB(Arachnida ~ Treatment + weedy_sig3 + (1|Site:Field)
                             + shan + rich + totalCover,
-                            data = dfFaVD,
+                            data = df_fa_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 ara.fa.vd.tab <- dredge(global.ara.fa.vd,
@@ -89,10 +89,10 @@ best.ara.fa.vd <- get.models(ara.fa.vd.tab, 1)[[1]]
 # must drop wateringMethod here because all sites are flooded.
 
 # Coccinellidae
-bestModList$best.coc.fa
+best_mod_list$best.coc.fa
 global.coc.fa.vd <- glmmTMB(Coccinellidae ~ Treatment + ag_no + alfalfa_no +
                               (1|Site:Field) + shan + rich + totalCover,
-                            data = dfFaVD,
+                            data = df_fa_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 coc.fa.vd.tab <- dredge(global.coc.fa.vd,
@@ -102,11 +102,11 @@ coc.fa.vd.tab <- dredge(global.coc.fa.vd,
 best.coc.fa.vd <- get.models(coc.fa.vd.tab, 1)[[1]]
 
 # Ichneumonoidea
-bestModList$best.ich.fa
+best_mod_list$best.ich.fa
 global.ich.fa.vd <- glmmTMB(Ichneumonoidea ~ Treatment + ag_sig1 +
                               log(AllAph + 1) + (1|Site:Field) + shan + rich +
                               totalCover,
-                            data = dfFaVD,
+                            data = df_fa_vd,
                             family = 'nbinom2',
                             na.action = "na.fail")
 ich.fa.vd.tab <- dredge(global.ich.fa.vd,

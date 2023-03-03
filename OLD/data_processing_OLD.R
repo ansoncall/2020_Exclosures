@@ -890,7 +890,7 @@ subplot_divdata %<>%
   mutate(shan = all_of(shan), simp = all_of(simp), rich = all_of(rich))
 
 ### join diversity table and location data ####
-vegPlots <- subplot_divdata %>%
+veg_plots <- subplot_divdata %>%
   left_join(locs, by = 'id') %>%
   select(-id) %>% # drop simple (no season) id since this is no longer needed
   mutate(type = as_factor(type)) %>% # covert 'type' to factor
@@ -978,12 +978,12 @@ data_long %<>% filter(Treatment != 'Full')
 data # main table of insect count data
 data_long # insect data in long format
 landcover # landcover areaScores for each field
-vegPlots # final plot-level veg data from surveys
+veg_plots # final plot-level veg data from surveys
 vegSites # final site-level veg data from surveys
 
 # export tidy data ####
 # build list of data to export
-tidy_data <- list(data, data_long, landcover, vegPlots, vegSites)
-data_names <- list('data', 'data_long', 'landcover', 'vegPlots', 'vegSites')
+tidy_data <- list(data, data_long, landcover, veg_plots, vegSites)
+data_names <- list('data', 'data_long', 'landcover', 'veg_plots', 'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data_OLD/', .y, ".csv")))

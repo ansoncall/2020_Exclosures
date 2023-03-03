@@ -1,6 +1,6 @@
 # for anna
 library(tidyverse)
-d <- read_csv("tidy_data/vegPlots.csv")
+d <- read_csv("tidy_data/veg_plots.csv")
 
 d_present <- d %>%
   mutate(across(12:50, ~ ifelse(.x == 0, 0, 1)))

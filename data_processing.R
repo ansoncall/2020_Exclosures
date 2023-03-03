@@ -966,7 +966,7 @@ subplot_divdata %<>%
   mutate(shan = all_of(shan), simp = all_of(simp), rich = all_of(rich))
 
 ### join diversity table and location data ####
-vegPlots <- subplot_divdata %>%
+veg_plots <- subplot_divdata %>%
   left_join(locs, by = 'id') %>%
   select(-id) %>% # drop simple (no season) id since this is no longer needed
   mutate(type = as_factor(type)) %>% # covert 'type' to factor
@@ -1035,7 +1035,7 @@ data_long # insect data in long format
 tidyLandcover # landcover areaScores for each field
 lcOutList[[1]] # 'fixed class' landcover areaScores for each field
 lcOutList[[2]] # regular landcover areaScores for each field
-vegPlots # final plot-level veg data from surveys
+veg_plots # final plot-level veg data from surveys
 vegSites # final site-level veg data from surveys
 
 # export tidy data ####
@@ -1044,13 +1044,13 @@ tidy_data <- list(data,
                   data_long,
                   lcOutList[[1]],
                   lcOutList[[2]],
-                  vegPlots,
+                  veg_plots,
                   vegSites)
 data_names <- list('data',
                    'data_long',
                    'landcover_fixed',
                    'landcover',
-                   'vegPlots',
+                   'veg_plots',
                    'vegSites')
 # export
 walk2(tidy_data, data_names, ~write_csv(.x, paste0('tidy_data/', .y, ".csv")))
@@ -1067,7 +1067,7 @@ landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
 landcoverFixed <-
   read_csv('tidy_data/landcover_fixed.csv', col_types = 'ffffdddddddddddd')
 # vegetation survey data by survey plot
-vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
+veg_plots <- read_csv('tidy_data/veg_plots.csv', col_types = 'fffffff')
 # vegetation survey data by site (farm)
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
@@ -1110,7 +1110,7 @@ landcoverBinned <- left_join(landcoverReg, landcoverFix,
   pivot_wider(names_from = distanceWeight, values_from = alfalfa:water_fix)
 
 ## prepare margin data ####
-field_margins <- vegPlots %>% filter(type == 'Margin') %>%
+field_margins <- veg_plots %>% filter(type == 'Margin') %>%
   mutate(total_cover = select(., 12:132) %>% rowSums(na.rm = TRUE)) %>%
   group_by(field_id, season) %>%
   summarize(shan = mean(shan),
@@ -1123,7 +1123,7 @@ field_margins <- vegPlots %>% filter(type == 'Margin') %>%
   select(-field_id, -season)
 
 ## make combined df of all subplot-level data ####
-subplotData <- data_long %>%
+subplot_data <- data_long %>%
   select(-Vial) %>%
   # divide 'Pre-' values by 3 to account for unequal sampling area
   mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
@@ -1146,7 +1146,7 @@ subplotData <- data_long %>%
   left_join(field_margins, by = c('siteId', 'Season')) %>%
   select(-siteId, -site, -field)
 ## same, but don't div pre/3
-subplotDataRaw <- data_long %>%
+subplot_data_raw <- data_long %>%
   select(-Vial) %>%
   # # divide 'Pre-' values by 3 to account for unequal sampling area
   # mutate(Density = case_when(Treatment =='Pre-' ~ Density/3,
@@ -1170,5 +1170,5 @@ subplotDataRaw <- data_long %>%
   select(-siteId, -site, -field)
 
 ## final export ####
-write_csv(subplotData, 'tidy_data/subplotData.csv')
-write_csv(subplotDataRaw, 'tidy_data/subplotDataRaw.csv')
+write_csv(subplot_data, 'tidy_data/subplot_data.csv')
+write_csv(subplot_data_raw, 'tidy_data/subplot_data_raw.csv')

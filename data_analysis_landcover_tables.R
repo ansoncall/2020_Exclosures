@@ -25,7 +25,7 @@ data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
 landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffdddddddddddd')
 landcoverFixed <- read_csv('tidy_data/landcover_fixed.csv',
                       col_types = 'ffffdddddddddddd')
-vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
+veg_plots <- read_csv('tidy_data/veg_plots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
 

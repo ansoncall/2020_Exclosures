@@ -84,28 +84,28 @@ rpaste0 <- function (x,y) {
 # subplot-level data, all vars
 # pre- data not /3, can use area offset to correct.
 # No transformations have been applied
-subplotDataRaw <- read_csv('tidy_data/subplotDataRaw.csv',
+subplot_data_raw <- read_csv('tidy_data/subplotDataRaw.csv',
                            col_types = 'ffffff')
 
 # "Pre-" density has already been /3
 # No transformations have been applied
-subplotData <- read_csv('tidy_data/subplotData.csv',
+subplot_data <- read_csv('tidy_data/subplotData.csv',
                         col_types = 'ffffff')
 
 # make plot-level data, excluding "Pre-" measurements
-plotData <- subplotData %>%
+plot_data <- subplot_data %>%
   filter(Treatment != "Pre-") %>%
   group_by(Site, Field, Plot, Season) %>%
   summarize(across(where(is.numeric), .fns = mean), .groups = 'keep')
 
 # make field-level data by taking means across fields (all plots pooled)
-fieldData <- subplotData %>%
+field_data <- subplot_data %>%
   filter(Treatment != "Pre-") %>%
   group_by(Site, Field, Treatment, Season) %>%
   summarize(across(where(is.numeric), .fns = mean), .groups = 'keep')
 
 # raw data from vegetation plots
-vegPlots <- read_csv('tidy_data/vegPlots.csv')
+veg_plots <- read_csv('tidy_data/vegPlots.csv')
 
 
 # define color palette ####
@@ -127,7 +127,7 @@ source('data_analysis_classification_summary.R', echo = TRUE)
 
 # Wrangle data for model selection ####
 # split spring and fall data
-dfSp <- subplotDataRaw %>%
+df_sp <- subplot_data_raw %>%
   # spring only
   filter(Season == 'Spring') %>%
   # "regular" landcover only
@@ -141,7 +141,7 @@ dfSp <- subplotDataRaw %>%
   mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
                           Treatment != 'Pre-' ~ 1))
 
-dfFa <- subplotDataRaw %>%
+df_fa <- subplot_data_raw %>%
 
   filter(Season == 'Fall') %>%
   # "regular" landcover only
@@ -156,7 +156,7 @@ dfFa <- subplotDataRaw %>%
                           Treatment != 'Pre-' ~ 1))
 
 # use rank transform on landcover vars
-dfSpRnk <- subplotDataRaw %>%
+df_sp_rnk <- subplot_data_raw %>%
   # spring only
   filter(Season == 'Spring') %>%
   # "regular" landcover only
@@ -173,7 +173,7 @@ dfSpRnk <- subplotDataRaw %>%
   mutate(Area = case_when(Treatment == 'Pre-' ~ 3,
                           Treatment != 'Pre-' ~ 1))
 
-dfFaRnk <- subplotDataRaw %>%
+df_fa_rnk <- subplot_data_raw %>%
   # spring only
   filter(Season == 'Fall') %>%
   # "regular" landcover only
@@ -191,9 +191,9 @@ dfFaRnk <- subplotDataRaw %>%
                           Treatment != 'Pre-' ~ 1))
 
 # # example dotcharts - shows distribution of explanatory variables
-# dotchart(sort(dfSpRnk$AllAph))
-# dotchart(sort(dfSp$log_AllAph))
-# dotchart(sort(dfFa$log_AllAph))
+# dotchart(sort(df_sp_rnk$AllAph))
+# dotchart(sort(df_sp$log_AllAph))
+# dotchart(sort(df_fa$log_AllAph))
 
 
 # Fit models ####
@@ -247,7 +247,7 @@ source('collectMods_preds.R', echo = TRUE)
 
 # Make table of top (no veg) predator models ####
 # make list of best models
-bestModList <- list(
+best_mod_list <- list(
   'best.ant.sp' = get.models(nb_scaled$tab_nb_anth_sp_scaled, 1)[[1]],
   'best.ara.sp' = get.models(nb_scaled$tab_nb_ara_sp_scaled, 1)[[1]],
   'best.coc.sp' = get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]],
@@ -261,7 +261,7 @@ bestModList <- list(
 )
 
 # build empty tibble to hold stats
-statsDf <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
+stats_df <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                                 "Geocoris", "Ichneumodoidea"), 2),
                   Season = c(rep("Spring", 5), rep("Fall", 5)),
                   MarginalR2 = c(0),
@@ -272,17 +272,17 @@ statsDf <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                   coefs2 = c(0))
 
 # fill tibble with stats
-for (i in 1:length(bestModList)){
-  statsDf$MarginalR2[[i]] <- r2(bestModList[[i]])[[2]]
-  statsDf$ConditionalR2[[i]] <- r2(bestModList[[i]])[[1]]
-  statsDf$effects1[[i]] <- names(bestModList[[i]]$frame)[2]
-  statsDf$effects2[[i]] <- names(bestModList[[i]]$frame)[3]
-  statsDf$coefs1[[i]] <- fixef(bestModList[[i]])$cond[2]
-  statsDf$coefs2[[i]] <- fixef(bestModList[[i]])$cond[3]
+for (i in 1:length(best_mod_list)){
+  stats_df$MarginalR2[[i]] <- r2(best_mod_list[[i]])[[2]]
+  stats_df$ConditionalR2[[i]] <- r2(best_mod_list[[i]])[[1]]
+  stats_df$effects1[[i]] <- names(best_mod_list[[i]]$frame)[2]
+  stats_df$effects2[[i]] <- names(best_mod_list[[i]]$frame)[3]
+  stats_df$coefs1[[i]] <- fixef(best_mod_list[[i]])$cond[2]
+  stats_df$coefs2[[i]] <- fixef(best_mod_list[[i]])$cond[3]
 }
 
 
-statsDf %>%
+stats_df %>%
   group_by(Season) %>%
   tab_df(title = "Top predator models (no vegetation data included)")
 
@@ -298,101 +298,101 @@ statsDf %>%
 #   select(where(~!all(is.na(.x)))) %>% View
 
 # choose model to review
-review.mod <- get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]]
+review_mod <- get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]]
 
 # show summary
-summary(review.mod) # no random effect variance. essentially equivalent to
+summary(review_mod) # no random effect variance. essentially equivalent to
                          # a fixed effects mod. I checked.
 # basic effects plots
-plot(allEffects(review.mod, residuals = T))
+plot(allEffects(review_mod, residuals = T))
 
 # tidy coeffs plot
-tidy(review.mod, conf.int = T) %>%
+tidy(review_mod, conf.int = T) %>%
   # needs "model" column for dwplot
   mutate(model = 1) %>%
   dwplot
 
 
 # extract residuals, fitted values
-pearsonRes <- resid(review.mod, type = 'pearson')
-workingRes <- resid(review.mod, type = 'working')
-defaultRes <- resid(review.mod)
-dharmaRes <- simulateResiduals(review.mod)
-fitted <- fitted(review.mod)
+pearson_res <- resid(review_mod, type = 'pearson')
+working_res <- resid(review_mod, type = 'working')
+default_res <- resid(review_mod)
+dharma_res <- simulateResiduals(review_mod)
+fitted <- fitted(review_mod)
 
 # basic DHARMa plot
-plot(dharmaRes)
+plot(dharma_res)
 
 # other residual plots
-plot(fitted, pearsonRes)
-plot(fitted, defaultRes)
+plot(fitted, pearson_res)
+plot(fitted, default_res)
 
 
 # Predator models with vegdata ####
 # drop Yerington (NA vegdata values)
-dfSpVD <- dfSp %>% filter(!is.na(shan))
-dfFaVD <- dfFa %>% filter(!is.na(shan))
+df_sp_vd <- df_sp %>% filter(!is.na(shan))
+df_fa_vd <- df_fa %>% filter(!is.na(shan))
 # # Check nrow
-# dfSp %>% nrow
-# dfSpVD %>% nrow
-# dfFa %>% nrow
-# dfFaVD %>% nrow
+# df_sp %>% nrow
+# df_sp_vd %>% nrow
+# df_fa %>% nrow
+# df_fa_vd %>% nrow
 
 ## Add vegdata to top mods
 source("compareVeg_pred.R", echo = TRUE)
 
 ### Spring
 # Anthocoridae
-r2(bestModList$best.ant.sp)
+r2(best_mod_list$best.ant.sp)
 r2(best.ant.sp.vd) ## new mod has one less factor
 # vedict - keep original
 
 # Arachnida
-r2(bestModList$best.ara.sp)
+r2(best_mod_list$best.ara.sp)
 r2(best.ara.sp.vd) ## same model structures. original has more data but worse r2
 # vedict - keep original
 
 # Coccinellidae
-r2(bestModList$best.coc.sp)
+r2(best_mod_list$best.coc.sp)
 r2(best.coc.sp.vd) ## same model structures. original has more data and better
                    ## marginal r2
 # vedict - keep original
 
 # Ichneumonoidea
-r2(bestModList$best.ich.sp)
+r2(best_mod_list$best.ich.sp)
 r2(best.ich.sp.vd) ## new model has one less factor. new has better marginal r2,
                    ## but worse conditional r2
 # vedict - keep original
 
 ### Fall
 # Anthocoridae
-r2(bestModList$best.ant.fa)
+r2(best_mod_list$best.ant.fa)
 r2(best.ant.fa.vd) ## total cover looking like the best predictor here
 ## verdict - OVERTURN. new model is better!
 
 # Arachnida
 # must drop wateringMethod here because all sites are flooded.
-r2(bestModList$best.ara.fa)
+r2(best_mod_list$best.ara.fa)
 r2(best.ara.fa.vd) ## new model with total cover instead of wateringMethod is
                    ## better.
 ## verdict - OVERTURN. new model is better!
 
 
 # Coccinellidae
-r2(bestModList$best.coc.fa)
+r2(best_mod_list$best.coc.fa)
 r2(best.coc.fa.vd) ## new model has one less factor.
 ## verdict - keep original
 
 # Ichneumonoidea
-r2(bestModList$best.ich.fa)
+r2(best_mod_list$best.ich.fa)
 r2(best.ich.fa.vd) ## same models. original has better marginal r2
 ## verdict - keep original
 
 ### Summarize best pred models (w/vegdata)
-newMods <- list('antFA' = best.ant.fa.vd, 'araFA' = best.ara.fa.vd)
+new_mods <- list('antFA' = best.ant.fa.vd, 'araFA' = best.ara.fa.vd)
 
 # build empty tibble to hold stats
-statsDf.new <- tibble(Taxon = c("Anthocoridae", "Arachnida"),
+stats_df_new <- tibble(Taxon = c("Anthocoridae", "Arachnida"),
                   Season = rep("Fall", 2),
                   MarginalR2 = c(0),
                   ConditionalR2 = c(0),
@@ -402,18 +402,18 @@ statsDf.new <- tibble(Taxon = c("Anthocoridae", "Arachnida"),
                   coefs2 = c(0))
 
 # fill tibble with stats
-for (i in 1:length(newMods)){
-  statsDf.new$MarginalR2[[i]] <- r2(newMods[[i]])[[2]]
-  statsDf.new$ConditionalR2[[i]] <- r2(newMods[[i]])[[1]]
-  statsDf.new$effects1[[i]] <- names(newMods[[i]]$frame)[2]
-  statsDf.new$effects2[[i]] <- names(newMods[[i]]$frame)[3]
-  statsDf.new$coefs1[[i]] <- fixef(newMods[[i]])$cond[2]
-  statsDf.new$coefs2[[i]] <- fixef(newMods[[i]])$cond[3]
+for (i in 1:length(new_mods)){
+  stats_df_new$MarginalR2[[i]] <- r2(new_mods[[i]])[[2]]
+  stats_df_new$ConditionalR2[[i]] <- r2(new_mods[[i]])[[1]]
+  stats_df_new$effects1[[i]] <- names(new_mods[[i]]$frame)[2]
+  stats_df_new$effects2[[i]] <- names(new_mods[[i]]$frame)[3]
+  stats_df_new$coefs1[[i]] <- fixef(new_mods[[i]])$cond[2]
+  stats_df_new$coefs2[[i]] <- fixef(new_mods[[i]])$cond[3]
 }
 
 #### TODO - Export table ####
 # plot table for now
-statsDf.new %>%
+stats_df_new %>%
   mutate(effects2 = case_when(Taxon == 'Anthocoridae' ~ 'None',
                               Taxon != 'Anthocoridae' ~  effects2,)) %>%
   mutate(coefs2 = case_when(Taxon == 'Anthocoridae' ~ 0,
@@ -430,7 +430,7 @@ source("coccinellidae_binomial.R", echo = TRUE)
 # # check mod table
 # all_bin_mods %>% View
 
-# # review mod tables and top mods
+# # review_mod tables and top mods
 # all_bin_mods %>%
 #   tibble %>%
 #   slice(1:5) %>% # can change how inclusive this is
@@ -510,15 +510,15 @@ tab_nb_nonacy_fa_scaled %>%
 # Review aphid models ####
 # spring - #1 mod is inappropriate because it combines wateringmethod and
 # water_sig1
-sp.best <- get.models(tab_nb_allaph_sp_scaled, 2)[[1]]
-fa.best <- get.models(tab_nb_allaph_fa_scaled, 1)[[1]]
-summary(sp.best)
-summary(fa.best)
+sp_best <- get.models(tab_nb_allaph_sp_scaled, 2)[[1]]
+fa_best <- get.models(tab_nb_allaph_fa_scaled, 1)[[1]]
+summary(sp_best)
+summary(fa_best)
 
 ## make aphid modstats table
-aphMods <- list('allaphFA' = sp.best, 'araFA' = fa.best)
+aph_mods <- list('allaphFA' = sp_best, 'araFA' = fa_best)
 # build empty tibble to hold stats
-statsDf.aph <- tibble(Taxon = c("AllAph", "AllAph"),
+stats_df_aph <- tibble(Taxon = c("AllAph", "AllAph"),
                       Season = c("Spring","Fall"),
                       MarginalR2 = c(0),
                       ConditionalR2 = c(0),
@@ -529,79 +529,79 @@ statsDf.aph <- tibble(Taxon = c("AllAph", "AllAph"),
                       coefs2 = c(0),
                       coefs3 = c(0))
 # fill tibble with stats
-for (i in 1:length(aphMods)){
-  statsDf.aph$MarginalR2[[i]] <- r2(aphMods[[i]])[[2]]
-  statsDf.aph$ConditionalR2[[i]] <- r2(aphMods[[i]])[[1]]
-  statsDf.aph$effects1[[i]] <- names(aphMods[[i]]$frame)[2]
-  statsDf.aph$effects2[[i]] <- names(aphMods[[i]]$frame)[3]
-  statsDf.aph$effects3[[i]] <- names(aphMods[[i]]$frame)[4]
-  statsDf.aph$coefs1[[i]] <- fixef(aphMods[[i]])$cond[2]
-  statsDf.aph$coefs2[[i]] <- fixef(aphMods[[i]])$cond[3]
-  statsDf.aph$coefs3[[i]] <- fixef(aphMods[[i]])$cond[4]
+for (i in 1:length(aph_mods)){
+  stats_df_aph$MarginalR2[[i]] <- r2(aph_mods[[i]])[[2]]
+  stats_df_aph$ConditionalR2[[i]] <- r2(aph_mods[[i]])[[1]]
+  stats_df_aph$effects1[[i]] <- names(aph_mods[[i]]$frame)[2]
+  stats_df_aph$effects2[[i]] <- names(aph_mods[[i]]$frame)[3]
+  stats_df_aph$effects3[[i]] <- names(aph_mods[[i]]$frame)[4]
+  stats_df_aph$coefs1[[i]] <- fixef(aph_mods[[i]])$cond[2]
+  stats_df_aph$coefs2[[i]] <- fixef(aph_mods[[i]])$cond[3]
+  stats_df_aph$coefs3[[i]] <- fixef(aph_mods[[i]])$cond[4]
 }
 
 #### TODO - Export table ####
 # plot table for now
-statsDf.aph %>%
+stats_df_aph %>%
   tab_df
 
 # Aphid models with vegdata ####
 # recall vegdata from predator modeling
-dfSpVD
-dfFaVD
+df_sp_vd
+df_fa_vd
 # add vegdata to top mods
-sp.best
-sp.best.veg <- glmmTMB(AllAph ~ Treatment + ag_sig1 + wateringMethod +
+sp_best
+sp_best_veg <- glmmTMB(AllAph ~ Treatment + ag_sig1 + wateringMethod +
                          log(Coccinellidae + 1) + shan + rich + totalCover +
                          (1|Site:Field),
-                       data = dfSpVD,
+                       data = df_sp_vd,
                        family = 'nbinom2',
                        na.action = "na.fail")
 
-veg.dredge.sp <- dredge(sp.best.veg,
+veg_dredge_sp <- dredge(sp_best_veg,
                         fixed='cond(Treatment)',
                         m.lim=c(0,4),
                         trace = 2)
 
-fa.best
-fa.best.veg <- glmmTMB(AllAph ~ Treatment + impermeable_sig4 +
+fa_best
+fa_best_veg <- glmmTMB(AllAph ~ Treatment + impermeable_sig4 +
                          naturalArid_sig4 + log(Ichneumonoidea + 1) + shan +
                          rich + totalCover + (1|Site:Field),
-                    data = dfFaVD,
+                    data = df_fa_vd,
                     family = 'nbinom2',
                     na.action = "na.fail")
 
-veg.dredge.fa <- dredge(fa.best.veg,
+veg_dredge_fa <- dredge(fa_best_veg,
                         fixed='cond(Treatment)',
                         m.lim=c(0,4),
                         trace = 2)
 
 # review model selection tables and best models
 ## Spring
-veg.dredge.sp %>% View
+veg_dredge_sp %>% View
 # new best mod!! +richness!!
-sp.best.veg <- get.models(veg.dredge.sp, 1)[[1]]
-summary(sp.best.veg)
-r2(sp.best.veg)
-plot(simulateResiduals(sp.best.veg))
-plot(fitted(sp.best.veg), residuals(sp.best.veg, type = 'pearson'))
-plot(dfSpVD$AllAph, fitted(sp.best.veg))
+sp_best_veg <- get.models(veg_dredge_sp, 1)[[1]]
+summary(sp_best_veg)
+r2(sp_best_veg)
+plot(simulateResiduals(sp_best_veg))
+plot(fitted(sp_best_veg), residuals(sp_best_veg, type = 'pearson'))
+plot(df_sp_vd$AllAph, fitted(sp_best_veg))
 abline(0,1)
 
-plot(allEffects(sp.best.veg, resid =T))
+plot(allEffects(sp_best_veg, resid =T))
 
 ## Fall
-veg.dredge.fa %>% View
+veg_dredge_fa %>% View
 # new best mod!! -shan!!
-fa.best.veg <- get.models(veg.dredge.fa, 1)[[1]]
-summary(fa.best.veg)
-r2(fa.best.veg)
-plot(simulateResiduals(fa.best.veg))
-plot(fitted(fa.best.veg), residuals(fa.best.veg, type = 'pearson'))
-plot(dfFaVD$AllAph, fitted(fa.best.veg))
+fa_best_veg <- get.models(veg_dredge_fa, 1)[[1]]
+summary(fa_best_veg)
+r2(fa_best_veg)
+plot(simulateResiduals(fa_best_veg))
+plot(fitted(fa_best_veg), residuals(fa_best_veg, type = 'pearson'))
+plot(df_fa_vd$AllAph, fitted(fa_best_veg))
 abline(0,1)
 
-plot(allEffects(fa.best.veg, resid = T))
+plot(allEffects(fa_best_veg, resid = T))
 
 
 
@@ -611,18 +611,18 @@ plot(allEffects(fa.best.veg, resid = T))
 source("sham_attraction.R", echo = TRUE)
 
 ## Examine models
-diffStats.sp # Ara, Coc *; Anth ***
-diffStats.fa # none significant
+diff_stats_sp # Ara, Coc *; Anth ***
+diff_stats_fa # none significant
 
 ## Examine Ichneumonidae - generalized linear model
-summary(dIch.mod)
+summary(d_ich_mod)
 #try nb mod for ich in fall
-nb.dIch <- glmmTMB(Ichneumonoidea ~ Treatment + (1|Site:Field),
+nb_d_ich <- glmmTMB(Ichneumonoidea ~ Treatment + (1|Site:Field),
                      family='nbinom2',
-                     data = subplotDataRaw %>% filter(Season =='Fall',
+                     data = subplot_data_raw %>% filter(Season =='Fall',
                                                       Treatment!='Pre-'))
 
-summary(nb.dIch)
+summary(nb_d_ich)
 exp(0.8307) # exponentiation of sham effect estimate
 # this is better I think. could do pois or nb model. Overdispersion is there,
 # but minimal.
@@ -632,15 +632,15 @@ exp(0.8307) # exponentiation of sham effect estimate
 ### Plot sham effects
 #### TODO - come up with a better plot ####
 # df of asterisks
-sigs1.sp <- tibble(Taxon = c('Anthocoridae'),
+sigs1_sp <- tibble(Taxon = c('Anthocoridae'),
                Difference = rep(16, 1),
                Season = c('Spring'))
-sigs2.sp <- tibble(Taxon = c('Arachnida','Coccinellidae'),
+sigs2_sp <- tibble(Taxon = c('Arachnida','Coccinellidae'),
                 Difference = rep(16, 2),
                 Season = c('Spring'))
 
 
-plotWDiff %>% pivot_longer(contains('diff'),
+plot_w_diff %>% pivot_longer(contains('diff'),
                            names_to = 'Taxon',
                            values_to = 'Difference') %>%
   mutate(Taxon = str_sub(Taxon, 5)) %>%
@@ -652,14 +652,14 @@ plotWDiff %>% pivot_longer(contains('diff'),
   geom_boxplot() +
   facet_grid(.~Season) +
   theme_classic() +
-  geom_text(data = sigs1.sp, label = "***") +
-  geom_text(data = sigs2.sp, label = "*") +
+  geom_text(data = sigs1_sp, label = "***") +
+  geom_text(data = sigs2_sp, label = "*") +
   geom_hline(yintercept = 0, color = 'red') +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
 
 # the above plot is ugly. make a better one.
-plotWDiff %>% pivot_longer(contains('diff'),
+plot_w_diff %>% pivot_longer(contains('diff'),
                            names_to = 'Taxon',
                            values_to = 'Difference') %>%
   mutate(Taxon = str_sub(Taxon, 5)) %>%
@@ -687,30 +687,31 @@ source("top_down.R", echo = TRUE)
 # 1. prepare data
 library(sjmisc) # to_dummy
 
-mDatr <- subplotDataRaw %>%
+lavaan_df_prep <- subplot_data_raw %>%
   to_dummy(wateringMethod, suffix = 'label') %>%
-  bind_cols(subplotDataRaw)
-mDat <- mDatr %>%
+  bind_cols(subplot_data_raw)
+lavaan_df <- lavaan_df_prep %>%
   to_dummy(Treatment, suffix = "label") %>%
-  bind_cols(mDatr) %>%
+  bind_cols(lavaan_df_prep) %>%
   left_join(diffData_wide) %>%
   filter(Season == 'Spring',
          Treatment != 'Pre-',
          diffCoccinellidae > 0) %>%
   mutate(logAllAph = log(AllAph +1),
-         logCoccinellidae = log(Coccinellidae+1))# %>%
-  # mutate(diffCoccinellidae = case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
-  #                                      Treatment_Sham == 0 ~ 0))
+         logCoccinellidae = log(Coccinellidae+1)) # %>%
+  # mutate(diffCoccinellidae =
+  #          case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
+  #                    Treatment_Sham == 0 ~ 0))
 
 
 # 2. review aphid ladybug relationship
 ## from prior results....
-cocc.eff <- glmmTMB(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
-                    data = mDat,
+cocc_eff <- glmmTMB(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
+                    data = lavaan_df,
                     family = 'nbinom2')
-summary(cocc.eff) # -TreatmentSham**
-plot(allEffects(cocc.eff))
-plot(simulateResiduals(cocc.eff))
+summary(cocc_eff) # -TreatmentSham**
+plot(allEffects(cocc_eff))
+plot(simulateResiduals(cocc_eff))
 
 
 # 3. build SEM
@@ -718,7 +719,7 @@ plot(simulateResiduals(cocc.eff))
 library(lavaan)
 library(lavaanPlot)
 
-mod.spec <- '
+mod_spec <- '
   # direct effects
     AllAph ~ lcONE*wateringMethod_Flooding + lcTWO*ag_sig1 + b*diffCoccinellidae
     Coccinellidae ~ lcTHREE*weedy_sig1 + lcFOUR*dirt_sig1
@@ -743,7 +744,7 @@ mod.spec <- '
 '
 
 # test
-mod.spec <- '
+mod_spec <- '
 Coccinellidae ~ b*weedy_sig1 + dirt_sig1
 diffCoccinellidae ~ Coccinellidae + a*Treatment_Sham
 AllAph ~ diffCoccinellidae + wateringMethod_Flooding + ag_sig1
@@ -751,9 +752,9 @@ AllAph ~ diffCoccinellidae + wateringMethod_Flooding + ag_sig1
 a == 1
 b == 1
 '
-mod.fit <- sem(mod.spec, data = mDat)
-summary(mod.fit)
-lavaanPlot(model = mod.fit, coefs = T, covs = F, stand = F)
+mod_fit <- sem(mod_spec, data = lavaan_df)
+summary(mod_fit)
+lavaanPlot(model = mod_fit, coefs = T, covs = F, stand = F)
 
 ### TODO - understand scale of coeffs. Check that constraints are appropriate ####
 

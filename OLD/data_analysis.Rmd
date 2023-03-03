@@ -79,7 +79,7 @@ rpaste0 <- function (x,y) {
 data <- read_csv('tidy_data/data.csv', col_types = 'fffffdddddddddddddddddddd')
 data_long <- read_csv('tidy_data/data_long.csv', col_types = 'fffffffd')
 landcover <- read_csv('tidy_data/landcover.csv', col_types = 'ffffffddddddd')
-vegPlots <- read_csv('tidy_data/vegPlots.csv', col_types = 'fffffff')
+veg_plots <- read_csv('tidy_data/veg_plots.csv', col_types = 'fffffff')
 vegSites <- read_csv('tidy_data/vegSites.csv', col_types = 'f')
 
 # define convenience identifiers ####
@@ -358,13 +358,13 @@ shinyApp(
         data.r = reactive({
       
       if (input$filter == 'Margin') {
-        d <- vegPlots %>% 
+        d <- veg_plots %>% 
           filter(type == 'Margin')
       } else if (input$filter == 'Random') {
-        d <- vegPlots %>% 
+        d <- veg_plots %>% 
           filter(type == 'Random')
       } else {
-        d <- vegPlots
+        d <- veg_plots
       }
       return(d)
       
@@ -724,12 +724,12 @@ Vegetation sampling plots may not be perfectly stratified when the land cover cl
 ## fuck this is heavy
 ## nah you might be lazy though
 
-# vegPlots %>% filter(is.na(K3LSfall))
+# veg_plots %>% filter(is.na(K3LSfall))
 # 
-# nrow(vegPlots)
+# nrow(veg_plots)
 
 # make vegplot factors in number order
-vegPlots %<>% 
+veg_plots %<>% 
   mutate(across(133:153, as_factor)) %>% 
   mutate(total_cover = rowSums(across(SAVE4:UNK_POACEAE5)))
 
@@ -741,7 +741,7 @@ shinyApp(
 
   ui = fluidPage(
     selectInput(inputId = "imgSet", "Classification data",
-                choices = colnames(vegPlots %>% select(133:153))),
+                choices = colnames(veg_plots %>% select(133:153))),
     selectInput(inputId = "season", "Season filter",
                 choices = c('Spring', 'Fall')),
     plotOutput("coverPlot")
@@ -751,7 +751,7 @@ shinyApp(
     
     output$coverPlot = renderPlot({
       
-      ggplot(data = vegPlots %>% filter(season == input$season, type == 'Random'), 
+      ggplot(data = veg_plots %>% filter(season == input$season, type == 'Random'), 
              aes_string(x = input$imgSet, fill = input$imgSet)) +
         geom_bar()
       
@@ -776,7 +776,7 @@ shinyApp(
 
   ui = fluidPage(
     selectInput(inputId = "imgSet", "Classification data",
-                choices = colnames(vegPlots %>% select(133:153))),
+                choices = colnames(veg_plots %>% select(133:153))),
     selectInput(inputId = "stat", "Statistic",
                 choices = c('shan', 'simp', 'rich', 'total_cover', 'MESA', 'SAVE4')),
     selectInput(inputId = "season", "Season filter",
@@ -791,7 +791,7 @@ shinyApp(
     
     data.r = reactive(
       
-      vegPlots %>% 
+      veg_plots %>% 
         filter(season == input$season, type ==input$type) %>% 
         select(id, site, shan, simp, rich, total_cover,
                 MESA, SAVE4, input$imgSet) %>% 
@@ -1208,7 +1208,7 @@ varList <- as_tibble(cbind(varListPC1, varListPC2)) %>%
 
 # join field-level insect densities ####
 # comine field-level insect densities and cover class data
-fieldData <- mean_density %>% 
+field_data <- mean_density %>% 
   ungroup() %>% 
   group_by(Site, Field, Season) %>% 
   dplyr::summarise(across(where(is.numeric), mean), .groups = 'keep') %>% 
@@ -1228,7 +1228,7 @@ cand_mods_spring <- map(trimmed_predlist, function (pred) {
     
     mod <- lmer(eval(as.name(pred)) ~ 
                   eval(as.name(x)) + eval(as.name(y)) + (1 | Site), 
-                data = fieldData %>% filter(Season == 'Spring'))
+                data = field_data %>% filter(Season == 'Spring'))
   })
 })
 
@@ -1237,7 +1237,7 @@ cand_mods_fall <- map(trimmed_predlist, function (pred) {
     
     mod <- lmer(eval(as.name(pred)) ~ 
                   eval(as.name(x)) + eval(as.name(y)) + (1 | Site), 
-                data = fieldData %>% filter(Season == 'Fall'))
+                data = field_data %>% filter(Season == 'Fall'))
   })
 })
 # note that many, but not all, fits are singular!
@@ -1442,7 +1442,7 @@ pcData2 <- pcaList$NAIP.K5.sig4 %>%
 pcData <- left_join(pcData1, pcData2)
 
 # data # plot-level
-# fieldData # field-level
+# field_data # field-level
 # would like to use plot-level data here, but land cover data is field level. What to do?
 # can we add site as a random factor in SEM?
 

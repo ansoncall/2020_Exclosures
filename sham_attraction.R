@@ -7,7 +7,7 @@
 # this df contains plot-level DIFFERENCES between sham and control
 # this must use UNLOGGED data because subtraction on the log scale doesn't make
 # sense
-diffData_wide <- subplotDataRaw %>% # long-format counts
+diffData_wide <- subplot_data_raw %>% # long-format counts
   filter(Treatment != 'Pre-') %>% # remove 'Pre-' treatments
   # make separate cols for each treatment (AND taxon)
   pivot_wider(names_from = Treatment, values_from = Arachnida:NonAcy) %>%
@@ -32,89 +32,89 @@ diffData_wide <- subplotDataRaw %>% # long-format counts
 # maybe add scaled+summed pred col here?
 # NOTE: this did not end up being useful, but I tried it!
 
-# join diffdata to plotdata
-plotWDiff <- left_join(plotData, diffData_wide)
+# join diffdata to plot_data
+plot_w_diff <- left_join(plot_data, diffData_wide)
 # ready to model? no transforms applied yet
 # not all predictor vars are uniformly distributed
-dotchart(plotWDiff$Arachnida)
-dotchart(plotWDiff$Anthocoridae)
-dotchart(plotWDiff$Coccinellidae)
-dotchart(plotWDiff$Geocoris)
-dotchart(plotWDiff$Ichneumonoidea)
-dotchart(plotWDiff$AllAph)
+dotchart(plot_w_diff$Arachnida)
+dotchart(plot_w_diff$Anthocoridae)
+dotchart(plot_w_diff$Coccinellidae)
+dotchart(plot_w_diff$Geocoris)
+dotchart(plot_w_diff$Ichneumonoidea)
+dotchart(plot_w_diff$AllAph)
 #log+1
-dotchart(log(plotWDiff$Arachnida+1))
-dotchart(log(plotWDiff$Anthocoridae+1))
-dotchart(log(plotWDiff$Coccinellidae+1))
-dotchart(log(plotWDiff$Geocoris+1))
-dotchart(log(plotWDiff$Ichneumonoidea+1))
-dotchart(log(plotWDiff$AllAph+1)) # response
+dotchart(log(plot_w_diff$Arachnida+1))
+dotchart(log(plot_w_diff$Anthocoridae+1))
+dotchart(log(plot_w_diff$Coccinellidae+1))
+dotchart(log(plot_w_diff$Geocoris+1))
+dotchart(log(plot_w_diff$Ichneumonoidea+1))
+dotchart(log(plot_w_diff$AllAph+1)) # response
 
-dotchart(plotWDiff$diffArachnida)
-dotchart(plotWDiff$diffAnthocoridae)
-dotchart(plotWDiff$diffCoccinellidae)
-dotchart(plotWDiff$diffGeocoris)
-dotchart(plotWDiff$diffIchneumonoidea)
-dotchart(plotWDiff$diffAllAph)
+dotchart(plot_w_diff$diffArachnida)
+dotchart(plot_w_diff$diffAnthocoridae)
+dotchart(plot_w_diff$diffCoccinellidae)
+dotchart(plot_w_diff$diffGeocoris)
+dotchart(plot_w_diff$diffIchneumonoidea)
+dotchart(plot_w_diff$diffAllAph)
 
 ### Make models ####
 # Mixed effects needed?
 # linear and linear mixed-effects often give different results.
 # must use mixed effects to account for non-independence
-lmer(diffArachnida~1+(1|Site:Field), data = plotWDiff) %>% summary() # no
-t.test(plotWDiff$diffArachnida) # same
-lmer(diffAnthocoridae~1+(1|Site:Field), data = plotWDiff) %>% summary() # yes
-t.test(plotWDiff$diffAnthocoridae) # still yes, but not the same!
-lmer(diffCoccinellidae~1+(1|Site:Field), data = plotWDiff) %>% summary() # yes
-t.test(plotWDiff$diffCoccinellidae) # same
-lmer(diffGeocoris~1+(1|Site:Field), data = plotWDiff) %>% summary() # no
-t.test(plotWDiff$diffGeocoris) # still no, but not the same!
-lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotWDiff) %>% summary() # no
-t.test(plotWDiff$diffIchneumonoidea) # still no, but not the same!
+lmer(diffArachnida~1+(1|Site:Field), data = plot_w_diff) %>% summary() # no
+t.test(plot_w_diff$diffArachnida) # same
+lmer(diffAnthocoridae~1+(1|Site:Field), data = plot_w_diff) %>% summary() # yes
+t.test(plot_w_diff$diffAnthocoridae) # still yes, but not the same!
+lmer(diffCoccinellidae~1+(1|Site:Field), data = plot_w_diff) %>% summary() # yes
+t.test(plot_w_diff$diffCoccinellidae) # same
+lmer(diffGeocoris~1+(1|Site:Field), data = plot_w_diff) %>% summary() # no
+t.test(plot_w_diff$diffGeocoris) # still no, but not the same!
+lmer(diffIchneumonoidea~1+(1|Site:Field), data = plot_w_diff) %>% summary() # no
+t.test(plot_w_diff$diffIchneumonoidea) # still no, but not the same!
 
 # positive coeff means shams ATTRACT
 #### Spring ####
-plotDiff.sp <- plotWDiff %>% filter(Season == 'Spring')
+plotDiff.sp <- plot_w_diff %>% filter(Season == 'Spring')
 dAra.mod <- lmer(diffArachnida~1+(1|Site:Field), data = plotDiff.sp)
 dAnt.mod <- lmer(diffAnthocoridae~1+(1|Site:Field), data = plotDiff.sp)
 dCoc.mod <- lmer(diffCoccinellidae~1+(1|Site:Field), data = plotDiff.sp)
 dGeo.mod <- lmer(diffGeocoris~1+(1|Site:Field), data = plotDiff.sp)
-dIch.mod <- lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotDiff.sp)
+d_ich_mod <- lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotDiff.sp)
 dAph.mod <- lmer(diffAllAph~1+(1|Site:Field), data = plotDiff.sp)
 
 # collect stats from these mods
-diffMods <- list(dAra.mod, dAnt.mod, dCoc.mod, dGeo.mod, dIch.mod, dAph.mod)
-diffStats.sp <- tibble(Taxon = c('Ara', 'Ant', 'Coc', 'Geo', 'Ich', 'Aph'),
+diffMods <- list(dAra.mod, dAnt.mod, dCoc.mod, dGeo.mod, d_ich_mod, dAph.mod)
+diff_stats_sp <- tibble(Taxon = c('Ara', 'Ant', 'Coc', 'Geo', 'Ich', 'Aph'),
                        Est = c(0),
                        Ste= c(0),
                        P = c(0))
 for (i in 1:6){
 
-  diffStats.sp$Est[[i]] <- summary(diffMods[[i]])$coefficients[[1]]
-  diffStats.sp$Ste[[i]] <- summary(diffMods[[i]])$coefficients[[2]]
-  diffStats.sp$P[[i]] <- summary(diffMods[[i]])$coefficients[[5]]
+  diff_stats_sp$Est[[i]] <- summary(diffMods[[i]])$coefficients[[1]]
+  diff_stats_sp$Ste[[i]] <- summary(diffMods[[i]])$coefficients[[2]]
+  diff_stats_sp$P[[i]] <- summary(diffMods[[i]])$coefficients[[5]]
 
 }
 
 #### Fall ####
-plotDiff.fa <- plotWDiff %>% filter(Season == 'Fall')
+plotDiff.fa <- plot_w_diff %>% filter(Season == 'Fall')
 dAra.mod <- lmer(diffArachnida~1+(1|Site:Field), data = plotDiff.fa)
 dAnt.mod <- lmer(diffAnthocoridae~1+(1|Site:Field), data = plotDiff.fa)
 dCoc.mod <- lmer(diffCoccinellidae~1+(1|Site:Field), data = plotDiff.fa)
 dGeo.mod <- lmer(diffGeocoris~1+(1|Site:Field), data = plotDiff.fa)
-dIch.mod <- lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotDiff.fa)
+d_ich_mod <- lmer(diffIchneumonoidea~1+(1|Site:Field), data = plotDiff.fa)
 dAph.mod <- lmer(diffAllAph~1+(1|Site:Field), data = plotDiff.fa)
 
 # collect stats from these mods
-diffMods <- list(dAra.mod, dAnt.mod, dCoc.mod, dGeo.mod, dIch.mod, dAph.mod)
-diffStats.fa <- tibble(Taxon = c('Ara', 'Ant', 'Coc', 'Geo', 'Ich', 'Aph'),
+diffMods <- list(dAra.mod, dAnt.mod, dCoc.mod, dGeo.mod, d_ich_mod, dAph.mod)
+diff_stats_fa <- tibble(Taxon = c('Ara', 'Ant', 'Coc', 'Geo', 'Ich', 'Aph'),
                        Est = c(0),
                        Ste= c(0),
                        P = c(0))
 for (i in 1:6){
 
-  diffStats.fa$Est[[i]] <- summary(diffMods[[i]])$coefficients[[1]]
-  diffStats.fa$Ste[[i]] <- summary(diffMods[[i]])$coefficients[[2]]
-  diffStats.fa$P[[i]] <- summary(diffMods[[i]])$coefficients[[5]]
+  diff_stats_fa$Est[[i]] <- summary(diffMods[[i]])$coefficients[[1]]
+  diff_stats_fa$Ste[[i]] <- summary(diffMods[[i]])$coefficients[[2]]
+  diff_stats_fa$P[[i]] <- summary(diffMods[[i]])$coefficients[[5]]
 
 }

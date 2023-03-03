@@ -1,6 +1,6 @@
 # for summarizing landcover classification
 ## Effect of "fixing" alfalfa classification on alfalfa areaScore
-fieldData %>%
+field_data %>%
   # only need one season
   filter(Season == "Spring") %>%
   # calculate change in alfalfa area
@@ -32,7 +32,7 @@ fieldData %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ## Effect of "fixing" alfalfa classification on weedyWet areaScore
-fieldData %>%
+field_data %>%
   # only need one season
   filter(Season == "Spring", Treatment == "Control") %>%
   # calculate change in alfalfa area
@@ -67,7 +67,7 @@ fieldData %>%
 
 ## weedy/wet binning effect ####
 # what is the correlation between weedy and wet cover?
-fieldData %>%
+field_data %>%
   # only need one season and trt
   filter(Season == "Spring", Treatment == "Control") %>%
   # focus on weedy vs. wet
@@ -96,7 +96,7 @@ fieldData %>%
 # correlated
 
 # wet and water correlation
-fieldData %>%
+field_data %>%
   # only need one season and trt
   filter(Season == "Spring", Treatment == "Control") %>%
   # focus on weedy vs. wet
@@ -119,7 +119,7 @@ fieldData %>%
   theme(axis.ticks = element_blank(),
         axis.text = element_blank())
 # moderate correlation here. this breaks down when using weedyWet (7-class)
-fieldData %>%
+field_data %>%
   # only need one season and trt
   filter(Season == "Spring", Treatment == "Control") %>%
   # focus on weedy vs. wet
@@ -152,21 +152,21 @@ fieldData %>%
 # Margin data summary ####
 ## Across sites ####
 # Shannon diversity
-ggplot(data = vegPlots %>% filter(type == "Margin"),
+ggplot(data = veg_plots %>% filter(type == "Margin"),
        aes(x = site, y = shan, fill = season)) +
   geom_boxplot() +
   labs(title = "Shannon diversity index",
        x = "Site", y = "Diversity") +
   scale_fill_manual(values = c("#76db91", "#9e3c21"))
 # Plant species richness
-ggplot(data = vegPlots %>% filter(type == "Margin"),
+ggplot(data = veg_plots %>% filter(type == "Margin"),
        aes(x = site, y = rich, fill = season)) +
   geom_boxplot() +
   labs(title = "Plant species richness",
        x = "Site", y = "Richness") +
   scale_fill_manual(values = c("#76db91", "#9e3c21"))
 # Total plant cover
-vegPlots %>%
+veg_plots %>%
   filter(type == "Margin") %>%
   mutate(total_cover = select(., 12:132) %>%
            rowSums(na.rm = TRUE)) %>%

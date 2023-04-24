@@ -106,12 +106,43 @@ veg_plots <- read_csv("tidy_data/vegPlots.csv")
 
 
 # define color palette ####
-# Acyrthosiphon aphids: #548235
-# Non-Acyrthosiphon aphids: #3B3838
-# Spring: #76db91
-# Fall: #9e3c21
-# Predators: "Spectral"
-# Sites: "Set1"
+"#548235" # Acyrthosiphon aphids
+"#3B3838" # Non-Acyrthosiphon aphids
+"#76db91" # Spring
+"#9e3c21" # Fall:
+"Spectral" # Predators (alphabe)
+"Set1" # Sites
+
+# Landcover: Use palette derived from actual colors?
+# trainingPalette asset from earth engine:
+"#173118" # alfalfa
+"#7f736d" # naturalArid
+"#93837c" # weedy
+"#373f2a" # riparian
+"#696153" # Ag group midpoint
+  "#a38878" # rye
+  "#2e3a2d" # onion
+"#A8A4A5" # Bare group midpoint (first two)
+  "#b6b2b0" # bare
+  "#999599" # dirtRoad
+  "#6f5a4f" # dairy
+"#89939F" # Impermeable group midpoint
+  "#50514c" # paved
+  "#c2d4f1" # structures
+NA # Surface water
+
+# Contrast too low, make curstom palette
+"#156b07" # alfalfa
+"#cca266" # naturalArid
+"#801f19" # weedy
+"#a5cc66" # riparian
+"#9987f1" # Ag group
+"#cc6655" # Bare group
+"grey40" # Impermeable
+"#192280" # Surface water
+
+
+
 
 # Data exploration ####
 ## Arthropod data summary
@@ -266,7 +297,14 @@ stats_df <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                   effects1 = c("none"),
                   effects2 = c("none"),
                   coefs1 = c(0),
-                  coefs2 = c(0))
+                  coefs2 = c(0),
+                  coefs1min = c(0),
+                  coefs1max = c(0),
+                  coefs2min = c(0),
+                  coefs2max = c(0),
+                  coefsse1 = c(0),
+                  coefsse2 = c(0)
+                  )
 
 # fill tibble with stats
 for (i in seq_along(best_mod_list)){
@@ -276,12 +314,221 @@ for (i in seq_along(best_mod_list)){
   stats_df$effects2[[i]] <- names(best_mod_list[[i]]$frame)[3]
   stats_df$coefs1[[i]] <- fixef(best_mod_list[[i]])$cond[2]
   stats_df$coefs2[[i]] <- fixef(best_mod_list[[i]])$cond[3]
+  stats_df$coefs1min[[i]] <- confint(best_mod_list[[i]])[2,1]
+  stats_df$coefs2min[[i]] <- confint(best_mod_list[[i]])[3,1]
+  stats_df$coefs1max[[i]] <- confint(best_mod_list[[i]])[2,2]
+  stats_df$coefs2max[[i]] <- confint(best_mod_list[[i]])[3,2]
+  stats_df$coefsse1[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[2,2]
+  stats_df$coefsse2[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[3,2]
+
 }
 
 
 stats_df %>%
   group_by(Season) %>%
   tab_df(title = "Top predator models (no vegetation data included)")
+## BOOKMARK ####
+# maybe build the figure in notebook p. 28 based on the table above.
+# no spring pred mods need vegdata, so you can rock with this.
+# fall mods that need vegdata:
+# Anthocoridae, Arachnida
+
+# reshape stats table
+figDat <- stats_df %>%
+  rename(coefsmin1 = coefs1min,
+         coefsmax1 = coefs1max,
+         coefsmin2 = coefs2min,
+         coefsmax2 = coefs2max) %>%
+  pivot_longer(effects1:coefsse2,
+               names_to = c(".value", "effectRank"),
+               names_pattern = "(.*)(.s*)",
+               values_to = c("var1, var2, var3, var4, var5, var6")) %>%
+  mutate(effects = case_when(effects == "log_AllAph" ~ "logAllAph_NA",
+                             effects == "wateringMethod" ~ "wateringMethod_NA",
+                             effects != c("log_AllAph",
+                                          "wateringMethod") ~ effects)) %>%
+  separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
+  mutate(Taxon = fct_rev(as_factor(Taxon))) %>%
+  mutate(Distance = factor(Distance, levels = c("NA",
+                                                "sig1",
+                                                "sig2",
+                                                "sig3",
+                                                "sig4",
+                                                "sig5",
+                                                "const",
+                                                "no")))
+
+
+# test ggplot
+figDat %>%
+  filter(Season == "Spring") %>%
+  ggplot(aes(x = Distance, y = Taxon, group = effectRank)) +
+  geom_point(aes(color = Effect,
+                 size = abs(coefs),
+                 shape = as_factor(sign(coefs))),
+             position = position_dodge(-0.5),
+             stroke = 2) +
+  scale_size(range = c(5, 24), name = "Effect size") +
+  scale_x_discrete(drop = FALSE) +
+  scale_shape_manual(name = "Effect size",
+                     values = c(1, 16)) +
+  scale_color_brewer(palette = "Dark2")
+
+# CAPTION (v1): Effects of explanatory variables (including land cover features
+# and log aphid density) and their distance weighting (x axis) on the density
+# of key predators (y axis). Only the explanatory variables from the best model
+# of each predator (by lowest AICc) are shown. The identities of the
+# explanatory variables are represented by color, and the points are scaled to
+# the effect size. Open circles represent negative effect sizes.
+
+
+
+# test ggplot v2
+figDat %>%
+  filter(Season == "Spring") %>%
+  mutate(Effect = reorder(Effect, desc(coefs))) %>%
+  ggplot(aes(x = Taxon, y = coefs, group = effectRank, color = Distance)) +
+  geom_point(stroke = 2.5) +
+  geom_linerange(aes(ymin = coefsmin, ymax = coefsmax), size = 1.5) +
+  facet_grid(~Effect, scales = "free_x", space = "free_x") +
+  scale_color_manual(values = c("NA" = "grey50",
+                                "sig1" = "#003366",
+                                "sig2" = "#174978",
+                                "sig3" = "#2f5f8a",
+                                "sig4" = "#46769b",
+                                "sig5" = "#5e8cad",
+                                "const" = "purple",
+                                "no" = "violet"
+                                ), drop = FALSE) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  ylab("Effect size")
+
+# CAPTION (v2): Effects of explanatory variables (including land cover features
+# and log aphid density) on the density of key predators. Only explanatory
+# variables from the best models (lowest AICc) are shown. The distance
+# weighting of the effect (where applicable) is denoted by color. Explanatory
+# variables are ordered (left to right) by mean effect size across all taxa.
+# Error bars represent 95% confidence intervals.
+
+# test ggplot v3
+figDat %>%
+  filter(Season == "Spring") %>%
+  mutate(Effect = reorder(Effect, desc(coefs))) %>%
+  ggplot(aes(x = Effect, y = coefs, group = effectRank, color = Distance)) +
+  geom_point(stroke = 2.5) +
+  geom_linerange(aes(ymin = coefsmin, ymax = coefsmax), size = 1.5) +
+  facet_grid(~Taxon, scales = "free_x", space = "free_x") +
+  scale_color_manual(values = c("NA" = "grey50",
+                                "sig1" = "#003366",
+                                "sig2" = "#174978",
+                                "sig3" = "#2f5f8a",
+                                "sig4" = "#46769b",
+                                "sig5" = "#5e8cad",
+                                "const" = "purple",
+                                "no" = "violet"
+  ), drop = FALSE) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  ylab("Effect size")
+
+# CAPTION (v3): Effects of explanatory variables (including land cover features
+# and log aphid density) on the density of key predators. Only explanatory
+# variables from the best models (lowest AICc) are shown. The distance
+# weighting of the effect (where applicable) is denoted by color.
+# Error bars represent 95% confidence intervals.
+
+# # test ggplot v4 - no go
+# figDat %>%
+#   filter(Season == "Spring") %>%
+#   ggplot(aes(x = Distance, y = Taxon, group = effectRank)) +
+#   geom_point(aes(color = Effect, # estimate
+#                  size = (abs(coefs))*sqrt(2),
+#                  shape = as_factor(sign(coefs))),
+#                  stroke = 1,
+#              position = position_dodge(-0.5),
+#              alpha = 1) +
+#   geom_point(aes(color = Effect, # uncertainty
+#                  size = (abs(coefs)-3*estRange)*sqrt(2),
+#                  stroke = 6*estRange),
+#              shape = 21,
+#              position = position_dodge(-0.5),
+#              alpha = 0.5) +
+#   scale_x_discrete(drop = FALSE) +
+#   scale_shape_manual(name = "Effect size",
+#                      values = c(13, 1)) +
+#   scale_color_brewer(palette = "Dark2")
+
+# test ggplot v5
+install.packages("devtools")
+library(devtools)
+devtools::install_github("wilkelab/ungeviz")
+library(ungeviz)
+
+## need to calculate "moe" stat for ungeviz::stat_confidence_density
+
+figDat %>%
+  mutate(moe95 = coefsse*1.96,
+         Distance = recode(Distance, sig1 = "75m", sig5 = "650m", "NA" = "0m"),
+         Effect = recode(Effect,
+                         ag = "Non-alfalfa agriculture",
+                         alfalfa = "Alfalfa",
+                         dirt = "Bare soil",
+                         impermeable = "Impermeable surfaces",
+                         logAllAph = "log(Aphid density)",
+                         weedy = "Weedy cover"
+                         )) %>% # recode for draft to Hall
+  filter(Season == "Spring") %>%
+  ggplot(aes(y = Distance,
+             x = coefs,
+             group = effectRank,
+             fill = Effect,
+             # color = Effect,
+             moe = moe95)) +
+  facet_wrap(~Taxon, ncol = 1, strip.position = "right") +
+  stat_confidence_density(height = 0.80,
+                          position = position_dodge(0.8),
+                          show.legend = TRUE) +
+  # coord_flip() +
+  # scale_y_discrete(drop = FALSE) +
+  geom_point(position = position_dodge(0.8)) +
+  geom_errorbar(aes(xmin = coefs+coefsse,
+                    xmax = coefs-coefsse),
+                position = position_dodge(0.8),
+                width = 0.2
+                ) +
+  xlim(c(-2.2,1.7)) +
+  geom_vline(xintercept = 0,
+             linetype = "dashed",
+             color = "red",
+             alpha = 0.5) +
+  geom_hline(yintercept = (1:2)+0.5,
+             color = "grey30") +
+  xlab("Standardized effect size") +
+  ylab("Scale of effect") +
+  scale_fill_manual(name = "Explanatory variable",
+                    values = c('darkgreen',
+                               'sienna',
+                               'grey20',
+                               'maroon',
+                               '#b5b825',
+                               '#470170')) +
+  theme_grey(base_size = 14) +
+  theme(legend.position = c(0.85, 0.84),
+        legend.background = element_rect(linetype = 1, color = "black"),
+        panel.background = element_rect(fill = "grey90"),
+        plot.background = element_rect(fill = "white"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line(size = 0.1, color = "grey70"),
+        panel.grid.minor.x = element_line(size = 0.1, color = "grey80"),
+        strip.background = element_rect(fill = "grey50"))
+
+
+## next idea
+# split info above into one "heatmap" figure" (taxon*predictor, heat = effect size)
+# and one distance*taxon figure?
+
+
 
 
 # Review predator models ####
@@ -683,81 +930,212 @@ plot_w_diff %>% pivot_longer(contains("diff"),
 source("top_down.R", echo = TRUE)
 
 # SEM-LAVAAN ####
-### after talking to beth...####
-
-
-
 # 1. prepare data
-library(sjmisc) # to_dummy
-
+## binary watering method var
 lavaan_df_prep <- subplot_data_raw %>%
   to_dummy(wateringMethod, suffix = "label") %>%
   bind_cols(subplot_data_raw)
-lavaan_df <- lavaan_df_prep %>%
+## binary site vars
+lavaan_df_prep2 <- lavaan_df_prep %>%
+  to_dummy(Site, suffix = "label") %>%
+  bind_cols(lavaan_df_prep)
+## binary treatment vars, bind other data
+
+## one version only - you get lost if you make multiple dfs!
+lavaan_df1 <- lavaan_df_prep2 %>%
   to_dummy(Treatment, suffix = "label") %>%
-  bind_cols(lavaan_df_prep) %>%
+  bind_cols(lavaan_df_prep2) %>%
   left_join(diffData_wide) %>%
   filter(Season == "Spring",
-         Treatment != "Pre-",
-         diffCoccinellidae > 0) %>%
+         Treatment != "Pre-") %>%
+         # diffCoccinellidae > 0) %>%
   mutate(logAllAph = log(AllAph + 1),
-         logCoccinellidae = log(Coccinellidae + 1)) # %>%
-  # mutate(diffCoccinellidae =
-  #          case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
-  #                    Treatment_Sham == 0 ~ 0))
+         logCoccinellidae = log(Coccinellidae + 1)) %>%
+  select(logAllAph, logCoccinellidae, Coccinellidae, # dump other cols
+         diffCoccinellidae,
+         wateringMethod_Flooding,
+         ag_sig1, weedy_sig1, dirt_sig1,
+         AllAph, Treatment,
+         Treatment_Sham, Site, Field) %>%
+  mutate(diffCoccinellidae =
+           case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
+                     Treatment_Sham == 0 ~ 0)) %>%
+  mutate(across(.cols = -c(Treatment, Site, Field, Treatment_Sham,
+                           wateringMethod_Flooding),
+                .fns = ~as.vector(scale(.x))))
+                  # alternative: ~(. -mean(.)/ sd(.))
 
 
-# 2. review aphid ladybug relationship
-## from prior results....
-cocc_eff <- glmmTMB(AllAph ~ Treatment + log(Coccinellidae + 1) +
+## explore data
+names(lavaan_df1)
+nrow(lavaan_df1)
+mean(lavaan_df1 %>% pull(diffCoccinellidae))
+
+
+# explore dotcharts of all vars
+dotchart(lavaan_df1$logAllAph)
+dotchart(lavaan_df1$logCoccinellidae)
+dotchart(lavaan_df1$diffCoccinellidae)
+dotchart(lavaan_df1$logCoccinellidae)
+dotchart(lavaan_df1$ag_sig1)
+dotchart(lavaan_df1$weedy_sig1)
+dotchart(lavaan_df1$dirt_sig1)
+dotchart(lavaan_df1$Treatment_Sham)
+dotchart(lavaan_df1$wateringMethod_Flooding)
+dotchart(subplot_data_raw$weedy_sig1/lala)
+dotchart(subplot_data_raw$weedy_sig1)
+sd(subplot_data_raw$weedy_sig1)-> lala
+# 2. review aphid/ladybug/landcover relationships from glm
+## from "top-down" effects model....
+cocc_eff <- lmer(logAllAph ~ Treatment + logCoccinellidae +
                       (1 | Site:Field),
-                    data = lavaan_df,
-                    family = "nbinom2")
-summary(cocc_eff) # -TreatmentSham**
+                    data = lavaan_df1)
+summary(cocc_eff) # !!! Treatment_Sham N.S. unless diffCoccinellidae > 0
 plot(allEffects(cocc_eff))
 plot(simulateResiduals(cocc_eff))
 
+## from spring allaph model....
+summary(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])
+
+## from spring coccinellidae model....
+summary(best_mod_list$best.coc.sp)
 
 # 3. build SEM
 ## try lavaan ####
-library(lavaan)
-library(lavaanPlot)
-
-mod_spec <- "
+## 3a. Build model on data subset to estimate sham_trt effect
+## subset data (before scaling)
+## use data subset to find treatment -> aphid effect
+lavaan_df2 <- lavaan_df_prep2 %>%
+  to_dummy(Treatment, suffix = "label") %>%
+  bind_cols(lavaan_df_prep2) %>%
+  left_join(diffData_wide) %>%
+  filter(Season == "Spring",
+         Treatment != "Pre-",
+         diffCoccinellidae > 0) %>% # filter here!
+  mutate(logAllAph = log(AllAph + 1),
+         logCoccinellidae = log(Coccinellidae + 1)) %>%
+  select(logAllAph, logCoccinellidae, Coccinellidae, # dump other cols
+         diffCoccinellidae,
+         wateringMethod_Flooding,
+         ag_sig1, weedy_sig1, dirt_sig1,
+         AllAph, Treatment,
+         Treatment_Sham, Site, Field) %>%
+  mutate(diffCoccinellidae =
+           case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
+                     Treatment_Sham == 0 ~ 0)) %>%
+  mutate(across(.cols = -c(Treatment, Site, Field,
+                           wateringMethod_Flooding,
+                           Treatment_Sham, diffCoccinellidae),
+                .fns = ~(./sd(.)))) # scale, don't center
+## specify model (with no constraints)
+mod_specA <- "
   # direct effects
-    AllAph ~ lcONE*wateringMethod_Flooding + lcTWO*ag_sig1 + b*diffCoccinellidae
-    Coccinellidae ~ lcTHREE*weedy_sig1 + lcFOUR*dirt_sig1
-    diffCoccinellidae ~ c*Coccinellidae + d*Treatment_Sham
+    logCoccinellidae ~ w*weedy_sig1 + d*dirt_sig1
+
+    logAllAph ~ f*wateringMethod_Flooding + a*ag_sig1 + t*Treatment_Sham
+
   # mediator
     # ?
+
   # indirect effects
-    # Coccinellidae > diffCoccinellidae > AllAph
-    cb := c*b
-    # Treatment > diffCoccinelliade > AllAph
-    db := d*b
-  # total effects
-    # Treatment > AllAph
-    # tTreat := (d*b)
-    # Coccinellidae > AllAph
     # ?
-  # covariance ## ERROR - model not identifiable, maybe need to fix a param
-  # AllAph ~~ Coccinellidae
+    # multiply coefs here - use :=
+
+  # total effects
+    wd := w+(-d) # landcover -> ladybugs
+    fa := f+(-a) # landcover -> aphids
+    # add coefs here - use :=
+
+  # covariance
+   logAllAph ~~ l*logCoccinellidae
+
   # constraints
-    d == 1
-    lcTHREE == 1
+   # none yet!
 "
 
-# test
-mod_spec <- "
-Coccinellidae ~ b*weedy_sig1 + dirt_sig1
-diffCoccinellidae ~ Coccinellidae + a*Treatment_Sham
-AllAph ~ diffCoccinellidae + wateringMethod_Flooding + ag_sig1
-# constraint
-a == 1
-b == 1
-"
-mod_fit <- sem(mod_spec, data = lavaan_df)
-summary(mod_fit)
-lavaanPlot(model = mod_fit, coefs = TRUE, covs = FALSE, stand = FALSE)
+## fit model
+mod_fitA <- sem(mod_specA, data = lavaan_df2)
 
-### TODO - understand scale of coeffs. Check constraints ####
+summary(mod_fitA)
+# Trt_Sham effect is:
+# Trtmnt_Shm (t) Est: -0.758    Std.err: 0.133   z: -5.708    P: 0.000
+
+lavaanPlot(model = mod_fitA, coefs = TRUE, covs = F, stand = FALSE)
+
+
+## 3b. refit to full dataset with Trt_Sham coef "fixed"
+mod_specB <- "
+  # direct effects
+    logCoccinellidae ~ w*weedy_sig1 + d*dirt_sig1
+
+    logAllAph ~ f*wateringMethod_Flooding + a*ag_sig1 + t*Treatment_Sham
+
+  # mediator
+    # ?
+
+  # indirect effects
+    # ?
+    # multiply coefs here - use :=
+
+  # total effects
+    wd := w+(-d) # landcover -> ladybugs
+    fa := f+(-a) # landcover -> aphids
+    # add coefs here - use :=
+
+  # covariance
+   logAllAph ~~ l*logCoccinellidae
+
+  # constraints
+   t == -0.758
+"
+
+# ML is default estimator
+mod_fit1B <- sem(mod_specB, data = lavaan_df1)
+summary(mod_fit1B)
+
+lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = TRUE, stand = FALSE)
+
+
+lavResiduals(mod_fit1B)
+
+
+
+# exploratory regression
+## how does filtering change the sham > diff relationship?
+mod1 <- lm(diffCoccinellidae ~ Treatment_Sham + logCoccinellidae,
+           data = lavaan_df1)
+mod2 <- lm(diffCoccinellidae ~ Treatment_Sham + logCoccinellidae,
+           data = lavaan_df2)
+
+summary(mod1)
+summary(mod2) # better fit, stronger sham effect.
+
+plot(allEffects(mod1))
+plot(allEffects(mod2))
+
+# what is the deal with the diffCoccinellidae
+
+
+
+# for negbin SEM - maybe do blavaan, export jags model syntax, edit link
+# function, fit w/rjags. nightmarish.
+
+## back to sem?
+library(piecewiseSEM)
+
+model <- psem(lm(logCoccinellidae ~ weedy_sig1 + dirt_sig1, lavaan_df2),
+              lm(logAllAph ~ wateringMethod_Flooding + ag_sig1 +
+                   Treatment_Sham*logCoccinellidae, lavaan_df2))
+summary(model)
+plot(model)
+
+library(MASS)
+# glm version
+glm_model <- psem(glm.nb(Coccinellidae ~ weedy_sig1 +
+                             dirt_sig1, lavaan_df2),
+              glm.nb(AllAph ~ wateringMethod_Flooding + ag_sig1 +
+                   Treatment_Sham*Coccinellidae, lavaan_df2))
+summary(glm_model)
+plot(glm_model)
+
+

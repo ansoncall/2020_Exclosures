@@ -132,16 +132,19 @@ veg_plots <- read_csv("tidy_data/vegPlots.csv")
 NA # Surface water
 
 # Contrast too low, make curstom palette
-"#156b07" # alfalfa
-"#cca266" # naturalArid
-"#801f19" # weedy
-"#a5cc66" # riparian
-"#9987f1" # Ag group
-"#cc6655" # Bare group
-"grey40" # Impermeable
-"#192280" # Surface water
 
-
+lc_palette <- c(
+  "#156b07", # alfalfa
+  "#cca266", # naturalArid
+  "#a5cc66", # weedy
+  "#192280", # riparian
+  "#cc6655", # Ag group
+  "#801f19", # Bare group
+  "grey40", # Impermeable
+  "#9987f1" # log Aphid density
+)
+# ensure factors are ordered correctly
+lc_fct_ord <- c()
 
 
 # Data exploration ####
@@ -290,7 +293,7 @@ best_mod_list <- list(
 
 # build empty tibble to hold stats
 stats_df <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
-                                "Geocoris", "Ichneumodoidea"), 2),
+                                "Geocoris", "Ichneumonoidea"), 2),
                   Season = c(rep("Spring", 5), rep("Fall", 5)),
                   MarginalR2 = c(0),
                   ConditionalR2 = c(0),
@@ -303,7 +306,7 @@ stats_df <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                   coefs2min = c(0),
                   coefs2max = c(0),
                   coefsse1 = c(0),
-                  coefsse2 = c(0)
+                  coefsse2 = c(0),
                   )
 
 # fill tibble with stats
@@ -467,26 +470,45 @@ library(ungeviz)
 
 ## need to calculate "moe" stat for ungeviz::stat_confidence_density
 
+# both
 figDat %>%
   mutate(moe95 = coefsse*1.96,
-         Distance = recode(Distance, sig1 = "75m", sig5 = "650m", "NA" = "0m"),
-         Effect = recode(Effect,
-                         ag = "Non-alfalfa agriculture",
-                         alfalfa = "Alfalfa",
-                         dirt = "Bare soil",
-                         impermeable = "Impermeable surfaces",
-                         logAllAph = "log(Aphid density)",
-                         weedy = "Weedy cover"
-                         )) %>% # recode for draft to Hall
-  filter(Season == "Spring") %>%
+         Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
+                           no = "1000+",
+                           sig3 = "350"),
+         Effect = recode_factor(Effect,
+                                alfalfa = "Alfalfa",
+                                natArid = "Desert shrub",
+                                weedy = "Weedy cover",
+                                riparian = "Riparian",
+                                ag = "Non-alfalfa agriculture",
+                                dirt = "Bare soil",
+                                impermeable = "Impermeable surfaces",
+                                logAllAph = "log(Aphid density)",
+                                wateringMethod = "Flood irrigation",
+                                .ordered = TRUE # ensure factor order to match palette
+         ),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               Anthocoridae = "Anthocor.",
+                               Arachnida = "Arachnida",
+                               Coccinellidae = "Coccinell.",
+                               Geocoris = "Geocoris",
+                               Ichneumonoidea = "Ichneum."),
+         roundM = round(MarginalR2, 2),
+         quo = "{R^2}[M]~'='",
+         cat = paste0(quo, "~'", roundM, "'"),
+         expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
+         expr = paste0(round(MarginalR2,2))) %>%
+  # pull(cat)
   ggplot(aes(y = Distance,
              x = coefs,
              group = effectRank,
              fill = Effect,
              # color = Effect,
              moe = moe95)) +
-  facet_wrap(~Taxon, ncol = 1, strip.position = "right") +
-  stat_confidence_density(height = 0.80,
+  facet_grid(Taxon~Season) +
+  stat_confidence_density(height = 0.9,
                           position = position_dodge(0.8),
                           show.legend = TRUE) +
   # coord_flip() +
@@ -496,32 +518,73 @@ figDat %>%
                     xmax = coefs-coefsse),
                 position = position_dodge(0.8),
                 width = 0.2
-                ) +
-  xlim(c(-2.2,1.7)) +
+  ) +
+  xlim(c(-3.4,3)) +
   geom_vline(xintercept = 0,
              linetype = "dashed",
              color = "red",
              alpha = 0.5) +
-  geom_hline(yintercept = (1:2)+0.5,
+  geom_hline(yintercept = (1:4)+0.5,
              color = "grey30") +
   xlab("Standardized effect size") +
-  ylab("Scale of effect") +
+  ylab("Spatial scale of effect (m)") +
   scale_fill_manual(name = "Explanatory variable",
-                    values = c('darkgreen',
-                               'sienna',
-                               'grey20',
-                               'maroon',
-                               '#b5b825',
-                               '#470170')) +
-  theme_grey(base_size = 14) +
-  theme(legend.position = c(0.85, 0.84),
-        legend.background = element_rect(linetype = 1, color = "black"),
-        panel.background = element_rect(fill = "grey90"),
+                    values = c(
+                      "#156b07", # alfalfa
+                      # "#cca266", # naturalArid
+                      "#a5cc66", # weedy
+                      # "#192280", # riparian
+                      "#f59d8e", # Ag group
+                      "#801f19", # Bare group
+                      "grey40", # Impermeable
+                      "#9987f1", # log Aphid density
+                      "#0000ff" # Watering Method
+                    )) +
+  theme_grey(base_size = 10) +
+  theme(#legend.position = c(0.1, 0.1),
+        legend.background = element_rect(linetype = 1, color = NA),
+        panel.background = element_rect(fill = NA, color = "white"),
         plot.background = element_rect(fill = "white"),
         panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_line(size = 0.1, color = "grey70"),
-        panel.grid.minor.x = element_line(size = 0.1, color = "grey80"),
-        strip.background = element_rect(fill = "grey50"))
+        panel.grid.major.x = element_line(size = 0.1, color = "grey80"),
+        panel.grid.minor.x = element_line(size = 0.1, color = "grey90"),
+        strip.background.x = element_rect(fill = "NA", color = "NA"),
+        legend.text = element_text(size = 10),
+        legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
+  guides(fill = guide_legend(nrow = 2)) +
+  geom_label(aes(x = -3,
+                 y = 2.9,
+                 label = cat),
+             inherit.aes = F,
+             parse = T,
+             size = 3,
+             hjust = 0)
+
+
+
+ggsave("predmods.pdf", width = 6.5, height = 5, units = "in")
+
+a <- 2
+
+bquote(a == a)
+quote(a == a)
+
+bquote(a == .(a))
+substitute(a == A, list(A = a))
+
+
+plot(1:10, a*(1:10), main = bquote(a == .(a)))
+
+## to set a function default arg
+default <- 1
+bquote( function(x, y = .(default)) x+y )
+
+exprs <- expression(x <- 1, y <- 2, x + y)
+bquote(function() {..(exprs)}, splice = TRUE)
+
+
 
 
 ## next idea

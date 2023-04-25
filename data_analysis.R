@@ -146,6 +146,14 @@ lc_palette <- c(
 # ensure factors are ordered correctly
 lc_fct_ord <- c()
 
+# distance
+dist_palette <- c(
+  "#fafa6e",
+  "#86d780",
+  "#23aa8f",
+  "#007882",
+  "#2a4858"
+)
 
 # Data exploration ####
 ## Arthropod data summary
@@ -534,7 +542,7 @@ figDat %>%
                       # "#cca266", # naturalArid
                       "#a5cc66", # weedy
                       # "#192280", # riparian
-                      "#f59d8e", # Ag group
+                      "#ebad02", # Ag group
                       "#801f19", # Bare group
                       "grey40", # Impermeable
                       "#9987f1", # log Aphid density
@@ -562,29 +570,210 @@ figDat %>%
              size = 3,
              hjust = 0)
 
+# both - no distance
+figDat %>%
+  mutate(moe95 = coefsse*1.96,
+         Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
+                           no = "1000+",
+                           sig3 = "350"),
+         Effect = recode_factor(Effect,
+                                alfalfa = "Alfalfa",
+                                natArid = "Desert shrub",
+                                weedy = "Weedy cover",
+                                riparian = "Riparian",
+                                ag = "Non-alfalfa agriculture",
+                                dirt = "Bare soil",
+                                impermeable = "Impermeable surfaces",
+                                logAllAph = "log(Aphid density)",
+                                wateringMethod = "Flood irrigation",
+                                .ordered = TRUE # ensure factor order to match palette
+         ),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               Anthocoridae = "Anthocor.",
+                               Arachnida = "Arachnida",
+                               Coccinellidae = "Coccinell.",
+                               Geocoris = "Geocoris",
+                               Ichneumonoidea = "Ichneum."),
+         roundM = round(MarginalR2, 2),
+         quo = "{R^2}[M]~'='",
+         cat = paste0(quo, "~'", roundM, "'"),
+         expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
+         expr = paste0(round(MarginalR2,2))) %>%
+  # pull(cat)
+  ggplot(aes(y = Taxon,
+             x = coefs,
+             fill = Effect,
+             # color = Effect,
+             moe = moe95)) +
+  facet_grid(~Season) +
+  stat_confidence_density(height = 0.9,
+                          position = position_dodge(0.8),
+                          show.legend = TRUE) +
+  coord_flip() +
+  # scale_y_discrete(drop = FALSE) +
+  geom_point(position = position_dodge(0.8)) +
+  geom_errorbar(aes(xmin = coefs+coefsse,
+                    xmax = coefs-coefsse),
+                position = position_dodge(0.8),
+                width = 0.2
+  ) +
+  xlim(c(-3.4,3)) +
+  geom_vline(xintercept = 0,
+             linetype = "dashed",
+             color = "red",
+             alpha = 0.5) +
+  geom_hline(yintercept = (1:4)+0.5,
+             color = "grey70") +
+  xlab("Standardized effect size") +
+  ylab("Predator Taxon") +
+  scale_fill_manual(name = "Explanatory variable",
+                    values = c(
+                      "#156b07", # alfalfa
+                      # "#cca266", # naturalArid
+                      "#a5cc66", # weedy
+                      # "#192280", # riparian
+                      "#ebad02", # Ag group
+                      "#801f19", # Bare group
+                      "grey40", # Impermeable
+                      "#9987f1", # log Aphid density
+                      "#0000ff" # Watering Method
+                    )) +
+  theme_grey(base_size = 10) +
+  theme(#legend.position = c(0.1, 0.1),
+    legend.background = element_rect(linetype = 1, color = NA),
+    panel.background = element_rect(fill = NA, color = "black"),
+    plot.background = element_rect(fill = "white"),
+    # panel.grid.major.y = element_line(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    strip.background.x = element_rect(fill = "NA", color = "NA"),
+    legend.text = element_text(size = 10),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
+  guides(fill = guide_legend(nrow = 2)) +
+  geom_text(aes(x = 3,
+                 y = Taxon,
+                 label = cat),
+             inherit.aes = F,
+             parse = T,
+             size = 2.5)
 
 
-ggsave("predmods.pdf", width = 6.5, height = 5, units = "in")
+ggsave("predmods.png", width = 6.5, height = 4, units = "in")
 
-a <- 2
+## additional plot for distance
 
-bquote(a == a)
-quote(a == a)
+# define raster grob with horizontal gradient
+g <- rasterGrob(matrix(dist_palette, nrow = 1),
+                width=unit(1,"npc"), height = unit(1,"npc"),
+                interpolate = TRUE)
+figDat %>%
+  mutate(Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
+                           no = "1000",
+                           sig3 = "350"),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               Anthocoridae = "Anthocoridae",
+                               Arachnida = "Arachnida",
+                               Coccinellidae = "Coccinellidae",
+                               Geocoris = "Geocoris",
+                               Ichneumonoidea = "Ichneumonoidea"),
+         combo = paste0(Season, Taxon, Distance),
+         dnum = as.numeric(as.character(Distance))) %>%
+  distinct(combo, .keep_all = TRUE) %>%
+  filter(dnum > 0) %>%
+  mutate(hjust = c(0,-0.1,-0.2,-0.2,-0.3,
+                   0,0,1,1,-0.1),
+         y = c(9,7,5,9,3,9,9,9,7,7)) %>%
+  select(Season, Taxon, dnum, hjust, y) -> fd2
+  ggplot(aes(dnum)) +
+  scale_x_continuous(expand = c(0, 0),
+                     limits = c(-10, 1040),
+                     breaks = c(75, 350, 650, 1000)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(1, 6)) +
+  annotation_custom(g, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+  geom_vline(aes(xintercept=dnum), color="black", size=1) +
+  facet_wrap(~Season, ncol = 1) +
+  theme_grey(base_size = 14) +
+  geom_label(aes(y = y, label = Taxon, hjust = hjust)) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        strip.background.x = element_rect(fill = "NA", color = "NA")) +
+  xlab("Scale of land cover effects, m")
 
-bquote(a == .(a))
-substitute(a == A, list(A = a))
+Distance <- seq(1,1000)
+Vaggressive <- c((1.0 / (1.0 + 2.718282 ^ ((3.5 * Distance / 50) - 4.5))) * 1000, rep(0, 100))
+Aggressive <- c((1.0 / (1.0 + 2.718282 ^ ((2.0 * Distance / 50) - 6.0))) * 1000, rep(0, 100))
+Moderate <- c((1.0 / (1.0 + 2.718282 ^ ((1.25 * Distance / 50) - 8.0))) * 1000, rep(0, 100))
+Weak <- c((1.0 / (1.0 + 2.718282 ^ ((1.0 * Distance / 50) - 10.0))) * 1000, rep(0, 100))
+Vweak <- c((1.0 / (1.0 + 2.718282 ^ ((0.75 * Distance / 50) - 11.0))) * 1000, rep(0, 100))
+Constant <- c((abs(Distance-1000)), rep(0, 100))
+None <- c(rep(1000, 1000), rep(0, 100))
+# update dist to match length of other cols
+Distance <- seq(1, 1100)
+df <- data.frame(Distance, Vaggressive, Aggressive, Moderate, Weak, Vweak, Constant, None) %>%
+  pivot_longer(-Distance, names_to = "Decay function", values_to = "value") %>%
+  mutate(`Decay function` = fct_relevel(`Decay function`, "Vaggressive", "Aggressive", "Moderate", "Weak", "Vweak", "Constant", "None")) %>%
+  mutate(`Decay function` = fct_recode(`Decay function`, `Very aggressive` = "Vaggressive", `Very weak` = "Vweak"))
 
-
-plot(1:10, a*(1:10), main = bquote(a == .(a)))
-
-## to set a function default arg
-default <- 1
-bquote( function(x, y = .(default)) x+y )
-
-exprs <- expression(x <- 1, y <- 2, x + y)
-bquote(function() {..(exprs)}, splice = TRUE)
-
-
+# distance
+dist_palette <- c(
+  "#fafa6e",
+  "#86d780",
+  "#23aa8f",
+  "#007882",
+  "#2a4858",
+  "grey50",
+  "grey80"
+)
+figDat %>%
+  mutate(Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
+                           no = "1000",
+                           sig3 = "350"),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               Anthocoridae = "Anthocoridae",
+                               Arachnida = "Arachnida",
+                               Coccinellidae = "Coccinellidae",
+                               Geocoris = "Geocoris",
+                               Ichneumonoidea = "Ichneumonoidea"),
+         combo = paste0(Season, Taxon, Distance),
+         dnum = as.numeric(as.character(Distance))) %>%
+  distinct(combo, .keep_all = TRUE) %>%
+  filter(dnum > 0) %>%
+  mutate(hjust = c(0.03,-0.02,-0.07,-0.13,-0.09,
+                   0.03,-0.8,1.02,1.02,-0.02),
+         y = c(9,7,5,8,3,
+               9,4,9,7,7)) %>%
+  select(Season, Taxon, dnum, hjust, y) -> fd2
+fd2 %>%
+  mutate(col = case_when(dnum == 75 ~ "Very aggressive",
+                         dnum == 350 ~ "Moderate",
+                         dnum == 650 ~ "Very weak",
+                         dnum == 1000 ~ "None"),
+         col2 = as.factor(col)) %>%
+  mutate(col2 = fct_expand(col2, "Aggressive", "Weak", "Constant", "None")) %>%
+  mutate(col2 = fct_relevel(col2, "Very aggressive", "Aggressive", "Moderate",
+                            "Weak", "Very weak", "Constant", "None"))-> df3
+ggplot(df, aes(Distance, value, color = `Decay function`)) +
+  geom_line(size = 1) +
+  theme_classic() +
+  scale_color_manual(values = dist_palette) +
+  scale_fill_manual(values = dist_palette, drop = F, guide = "none") +
+  labs(y = "Weighting value") +
+  # geom_vline(data = fd2, aes(xintercept = dnum)) +
+  geom_label(data = df3, aes(x = dnum,
+                             y = y*100,
+                             hjust = hjust,
+                             label = Taxon,
+                             fill = col2),
+             inherit.aes = FALSE,
+             alpha = 0.8) +
+  facet_wrap(~Season, ncol = 1) +
+  theme(strip.background = element_blank())
 
 
 ## next idea

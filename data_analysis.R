@@ -10,6 +10,7 @@ library(classInt) # for kmeans clustering
 library(corrr) # for correlation plots of landcover vars
 library(crayon) # for colored terminal outputs
 library(data.table) # for rbindlist() to rbind a list of tables and make id col
+library(devtools) # for installing packages (ungeviz) from github
 library(DiagrammeR) # for SEM plots
 library(DHARMa) # for simulated residuals
 library(dotwhisker) # for effect size plots
@@ -42,6 +43,7 @@ library(tidyselect) # for peek()
 library(tidytable) # for get_dummies to make SEM data
 library(tidytext) # sort ggcols after faceting
 library(tidyverse) # R packages for data science
+library(ungeviz) # For "confidence density" ggplots
 library(varhandle) # easily create dummy vars with to.dummy()
 library(vegan) # for diversity indices in vegdata
 library(webshot) # to capture tab_model output (or other html output) as png
@@ -134,25 +136,41 @@ NA # Surface water
 # Contrast too low, make curstom palette
 
 lc_palette <- c(
-  "#156b07", # alfalfa
-  "#cca266", # naturalArid
-  "#a5cc66", # weedy
-  "#192280", # riparian
-  "#cc6655", # Ag group
+  "#4cd964", # alfalfa
+  "#0053ff", # weedy cover
+  "#5ac8fa", # non-alfalfa ag
+  "#ff3b30", # bare soil
+  "#ffcc00", # impermeable surfaces
+  "#ff6d00", # log(aphid dens.)
+  "#5856d6", # flood irrigation
+  "#ff2d55"  # total cover (veg survey)
+)
+lc_palette_experimental <- c(
+  "#105405", # alfalfa
+  "#aecf7a", # weedy cover
+  "#5b3769", # non-alfalfa  ag
   "#801f19", # Bare group
   "grey40", # Impermeable
-  "#9987f1" # log Aphid density
+  "#ff6d00", # log(aphid dens.)
+  "#393ebf", # flood irrigation
+  "#ff2d55"  # total cover (veg survey)
+  # "#5856d6", # riparian
+  # "#cca266" # naturalArid
 )
-# ensure factors are ordered correctly
+
+# ensure factors are ordered correctly!
 lc_fct_ord <- c()
 
 # distance
+# distance
 dist_palette <- c(
-  "#fafa6e",
-  "#86d780",
-  "#23aa8f",
-  "#007882",
-  "#2a4858"
+  "#fafa6e", # sig 1
+  "#86d780", # sig 2
+  "#23aa8f", # sig 3
+  "#007882", # sig 4
+  "#2a4858", # sig 5
+  "grey50",  # const
+  "grey80"   # no
 )
 
 # Data exploration ####
@@ -173,8 +191,8 @@ df_sp <- subplot_data_raw %>%
   select(!contains("fix")) %>%
   # log AllAph col
   mutate(log_AllAph = log(AllAph + 1)) %>%
-  # center and scale (not needed with rank transform)
-  mutate(across(.cols = contains("_"), # all landcover + log_AllAph
+  # center and scale (not needed with rank transform) all landcover + log_AllAph
+  mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
                 .fns = ~as.vector(scale(.)))) %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
@@ -187,8 +205,8 @@ df_fa <- subplot_data_raw %>%
   select(!contains("fix")) %>%
   # log AllAph col
   mutate(log_AllAph = log(AllAph + 1)) %>%
-  # center and scale (not needed with rank transform)
-  mutate(across(.cols = contains("_"), # all landcover + log_AllAph
+  # center and scale (not needed with rank transform) all landcover + log_AllAph
+  mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
                 .fns = ~as.vector(scale(.)))) %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
@@ -309,10 +327,10 @@ stats_df <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
                   effects2 = c("none"),
                   coefs1 = c(0),
                   coefs2 = c(0),
-                  coefs1min = c(0),
-                  coefs1max = c(0),
-                  coefs2min = c(0),
-                  coefs2max = c(0),
+                  coefsmin1 = c(0),
+                  coefsmax1 = c(0),
+                  coefsmin2 = c(0),
+                  coefsmax2 = c(0),
                   coefsse1 = c(0),
                   coefsse2 = c(0),
                   )
@@ -325,10 +343,10 @@ for (i in seq_along(best_mod_list)){
   stats_df$effects2[[i]] <- names(best_mod_list[[i]]$frame)[3]
   stats_df$coefs1[[i]] <- fixef(best_mod_list[[i]])$cond[2]
   stats_df$coefs2[[i]] <- fixef(best_mod_list[[i]])$cond[3]
-  stats_df$coefs1min[[i]] <- confint(best_mod_list[[i]])[2,1]
-  stats_df$coefs2min[[i]] <- confint(best_mod_list[[i]])[3,1]
-  stats_df$coefs1max[[i]] <- confint(best_mod_list[[i]])[2,2]
-  stats_df$coefs2max[[i]] <- confint(best_mod_list[[i]])[3,2]
+  stats_df$coefsmin1[[i]] <- confint(best_mod_list[[i]])[2,1]
+  stats_df$coefsmin2[[i]] <- confint(best_mod_list[[i]])[3,1]
+  stats_df$coefsmax1[[i]] <- confint(best_mod_list[[i]])[2,2]
+  stats_df$coefsmax2[[i]] <- confint(best_mod_list[[i]])[3,2]
   stats_df$coefsse1[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[2,2]
   stats_df$coefsse2[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[3,2]
 
@@ -338,442 +356,10 @@ for (i in seq_along(best_mod_list)){
 stats_df %>%
   group_by(Season) %>%
   tab_df(title = "Top predator models (no vegetation data included)")
-## BOOKMARK ####
-# maybe build the figure in notebook p. 28 based on the table above.
-# no spring pred mods need vegdata, so you can rock with this.
-# fall mods that need vegdata:
-# Anthocoridae, Arachnida
 
-# reshape stats table
-figDat <- stats_df %>%
-  rename(coefsmin1 = coefs1min,
-         coefsmax1 = coefs1max,
-         coefsmin2 = coefs2min,
-         coefsmax2 = coefs2max) %>%
-  pivot_longer(effects1:coefsse2,
-               names_to = c(".value", "effectRank"),
-               names_pattern = "(.*)(.s*)",
-               values_to = c("var1, var2, var3, var4, var5, var6")) %>%
-  mutate(effects = case_when(effects == "log_AllAph" ~ "logAllAph_NA",
-                             effects == "wateringMethod" ~ "wateringMethod_NA",
-                             effects != c("log_AllAph",
-                                          "wateringMethod") ~ effects)) %>%
-  separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
-  mutate(Taxon = fct_rev(as_factor(Taxon))) %>%
-  mutate(Distance = factor(Distance, levels = c("NA",
-                                                "sig1",
-                                                "sig2",
-                                                "sig3",
-                                                "sig4",
-                                                "sig5",
-                                                "const",
-                                                "no")))
+## Need to add vegdata for fall Anthocoridae, fall Arachnida
 
 
-# test ggplot
-figDat %>%
-  filter(Season == "Spring") %>%
-  ggplot(aes(x = Distance, y = Taxon, group = effectRank)) +
-  geom_point(aes(color = Effect,
-                 size = abs(coefs),
-                 shape = as_factor(sign(coefs))),
-             position = position_dodge(-0.5),
-             stroke = 2) +
-  scale_size(range = c(5, 24), name = "Effect size") +
-  scale_x_discrete(drop = FALSE) +
-  scale_shape_manual(name = "Effect size",
-                     values = c(1, 16)) +
-  scale_color_brewer(palette = "Dark2")
-
-# CAPTION (v1): Effects of explanatory variables (including land cover features
-# and log aphid density) and their distance weighting (x axis) on the density
-# of key predators (y axis). Only the explanatory variables from the best model
-# of each predator (by lowest AICc) are shown. The identities of the
-# explanatory variables are represented by color, and the points are scaled to
-# the effect size. Open circles represent negative effect sizes.
-
-
-
-# test ggplot v2
-figDat %>%
-  filter(Season == "Spring") %>%
-  mutate(Effect = reorder(Effect, desc(coefs))) %>%
-  ggplot(aes(x = Taxon, y = coefs, group = effectRank, color = Distance)) +
-  geom_point(stroke = 2.5) +
-  geom_linerange(aes(ymin = coefsmin, ymax = coefsmax), size = 1.5) +
-  facet_grid(~Effect, scales = "free_x", space = "free_x") +
-  scale_color_manual(values = c("NA" = "grey50",
-                                "sig1" = "#003366",
-                                "sig2" = "#174978",
-                                "sig3" = "#2f5f8a",
-                                "sig4" = "#46769b",
-                                "sig5" = "#5e8cad",
-                                "const" = "purple",
-                                "no" = "violet"
-                                ), drop = FALSE) +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
-  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
-  ylab("Effect size")
-
-# CAPTION (v2): Effects of explanatory variables (including land cover features
-# and log aphid density) on the density of key predators. Only explanatory
-# variables from the best models (lowest AICc) are shown. The distance
-# weighting of the effect (where applicable) is denoted by color. Explanatory
-# variables are ordered (left to right) by mean effect size across all taxa.
-# Error bars represent 95% confidence intervals.
-
-# test ggplot v3
-figDat %>%
-  filter(Season == "Spring") %>%
-  mutate(Effect = reorder(Effect, desc(coefs))) %>%
-  ggplot(aes(x = Effect, y = coefs, group = effectRank, color = Distance)) +
-  geom_point(stroke = 2.5) +
-  geom_linerange(aes(ymin = coefsmin, ymax = coefsmax), size = 1.5) +
-  facet_grid(~Taxon, scales = "free_x", space = "free_x") +
-  scale_color_manual(values = c("NA" = "grey50",
-                                "sig1" = "#003366",
-                                "sig2" = "#174978",
-                                "sig3" = "#2f5f8a",
-                                "sig4" = "#46769b",
-                                "sig5" = "#5e8cad",
-                                "const" = "purple",
-                                "no" = "violet"
-  ), drop = FALSE) +
-  theme(axis.text.x = element_text(angle = 35, hjust = 1)) +
-  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
-  ylab("Effect size")
-
-# CAPTION (v3): Effects of explanatory variables (including land cover features
-# and log aphid density) on the density of key predators. Only explanatory
-# variables from the best models (lowest AICc) are shown. The distance
-# weighting of the effect (where applicable) is denoted by color.
-# Error bars represent 95% confidence intervals.
-
-# # test ggplot v4 - no go
-# figDat %>%
-#   filter(Season == "Spring") %>%
-#   ggplot(aes(x = Distance, y = Taxon, group = effectRank)) +
-#   geom_point(aes(color = Effect, # estimate
-#                  size = (abs(coefs))*sqrt(2),
-#                  shape = as_factor(sign(coefs))),
-#                  stroke = 1,
-#              position = position_dodge(-0.5),
-#              alpha = 1) +
-#   geom_point(aes(color = Effect, # uncertainty
-#                  size = (abs(coefs)-3*estRange)*sqrt(2),
-#                  stroke = 6*estRange),
-#              shape = 21,
-#              position = position_dodge(-0.5),
-#              alpha = 0.5) +
-#   scale_x_discrete(drop = FALSE) +
-#   scale_shape_manual(name = "Effect size",
-#                      values = c(13, 1)) +
-#   scale_color_brewer(palette = "Dark2")
-
-# test ggplot v5
-install.packages("devtools")
-library(devtools)
-devtools::install_github("wilkelab/ungeviz")
-library(ungeviz)
-
-## need to calculate "moe" stat for ungeviz::stat_confidence_density
-
-# both
-figDat %>%
-  mutate(moe95 = coefsse*1.96,
-         Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
-                           no = "1000+",
-                           sig3 = "350"),
-         Effect = recode_factor(Effect,
-                                alfalfa = "Alfalfa",
-                                natArid = "Desert shrub",
-                                weedy = "Weedy cover",
-                                riparian = "Riparian",
-                                ag = "Non-alfalfa agriculture",
-                                dirt = "Bare soil",
-                                impermeable = "Impermeable surfaces",
-                                logAllAph = "log(Aphid density)",
-                                wateringMethod = "Flood irrigation",
-                                .ordered = TRUE # ensure factor order to match palette
-         ),
-         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
-         Taxon = recode_factor(Taxon,
-                               Anthocoridae = "Anthocor.",
-                               Arachnida = "Arachnida",
-                               Coccinellidae = "Coccinell.",
-                               Geocoris = "Geocoris",
-                               Ichneumonoidea = "Ichneum."),
-         roundM = round(MarginalR2, 2),
-         quo = "{R^2}[M]~'='",
-         cat = paste0(quo, "~'", roundM, "'"),
-         expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
-         expr = paste0(round(MarginalR2,2))) %>%
-  # pull(cat)
-  ggplot(aes(y = Distance,
-             x = coefs,
-             group = effectRank,
-             fill = Effect,
-             # color = Effect,
-             moe = moe95)) +
-  facet_grid(Taxon~Season) +
-  stat_confidence_density(height = 0.9,
-                          position = position_dodge(0.8),
-                          show.legend = TRUE) +
-  # coord_flip() +
-  # scale_y_discrete(drop = FALSE) +
-  geom_point(position = position_dodge(0.8)) +
-  geom_errorbar(aes(xmin = coefs+coefsse,
-                    xmax = coefs-coefsse),
-                position = position_dodge(0.8),
-                width = 0.2
-  ) +
-  xlim(c(-3.4,3)) +
-  geom_vline(xintercept = 0,
-             linetype = "dashed",
-             color = "red",
-             alpha = 0.5) +
-  geom_hline(yintercept = (1:4)+0.5,
-             color = "grey30") +
-  xlab("Standardized effect size") +
-  ylab("Spatial scale of effect (m)") +
-  scale_fill_manual(name = "Explanatory variable",
-                    values = c(
-                      "#156b07", # alfalfa
-                      # "#cca266", # naturalArid
-                      "#a5cc66", # weedy
-                      # "#192280", # riparian
-                      "#ebad02", # Ag group
-                      "#801f19", # Bare group
-                      "grey40", # Impermeable
-                      "#9987f1", # log Aphid density
-                      "#0000ff" # Watering Method
-                    )) +
-  theme_grey(base_size = 10) +
-  theme(#legend.position = c(0.1, 0.1),
-        legend.background = element_rect(linetype = 1, color = NA),
-        panel.background = element_rect(fill = NA, color = "white"),
-        plot.background = element_rect(fill = "white"),
-        panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_line(size = 0.1, color = "grey80"),
-        panel.grid.minor.x = element_line(size = 0.1, color = "grey90"),
-        strip.background.x = element_rect(fill = "NA", color = "NA"),
-        legend.text = element_text(size = 10),
-        legend.position = "bottom",
-        legend.title = element_blank(),
-        legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
-  guides(fill = guide_legend(nrow = 2)) +
-  geom_label(aes(x = -3,
-                 y = 2.9,
-                 label = cat),
-             inherit.aes = F,
-             parse = T,
-             size = 3,
-             hjust = 0)
-
-# both - no distance
-figDat %>%
-  mutate(moe95 = coefsse*1.96,
-         Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
-                           no = "1000+",
-                           sig3 = "350"),
-         Effect = recode_factor(Effect,
-                                alfalfa = "Alfalfa",
-                                natArid = "Desert shrub",
-                                weedy = "Weedy cover",
-                                riparian = "Riparian",
-                                ag = "Non-alfalfa agriculture",
-                                dirt = "Bare soil",
-                                impermeable = "Impermeable surfaces",
-                                logAllAph = "log(Aphid density)",
-                                wateringMethod = "Flood irrigation",
-                                .ordered = TRUE # ensure factor order to match palette
-         ),
-         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
-         Taxon = recode_factor(Taxon,
-                               Anthocoridae = "Anthocor.",
-                               Arachnida = "Arachnida",
-                               Coccinellidae = "Coccinell.",
-                               Geocoris = "Geocoris",
-                               Ichneumonoidea = "Ichneum."),
-         roundM = round(MarginalR2, 2),
-         quo = "{R^2}[M]~'='",
-         cat = paste0(quo, "~'", roundM, "'"),
-         expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
-         expr = paste0(round(MarginalR2,2))) %>%
-  # pull(cat)
-  ggplot(aes(y = Taxon,
-             x = coefs,
-             fill = Effect,
-             # color = Effect,
-             moe = moe95)) +
-  facet_grid(~Season) +
-  stat_confidence_density(height = 0.9,
-                          position = position_dodge(0.8),
-                          show.legend = TRUE) +
-  coord_flip() +
-  # scale_y_discrete(drop = FALSE) +
-  geom_point(position = position_dodge(0.8)) +
-  geom_errorbar(aes(xmin = coefs+coefsse,
-                    xmax = coefs-coefsse),
-                position = position_dodge(0.8),
-                width = 0.2
-  ) +
-  xlim(c(-3.4,3)) +
-  geom_vline(xintercept = 0,
-             linetype = "dashed",
-             color = "red",
-             alpha = 0.5) +
-  geom_hline(yintercept = (1:4)+0.5,
-             color = "grey70") +
-  xlab("Standardized effect size") +
-  ylab("Predator Taxon") +
-  scale_fill_manual(name = "Explanatory variable",
-                    values = c(
-                      "#156b07", # alfalfa
-                      # "#cca266", # naturalArid
-                      "#a5cc66", # weedy
-                      # "#192280", # riparian
-                      "#ebad02", # Ag group
-                      "#801f19", # Bare group
-                      "grey40", # Impermeable
-                      "#9987f1", # log Aphid density
-                      "#0000ff" # Watering Method
-                    )) +
-  theme_grey(base_size = 10) +
-  theme(#legend.position = c(0.1, 0.1),
-    legend.background = element_rect(linetype = 1, color = NA),
-    panel.background = element_rect(fill = NA, color = "black"),
-    plot.background = element_rect(fill = "white"),
-    # panel.grid.major.y = element_line(),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    strip.background.x = element_rect(fill = "NA", color = "NA"),
-    legend.text = element_text(size = 10),
-    legend.position = "bottom",
-    legend.title = element_blank(),
-    legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
-  guides(fill = guide_legend(nrow = 2)) +
-  geom_text(aes(x = 3,
-                 y = Taxon,
-                 label = cat),
-             inherit.aes = F,
-             parse = T,
-             size = 2.5)
-
-
-ggsave("predmods.png", width = 6.5, height = 4, units = "in")
-
-## additional plot for distance
-
-# define raster grob with horizontal gradient
-g <- rasterGrob(matrix(dist_palette, nrow = 1),
-                width=unit(1,"npc"), height = unit(1,"npc"),
-                interpolate = TRUE)
-figDat %>%
-  mutate(Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
-                           no = "1000",
-                           sig3 = "350"),
-         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
-         Taxon = recode_factor(Taxon,
-                               Anthocoridae = "Anthocoridae",
-                               Arachnida = "Arachnida",
-                               Coccinellidae = "Coccinellidae",
-                               Geocoris = "Geocoris",
-                               Ichneumonoidea = "Ichneumonoidea"),
-         combo = paste0(Season, Taxon, Distance),
-         dnum = as.numeric(as.character(Distance))) %>%
-  distinct(combo, .keep_all = TRUE) %>%
-  filter(dnum > 0) %>%
-  mutate(hjust = c(0,-0.1,-0.2,-0.2,-0.3,
-                   0,0,1,1,-0.1),
-         y = c(9,7,5,9,3,9,9,9,7,7)) %>%
-  select(Season, Taxon, dnum, hjust, y) -> fd2
-  ggplot(aes(dnum)) +
-  scale_x_continuous(expand = c(0, 0),
-                     limits = c(-10, 1040),
-                     breaks = c(75, 350, 650, 1000)) +
-  scale_y_continuous(expand = c(0, 0), limits = c(1, 6)) +
-  annotation_custom(g, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
-  geom_vline(aes(xintercept=dnum), color="black", size=1) +
-  facet_wrap(~Season, ncol = 1) +
-  theme_grey(base_size = 14) +
-  geom_label(aes(y = y, label = Taxon, hjust = hjust)) +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        strip.background.x = element_rect(fill = "NA", color = "NA")) +
-  xlab("Scale of land cover effects, m")
-
-Distance <- seq(1,1000)
-Vaggressive <- c((1.0 / (1.0 + 2.718282 ^ ((3.5 * Distance / 50) - 4.5))) * 1000, rep(0, 100))
-Aggressive <- c((1.0 / (1.0 + 2.718282 ^ ((2.0 * Distance / 50) - 6.0))) * 1000, rep(0, 100))
-Moderate <- c((1.0 / (1.0 + 2.718282 ^ ((1.25 * Distance / 50) - 8.0))) * 1000, rep(0, 100))
-Weak <- c((1.0 / (1.0 + 2.718282 ^ ((1.0 * Distance / 50) - 10.0))) * 1000, rep(0, 100))
-Vweak <- c((1.0 / (1.0 + 2.718282 ^ ((0.75 * Distance / 50) - 11.0))) * 1000, rep(0, 100))
-Constant <- c((abs(Distance-1000)), rep(0, 100))
-None <- c(rep(1000, 1000), rep(0, 100))
-# update dist to match length of other cols
-Distance <- seq(1, 1100)
-df <- data.frame(Distance, Vaggressive, Aggressive, Moderate, Weak, Vweak, Constant, None) %>%
-  pivot_longer(-Distance, names_to = "Decay function", values_to = "value") %>%
-  mutate(`Decay function` = fct_relevel(`Decay function`, "Vaggressive", "Aggressive", "Moderate", "Weak", "Vweak", "Constant", "None")) %>%
-  mutate(`Decay function` = fct_recode(`Decay function`, `Very aggressive` = "Vaggressive", `Very weak` = "Vweak"))
-
-# distance
-dist_palette <- c(
-  "#fafa6e",
-  "#86d780",
-  "#23aa8f",
-  "#007882",
-  "#2a4858",
-  "grey50",
-  "grey80"
-)
-figDat %>%
-  mutate(Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
-                           no = "1000",
-                           sig3 = "350"),
-         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
-         Taxon = recode_factor(Taxon,
-                               Anthocoridae = "Anthocoridae",
-                               Arachnida = "Arachnida",
-                               Coccinellidae = "Coccinellidae",
-                               Geocoris = "Geocoris",
-                               Ichneumonoidea = "Ichneumonoidea"),
-         combo = paste0(Season, Taxon, Distance),
-         dnum = as.numeric(as.character(Distance))) %>%
-  distinct(combo, .keep_all = TRUE) %>%
-  filter(dnum > 0) %>%
-  mutate(hjust = c(0.03,-0.02,-0.07,-0.13,-0.09,
-                   0.03,-0.8,1.02,1.02,-0.02),
-         y = c(9,7,5,8,3,
-               9,4,9,7,7)) %>%
-  select(Season, Taxon, dnum, hjust, y) -> fd2
-fd2 %>%
-  mutate(col = case_when(dnum == 75 ~ "Very aggressive",
-                         dnum == 350 ~ "Moderate",
-                         dnum == 650 ~ "Very weak",
-                         dnum == 1000 ~ "None"),
-         col2 = as.factor(col)) %>%
-  mutate(col2 = fct_expand(col2, "Aggressive", "Weak", "Constant", "None")) %>%
-  mutate(col2 = fct_relevel(col2, "Very aggressive", "Aggressive", "Moderate",
-                            "Weak", "Very weak", "Constant", "None"))-> df3
-ggplot(df, aes(Distance, value, color = `Decay function`)) +
-  geom_line(size = 1) +
-  theme_classic() +
-  scale_color_manual(values = dist_palette) +
-  scale_fill_manual(values = dist_palette, drop = F, guide = "none") +
-  labs(y = "Weighting value") +
-  # geom_vline(data = fd2, aes(xintercept = dnum)) +
-  geom_label(data = df3, aes(x = dnum,
-                             y = y*100,
-                             hjust = hjust,
-                             label = Taxon,
-                             fill = col2),
-             inherit.aes = FALSE,
-             alpha = 0.8) +
-  facet_wrap(~Season, ncol = 1) +
-  theme(strip.background = element_blank())
 
 
 ## next idea
@@ -840,7 +426,7 @@ source("compareVeg_pred.R", echo = TRUE)
 ### Spring
 # Anthocoridae
 r2(best_mod_list$best.ant.sp)
-r2(best.ant.sp.vd) ## new mod has one less factor
+r2(best.ant.sp.vd) ## new mod has shan instead of impermeable
 # vedict - keep original
 
 # Arachnida
@@ -917,6 +503,266 @@ stats_df_new %>%
   group_by(Taxon) %>%
   tab_df(title = "Top predator models - vegdata")
 # note: these models are better than the corresponding "no veg" models
+
+# combine info from old no-veg table with this new one
+# best_mod_list %>% names
+new_mods <- list("antFA" = best.ant.fa.vd, "araFA" = best.ara.fa.vd)
+
+best_mod_list$best.ant.fa <- best.ant.fa.vd
+best_mod_list$best.ara.fa <- best.ara.fa.vd
+
+# build empty tibble to hold stats
+stats_df_veg <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
+                                 "Geocoris", "Ichneumonoidea"), 2),
+                   Season = c(rep("Spring", 5), rep("Fall", 5)),
+                   MarginalR2 = c(0),
+                   ConditionalR2 = c(0),
+                   effects1 = c("none"),
+                   effects2 = c("none"),
+                   coefs1 = c(0),
+                   coefs2 = c(0),
+                   coefsmin1 = c(0),
+                   coefsmax1 = c(0),
+                   coefsmin2 = c(0),
+                   coefsmax2 = c(0),
+                   coefsse1 = c(0),
+                   coefsse2 = c(0),
+)
+
+# fill tibble with stats
+for (i in seq_along(best_mod_list)){
+  stats_df_veg$MarginalR2[[i]] <- r2(best_mod_list[[i]])[[2]]
+  stats_df_veg$ConditionalR2[[i]] <- r2(best_mod_list[[i]])[[1]]
+  stats_df_veg$effects1[[i]] <- names(best_mod_list[[i]]$frame)[2]
+  stats_df_veg$effects2[[i]] <- names(best_mod_list[[i]]$frame)[3]
+  stats_df_veg$coefs1[[i]] <- fixef(best_mod_list[[i]])$cond[2]
+  stats_df_veg$coefs2[[i]] <- fixef(best_mod_list[[i]])$cond[3]
+  stats_df_veg$coefsmin1[[i]] <- confint(best_mod_list[[i]])[2,1]
+  stats_df_veg$coefsmin2[[i]] <- confint(best_mod_list[[i]])[3,1]
+  stats_df_veg$coefsmax1[[i]] <- confint(best_mod_list[[i]])[2,2]
+  stats_df_veg$coefsmax2[[i]] <- confint(best_mod_list[[i]])[3,2]
+  stats_df_veg$coefsse1[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[2,2]
+  stats_df_veg$coefsse2[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[3,2]
+
+}
+
+
+# drop "Treatment" from fall anthocoridae model (only one fixed effect there)
+stats_df_veg2 <- stats_df_veg %>%
+  mutate(
+    effects2 = case_when(effects2 == "Treatment" ~ "NA",
+                         effects2 != "Treatment" ~ effects2),
+    coefs2 = case_when(effects2 == "NA" ~ 0,
+                         effects2 != "NA" ~ coefs2),
+    coefsmin2 = case_when(effects2 == "NA" ~ 0,
+                         effects2 != "NA" ~ coefsmin2),
+    coefsmax2 = case_when(effects2 == "NA" ~ 0,
+                         effects2 != "NA" ~ coefsmax2),
+    coefsse2 = case_when(effects2 == "NA" ~ 0,
+                         effects2 != "NA" ~ coefsse2)
+  )
+
+# reshape stats table
+figDat <- stats_df_veg2 %>%
+  pivot_longer(effects1:coefsse2,
+               names_to = c(".value", "effectRank"),
+               names_pattern = "(.*)(.s*)",
+               values_to = c("var1, var2, var3, var4, var5, var6")) %>%
+  mutate(effects = case_when(effects == "log_AllAph" ~ "logAllAph_NA",
+                             effects == "wateringMethod" ~ "wateringMethod_NA",
+                             effects == "totalCover" ~ "totalCover_NA",
+                             effects == "NA" ~ "NA_NA",
+                             effects != c("log_AllAph",
+                                          "wateringMethod",
+                                          "totalCover",
+                                          "NA") ~ effects)) %>%
+  separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
+  mutate(Taxon = fct_rev(as_factor(Taxon))) %>%
+  mutate(Distance = factor(Distance, levels = c("NA",
+                                                "sig1",
+                                                "sig2",
+                                                "sig3",
+                                                "sig4",
+                                                "sig5",
+                                                "const",
+                                                "no")))
+
+stats_df_veg2
+figDat
+
+
+
+
+
+
+# both - no distance
+figDat %>% filter(Effect != "NA") %>%
+  mutate(moe95 = coefsse*1.96,
+         Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
+                           no = "1000+",
+                           sig3 = "350"),
+         Effect = recode_factor(Effect,
+                                alfalfa = "Alfalfa",
+                                natArid = "Desert shrub",
+                                weedy = "Weedy cover",
+                                riparian = "Riparian",
+                                ag = "Non-alfalfa agriculture",
+                                dirt = "Bare soil",
+                                impermeable = "Impermeable surfaces",
+                                logAllAph = "log(Aphid density)",
+                                wateringMethod = "Flood irrigation",
+                                totalCover = "Total Cover",
+                                .ordered = TRUE # ensure factor order to match palette
+         ),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               Anthocoridae = "Anthocor.",
+                               Arachnida = "Arachnida",
+                               Coccinellidae = "Coccinell.",
+                               Geocoris = "Geocoris",
+                               Ichneumonoidea = "Ichneum."),
+         roundM = round(MarginalR2, 2),
+         quo = "{R^2}[M]~'='",
+         cat = paste0(quo, "~'", roundM, "'"),
+         expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
+         expr = paste0(round(MarginalR2,2))) %>%
+  # pull(cat)
+  ggplot(aes(y = Taxon,
+             x = coefs,
+             fill = Effect,
+             # color = Effect,
+             moe = moe95)) +
+  facet_grid(~Season) +
+  stat_confidence_density(height = 0.9,
+                          position = position_dodge(0.8),
+                          show.legend = TRUE) +
+  coord_flip() +
+  # scale_y_discrete(drop = FALSE) +
+  geom_point(position = position_dodge(0.8)) +
+  geom_errorbar(aes(xmin = coefs+coefsse,
+                    xmax = coefs-coefsse),
+                position = position_dodge(0.8),
+                width = 0.2
+  ) +
+  scale_fill_manual(values = lc_palette_experimental) +
+  xlim(c(-3.4,3)) +
+  geom_vline(xintercept = 0,
+             linetype = "dashed",
+             color = "red",
+             alpha = 0.5) +
+  geom_hline(yintercept = (1:4)+0.5,
+             color = "grey70") +
+  xlab("Standardized effect size") +
+  ylab("Predator Taxon") +
+  theme_grey(base_size = 10) +
+  theme(#legend.position = c(0.1, 0.1),
+    legend.background = element_rect(linetype = 1, color = NA),
+    panel.background = element_rect(fill = NA, color = "black"),
+    plot.background = element_rect(fill = "white"),
+    # panel.grid.major.y = element_line(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    strip.background.x = element_rect(fill = "NA", color = "NA"),
+    legend.text = element_text(size = 10),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
+  guides(fill = guide_legend(nrow = 2)) +
+  geom_text(aes(x = 3,
+                y = Taxon,
+                label = cat),
+            inherit.aes = F,
+            parse = T,
+            size = 2.5)
+
+
+
+
+# reshape stats table
+figDat <- stats_df %>%
+  pivot_longer(effects1:coefsse2,
+               names_to = c(".value", "effectRank"),
+               names_pattern = "(.*)(.s*)",
+               values_to = c("var1, var2, var3, var4, var5, var6")) %>%
+  mutate(effects = case_when(effects == "log_AllAph" ~ "logAllAph_NA",
+                             effects == "wateringMethod" ~ "wateringMethod_NA",
+                             effects != c("log_AllAph",
+                                          "wateringMethod") ~ effects)) %>%
+  separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
+  mutate(Taxon = fct_rev(as_factor(Taxon))) %>%
+  mutate(Distance = factor(Distance, levels = c("NA",
+                                                "sig1",
+                                                "sig2",
+                                                "sig3",
+                                                "sig4",
+                                                "sig5",
+                                                "const",
+                                                "no")))
+
+
+# "predator spatial scale" figure
+Distance <- seq(1,1000)
+Vaggressive <- c((1.0 / (1.0 + 2.718282 ^ ((3.5 * Distance / 50) - 4.5))) * 1000, rep(0, 100))
+Aggressive <- c((1.0 / (1.0 + 2.718282 ^ ((2.0 * Distance / 50) - 6.0))) * 1000, rep(0, 100))
+Moderate <- c((1.0 / (1.0 + 2.718282 ^ ((1.25 * Distance / 50) - 8.0))) * 1000, rep(0, 100))
+Weak <- c((1.0 / (1.0 + 2.718282 ^ ((1.0 * Distance / 50) - 10.0))) * 1000, rep(0, 100))
+Vweak <- c((1.0 / (1.0 + 2.718282 ^ ((0.75 * Distance / 50) - 11.0))) * 1000, rep(0, 100))
+Constant <- c((abs(Distance-1000)), rep(0, 100))
+None <- c(rep(1000, 1000), rep(0, 100))
+# update dist to match length of other cols
+Distance <- seq(1, 1100)
+df <- data.frame(Distance, Vaggressive, Aggressive, Moderate, Weak, Vweak, Constant, None) %>%
+  pivot_longer(-Distance, names_to = "Decay function", values_to = "value") %>%
+  mutate(`Decay function` = fct_relevel(`Decay function`, "Vaggressive", "Aggressive", "Moderate", "Weak", "Vweak", "Constant", "None")) %>%
+  mutate(`Decay function` = fct_recode(`Decay function`, `Very aggressive` = "Vaggressive", `Very weak` = "Vweak"))
+
+
+figDat %>%
+  mutate(Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
+                           no = "1000",
+                           sig3 = "350"),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               Anthocoridae = "Anthocoridae",
+                               Arachnida = "Arachnida",
+                               Coccinellidae = "Coccinellidae",
+                               Geocoris = "Geocoris",
+                               Ichneumonoidea = "Ichneumonoidea"),
+         combo = paste0(Season, Taxon, Distance),
+         dnum = as.numeric(as.character(Distance))) %>%
+  distinct(combo, .keep_all = TRUE) %>%
+  filter(dnum > 0) %>%
+  mutate(hjust = c(0.09,-0.02,-0.07,-0.13,-0.09,
+                   -0.8,1.02,1.02,0),
+         y = c(9,7,5,8,3,
+               4,9,7,7)) %>%
+  select(Season, Taxon, dnum, hjust, y) -> fd2
+fd2 %>%
+  mutate(col = case_when(dnum == 75 ~ "Very aggressive",
+                         dnum == 350 ~ "Moderate",
+                         dnum == 650 ~ "Very weak",
+                         dnum == 1000 ~ "None"),
+         col2 = as.factor(col)) %>%
+  mutate(col2 = fct_expand(col2, "Aggressive", "Weak", "Constant", "None")) %>%
+  mutate(col2 = fct_relevel(col2, "Very aggressive", "Aggressive", "Moderate",
+                            "Weak", "Very weak", "Constant", "None"))-> df3
+ggplot(df, aes(Distance, value, color = `Decay function`)) +
+  geom_line(size = 1) +
+  theme_classic() +
+  scale_color_manual(values = dist_palette) +
+  scale_fill_manual(values = dist_palette, drop = F, guide = "none") +
+  labs(y = "Weighting value") +
+  # geom_vline(data = fd2, aes(xintercept = dnum)) +
+  geom_label(data = df3, aes(x = dnum,
+                             y = y*100,
+                             hjust = hjust,
+                             label = Taxon,
+                             fill = col2),
+             inherit.aes = FALSE,
+             alpha = 0.8) +
+  facet_wrap(~Season, ncol = 1) +
+  theme(strip.background = element_blank(),
+        legend.position = "bottom")
 
 # Extra ladybug model ####
 # try a binomial cocc mod for fall (low coc density in fall)

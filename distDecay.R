@@ -10,12 +10,12 @@ Constant <- c((abs(Distance-1000)), rep(0, 100))
 None <- c(rep(1000, 1000), rep(0, 100))
 # update dist to match length of other cols
 Distance <- seq(1, 1100)
-df <- data.frame(Distance, Vaggressive, Aggressive, Moderate, Weak, Vweak, Constant, None) %>%
+dist_decay_df <- data.frame(Distance, Vaggressive, Aggressive, Moderate, Weak, Vweak, Constant, None) %>%
   pivot_longer(-Distance, names_to = "Decay function", values_to = "value") %>%
   mutate(`Decay function` = fct_relevel(`Decay function`, "Vaggressive", "Aggressive", "Moderate", "Weak", "Vweak", "Constant", "None")) %>%
   mutate(`Decay function` = fct_recode(`Decay function`, `Very aggressive` = "Vaggressive", `Very weak` = "Vweak"))
 
-ggplot(df, aes(Distance, value, color = `Decay function`)) +
+ggplot(dist_decay_df, aes(Distance, value, color = `Decay function`)) +
   geom_line(size = 1) +
   theme_classic() +
   scale_color_grey() +

@@ -108,43 +108,18 @@ veg_plots <- read_csv("tidy_data/vegPlots.csv")
 
 
 # define color palette ####
-"#548235" # Acyrthosiphon aphids
-"#3B3838" # Non-Acyrthosiphon aphids
-"#76db91" # Spring
-"#9e3c21" # Fall:
-"Spectral" # Predators (alphabe)
+aphids_palette <- c(
+  "#548235", # Acyrthosiphon aphids
+  "#3B3838" # Non-Acyrthosiphon aphids
+)
+seasons_palette <- c(
+  "#76db91", # Spring
+  "#9e3c21" # Fall:
+)
+"Spectral" # Predators (alphabetical sort)
 "Set1" # Sites
 
-# Landcover: Use palette derived from actual colors?
-# trainingPalette asset from earth engine:
-"#173118" # alfalfa
-"#7f736d" # naturalArid
-"#93837c" # weedy
-"#373f2a" # riparian
-"#696153" # Ag group midpoint
-  "#a38878" # rye
-  "#2e3a2d" # onion
-"#A8A4A5" # Bare group midpoint (first two)
-  "#b6b2b0" # bare
-  "#999599" # dirtRoad
-  "#6f5a4f" # dairy
-"#89939F" # Impermeable group midpoint
-  "#50514c" # paved
-  "#c2d4f1" # structures
-NA # Surface water
-
-# Contrast too low, make curstom palette
-
-lc_palette <- c(
-  "#4cd964", # alfalfa
-  "#0053ff", # weedy cover
-  "#5ac8fa", # non-alfalfa ag
-  "#ff3b30", # bare soil
-  "#ffcc00", # impermeable surfaces
-  "#ff6d00", # log(aphid dens.)
-  "#5856d6", # flood irrigation
-  "#ff2d55"  # total cover (veg survey)
-)
+# landcover: Use palette derived from actual colors?
 lc_palette_experimental <- c(
   "#105405", # alfalfa
   "#aecf7a", # weedy cover
@@ -161,7 +136,6 @@ lc_palette_experimental <- c(
 # ensure factors are ordered correctly!
 lc_fct_ord <- c()
 
-# distance
 # distance
 dist_palette <- c(
   "#fafa6e", # sig 1
@@ -183,13 +157,14 @@ source("data_analysis_classification_summary.R", echo = TRUE)
 
 
 # Wrangle data for model selection ####
-# split spring and fall data
+# regular (no rank transform)
+# spring
 df_sp <- subplot_data_raw %>%
   # spring only
   filter(Season == "Spring") %>%
   # "regular" landcover only
-  select(!contains("fix")) %>%
-  # log AllAph col
+  select(!contains("fix")) %>% #"fix" landcover has manually fixed alfalfa areas
+  # log-transform AllAph col
   mutate(log_AllAph = log(AllAph + 1)) %>%
   # center and scale (not needed with rank transform) all landcover + log_AllAph
   mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
@@ -197,53 +172,38 @@ df_sp <- subplot_data_raw %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
-
+# fall
 df_fa <- subplot_data_raw %>%
-
   filter(Season == "Fall") %>%
-  # "regular" landcover only
   select(!contains("fix")) %>%
-  # log AllAph col
   mutate(log_AllAph = log(AllAph + 1)) %>%
-  # center and scale (not needed with rank transform) all landcover + log_AllAph
   mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
                 .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
-  mutate(Area = case_when(Treatment == "Pre-" ~ 3,
+    mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
 
-# use rank transform on landcover vars
+# rank transform on landcover vars
+# spring
 df_sp_rnk <- subplot_data_raw %>%
-  # spring only
   filter(Season == "Spring") %>%
-  # "regular" landcover only
   select(!contains("fix")) %>%
-  # rank transform landcover to uniformly distribute
+  # rank transform landcover to uniformly distribute values
   mutate(across(.cols = contains("_"), # all landcover + log_AllAph
                 .fns = ~dense_rank(.x))) %>%
-  # log AllAph col
   mutate(log_AllAph = log(AllAph + 1)) %>%
   # # center and scale (not needed with rank transform)
   # mutate(across(.cols = contains("_"), # all landcover + log_AllAph
   #               .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
 
+# fall
 df_fa_rnk <- subplot_data_raw %>%
-  # spring only
   filter(Season == "Fall") %>%
-  # "regular" landcover only
   select(!contains("fix")) %>%
-  # rank transform landcover to uniformly distribute
   mutate(across(.cols = contains("_"), # all landcover + log_AllAph
                 .fns = ~dense_rank(.x))) %>%
-  # log AllAph col
   mutate(log_AllAph = log(AllAph + 1)) %>%
-  # # center and scale (not needed with rank transform)
-  # mutate(across(.cols = contains("_"), # all landcover + log_AllAph
-  #               .fns = ~as.vector(scale(.)))) %>%
-  # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
 
@@ -291,16 +251,16 @@ source("collectMods_preds.R", echo = TRUE)
 # # Compare top predator models
 # anth_fams_sp %>% View # nb_scaled by at least delta>2
 # anth_fams_fa %>% View # nb_scaled by delta 1.27. NO RANDOM EFFECT in top mod
-# ara_fams_sp %>% View # both pois mods close, and they disagree
-# ara_fams_fa %>% View # nb mods agree, pois mods are delta+ 15
-# cocc_fams_sp %>% View
-        # scaled mods agree, ranked mods differ but delta +4 anyway
+# ara_fams_sp %>% View  # both pois mods close, and they disagree
+# ara_fams_fa %>% View  # nb mods agree, pois mods are delta+ 15
+# cocc_fams_sp %>% View # scaled mods agree, ranked mods differ,
+                        # but delta +4 anyway
 # cocc_fams_fa %>% View # scaled mods agree, ranked mods differ,
-#                      # ranked have slightly better fit but deltas are close
-# geo_fams_sp %>% View # nb_scaled by delta+ 13
-# geo_fams_fa %>% View # all mods agree and are generally close
-# ich_fams_sp %>% View # mods mostly agree and deltas are close
-# ich_fams_fa %>% View # nb_scaled by delta+7 NO RANDOM EFFECT in top mod
+#                       # ranked have slightly better fit but deltas are close
+# geo_fams_sp %>% View  # nb_scaled by delta+ 13
+# geo_fams_fa %>% View  # all mods agree and are generally close
+# ich_fams_sp %>% View  # mods mostly agree and deltas are close
+# ich_fams_fa %>% View  # nb_scaled by delta+7 NO RANDOM EFFECT in top mod
 
 # Make table of top (no veg) predator models ####
 # make list of best models
@@ -318,22 +278,26 @@ best_mod_list <- list(
 )
 
 # build empty tibble to hold stats
-stats_df <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
-                                "Geocoris", "Ichneumonoidea"), 2),
-                  Season = c(rep("Spring", 5), rep("Fall", 5)),
-                  MarginalR2 = c(0),
-                  ConditionalR2 = c(0),
-                  effects1 = c("none"),
-                  effects2 = c("none"),
-                  coefs1 = c(0),
-                  coefs2 = c(0),
-                  coefsmin1 = c(0),
-                  coefsmax1 = c(0),
-                  coefsmin2 = c(0),
-                  coefsmax2 = c(0),
-                  coefsse1 = c(0),
-                  coefsse2 = c(0),
-                  )
+stats_df <- tibble(Taxon = rep(c("Anthocoridae",
+                                 "Arachnida",
+                                 "Coccinellidae",
+                                 "Geocoris",
+                                 "Ichneumonoidea"),
+                               2),
+                   Season = c(rep("Spring", 5), rep("Fall", 5)),
+                   MarginalR2 = c(0),
+                   ConditionalR2 = c(0),
+                   effects1 = c("none"),
+                   effects2 = c("none"),
+                   coefs1 = c(0),
+                   coefs2 = c(0),
+                   coefsmin1 = c(0),
+                   coefsmax1 = c(0),
+                   coefsmin2 = c(0),
+                   coefsmax2 = c(0),
+                   coefsse1 = c(0),
+                   coefsse2 = c(0),
+)
 
 # fill tibble with stats
 for (i in seq_along(best_mod_list)){
@@ -352,22 +316,10 @@ for (i in seq_along(best_mod_list)){
 
 }
 
-
+# print table
 stats_df %>%
   group_by(Season) %>%
   tab_df(title = "Top predator models (no vegetation data included)")
-
-## Need to add vegdata for fall Anthocoridae, fall Arachnida
-
-
-
-
-## next idea
-# split info above into one "heatmap" figure" (taxon*predictor, heat = effect size)
-# and one distance*taxon figure?
-
-
-
 
 # Review predator models ####
 
@@ -493,8 +445,7 @@ for (i in seq_along(new_mods)){
   stats_df_new$coefs2[[i]] <- fixef(new_mods[[i]])$cond[3]
 }
 
-#### TODO - Export table ####
-# plot table for now
+# plot table
 stats_df_new %>%
   mutate(effects2 = case_when(Taxon == "Anthocoridae" ~ "None",
                               Taxon != "Anthocoridae" ~  effects2, )) %>%
@@ -506,7 +457,6 @@ stats_df_new %>%
 
 # combine info from old no-veg table with this new one
 # best_mod_list %>% names
-new_mods <- list("antFA" = best.ant.fa.vd, "araFA" = best.ara.fa.vd)
 
 best_mod_list$best.ant.fa <- best.ant.fa.vd
 best_mod_list$best.ara.fa <- best.ara.fa.vd
@@ -548,6 +498,7 @@ for (i in seq_along(best_mod_list)){
 
 
 # drop "Treatment" from fall anthocoridae model (only one fixed effect there)
+# use char "NA" to avoid problems with data wrangling below
 stats_df_veg2 <- stats_df_veg %>%
   mutate(
     effects2 = case_when(effects2 == "Treatment" ~ "NA",
@@ -562,7 +513,8 @@ stats_df_veg2 <- stats_df_veg %>%
                          effects2 != "NA" ~ coefsse2)
   )
 
-# reshape stats table
+# predator effects figure ####
+# reshape stats table for plotting
 figDat <- stats_df_veg2 %>%
   pivot_longer(effects1:coefsse2,
                names_to = c(".value", "effectRank"),
@@ -577,30 +529,23 @@ figDat <- stats_df_veg2 %>%
                                           "totalCover",
                                           "NA") ~ effects)) %>%
   separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
-  mutate(Taxon = fct_rev(as_factor(Taxon))) %>%
-  mutate(Distance = factor(Distance, levels = c("NA",
+  mutate(Taxon = fct_rev(as_factor(Taxon)),
+         Distance = factor(Distance, levels = c("NA",
                                                 "sig1",
                                                 "sig2",
                                                 "sig3",
                                                 "sig4",
                                                 "sig5",
                                                 "const",
-                                                "no")))
-
-stats_df_veg2
-figDat
-
-
-
-
-
-
-# both - no distance
-figDat %>% filter(Effect != "NA") %>%
+                                                "no"))) %>%
+  filter(Effect != "NA") %>%
   mutate(moe95 = coefsse*1.96,
-         Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
-                           no = "1000+",
-                           sig3 = "350"),
+         dnum = as.numeric(as.character(recode(Distance,
+                                               sig1 = "75",
+                                               sig5 = "650",
+                                               "NA" = "0",
+                                               no = "1000",
+                                               sig3 = "350"))),
          Effect = recode_factor(Effect,
                                 alfalfa = "Alfalfa",
                                 natArid = "Desert shrub",
@@ -612,7 +557,8 @@ figDat %>% filter(Effect != "NA") %>%
                                 logAllAph = "log(Aphid density)",
                                 wateringMethod = "Flood irrigation",
                                 totalCover = "Total Cover",
-                                .ordered = TRUE # ensure factor order to match palette
+                                # ensure factor order to match palette
+                                .ordered = TRUE
          ),
          Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
          Taxon = recode_factor(Taxon,
@@ -625,13 +571,15 @@ figDat %>% filter(Effect != "NA") %>%
          quo = "{R^2}[M]~'='",
          cat = paste0(quo, "~'", roundM, "'"),
          expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
-         expr = paste0(round(MarginalR2,2))) %>%
-  # pull(cat)
-  ggplot(aes(y = Taxon,
-             x = coefs,
-             fill = Effect,
-             # color = Effect,
-             moe = moe95)) +
+         expr = paste0(round(MarginalR2,2)))
+
+
+# pull(cat)
+ggplot(figDat, aes(y = Taxon,
+                   x = coefs,
+                   fill = Effect,
+                   # color = Effect,
+                   moe = moe95)) +
   facet_grid(~Season) +
   stat_confidence_density(height = 0.9,
                           position = position_dodge(0.8),
@@ -675,89 +623,47 @@ figDat %>% filter(Effect != "NA") %>%
             parse = T,
             size = 2.5)
 
+# "predator spatial scale" figure ####
+# import distance decay dataframe
+source("distDecay.R", echo = TRUE)
 
-
-
-# reshape stats table
-figDat <- stats_df %>%
-  pivot_longer(effects1:coefsse2,
-               names_to = c(".value", "effectRank"),
-               names_pattern = "(.*)(.s*)",
-               values_to = c("var1, var2, var3, var4, var5, var6")) %>%
-  mutate(effects = case_when(effects == "log_AllAph" ~ "logAllAph_NA",
-                             effects == "wateringMethod" ~ "wateringMethod_NA",
-                             effects != c("log_AllAph",
-                                          "wateringMethod") ~ effects)) %>%
-  separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
-  mutate(Taxon = fct_rev(as_factor(Taxon))) %>%
-  mutate(Distance = factor(Distance, levels = c("NA",
-                                                "sig1",
-                                                "sig2",
-                                                "sig3",
-                                                "sig4",
-                                                "sig5",
-                                                "const",
-                                                "no")))
-
-
-# "predator spatial scale" figure
-Distance <- seq(1,1000)
-Vaggressive <- c((1.0 / (1.0 + 2.718282 ^ ((3.5 * Distance / 50) - 4.5))) * 1000, rep(0, 100))
-Aggressive <- c((1.0 / (1.0 + 2.718282 ^ ((2.0 * Distance / 50) - 6.0))) * 1000, rep(0, 100))
-Moderate <- c((1.0 / (1.0 + 2.718282 ^ ((1.25 * Distance / 50) - 8.0))) * 1000, rep(0, 100))
-Weak <- c((1.0 / (1.0 + 2.718282 ^ ((1.0 * Distance / 50) - 10.0))) * 1000, rep(0, 100))
-Vweak <- c((1.0 / (1.0 + 2.718282 ^ ((0.75 * Distance / 50) - 11.0))) * 1000, rep(0, 100))
-Constant <- c((abs(Distance-1000)), rep(0, 100))
-None <- c(rep(1000, 1000), rep(0, 100))
-# update dist to match length of other cols
-Distance <- seq(1, 1100)
-df <- data.frame(Distance, Vaggressive, Aggressive, Moderate, Weak, Vweak, Constant, None) %>%
-  pivot_longer(-Distance, names_to = "Decay function", values_to = "value") %>%
-  mutate(`Decay function` = fct_relevel(`Decay function`, "Vaggressive", "Aggressive", "Moderate", "Weak", "Vweak", "Constant", "None")) %>%
-  mutate(`Decay function` = fct_recode(`Decay function`, `Very aggressive` = "Vaggressive", `Very weak` = "Vweak"))
-
-
-figDat %>%
-  mutate(Distance = recode(Distance, sig1 = "75", sig5 = "650", "NA" = "0",
-                           no = "1000",
-                           sig3 = "350"),
-         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
-         Taxon = recode_factor(Taxon,
-                               Anthocoridae = "Anthocoridae",
-                               Arachnida = "Arachnida",
-                               Coccinellidae = "Coccinellidae",
-                               Geocoris = "Geocoris",
-                               Ichneumonoidea = "Ichneumonoidea"),
-         combo = paste0(Season, Taxon, Distance),
-         dnum = as.numeric(as.character(Distance))) %>%
+# wrangle figDat to make "nameplates" df
+nameplates <- figDat %>%
+  # get unique scale value for taxon and season
+  mutate(
+    combo = paste0(Season, Taxon, dnum),
+  ) %>%
   distinct(combo, .keep_all = TRUE) %>%
+  # use only landcover vars that have a spatial scale
   filter(dnum > 0) %>%
-  mutate(hjust = c(0.09,-0.02,-0.07,-0.13,-0.09,
-                   -0.8,1.02,1.02,0),
+  # use to manually tune position of geom_label
+  mutate(hjust = c(0.22,0.02,-0.07,-0.23,-0.21,
+                   -0,1.02,1.02,0),
          y = c(9,7,5,8,3,
-               4,9,7,7)) %>%
-  select(Season, Taxon, dnum, hjust, y) -> fd2
-fd2 %>%
-  mutate(col = case_when(dnum == 75 ~ "Very aggressive",
+               4,9,7,7))  %>%
+  # make factor for color coding labels
+  mutate(col = as.factor(case_when(dnum == 75 ~ "Very aggressive",
                          dnum == 350 ~ "Moderate",
                          dnum == 650 ~ "Very weak",
-                         dnum == 1000 ~ "None"),
-         col2 = as.factor(col)) %>%
-  mutate(col2 = fct_expand(col2, "Aggressive", "Weak", "Constant", "None")) %>%
-  mutate(col2 = fct_relevel(col2, "Very aggressive", "Aggressive", "Moderate",
-                            "Weak", "Very weak", "Constant", "None"))-> df3
-ggplot(df, aes(Distance, value, color = `Decay function`)) +
+                         dnum == 1000 ~ "None"))
+         ) %>%
+  # add in missing factor levels
+  mutate(col = fct_expand(col, "Aggressive", "Weak", "Constant", "None")) %>%
+  # relevel factor order
+  mutate(col = fct_relevel(col, "Very aggressive", "Aggressive", "Moderate",
+                            "Weak", "Very weak", "Constant", "None"))
+
+ggplot(dist_decay_df, aes(Distance, value, color = `Decay function`)) +
   geom_line(size = 1) +
   theme_classic() +
   scale_color_manual(values = dist_palette) +
   scale_fill_manual(values = dist_palette, drop = F, guide = "none") +
   labs(y = "Weighting value") +
-  # geom_vline(data = fd2, aes(xintercept = dnum)) +
-  geom_label(data = df3, aes(x = dnum,
+  geom_label(data = nameplates, aes(x = dnum,
                              y = y*100,
                              hjust = hjust,
                              label = Taxon,
-                             fill = col2),
+                             fill = col),
              inherit.aes = FALSE,
              alpha = 0.8) +
   facet_wrap(~Season, ncol = 1) +

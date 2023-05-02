@@ -62,8 +62,8 @@ best.ich.sp.vd <- get.models(ich.sp.vd.tab, 1)[[1]]
 # Fall ####
 # Anthocoridae
 best_mod_list$best.ant.fa
-global.ant.fa.vd <- glmmTMB(Anthocoridae ~ Treatment + alfalfa_sig1 +
-                              dirt_sig1 + (1|Site:Field) + shan + rich +
+global.ant.fa.vd <- glmmTMB(Anthocoridae ~ Treatment + alfalfa_sig3 +
+                              divShan_sig3 + (1|Site:Field) + shan + rich +
                               totalCover,
                             data = df_fa_vd,
                             family = 'nbinom2',
@@ -90,7 +90,7 @@ best.ara.fa.vd <- get.models(ara.fa.vd.tab, 1)[[1]]
 
 # Coccinellidae
 best_mod_list$best.coc.fa
-global.coc.fa.vd <- glmmTMB(Coccinellidae ~ Treatment + ag_no + alfalfa_no +
+global.coc.fa.vd <- glmmTMB(Coccinellidae ~ Treatment + ag_const + divShan_const +
                               (1|Site:Field) + shan + rich + totalCover,
                             data = df_fa_vd,
                             family = 'nbinom2',

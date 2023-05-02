@@ -9,7 +9,7 @@ bin_gmod_sig1 <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                            wateringMethod + # non-landcover effects
                            alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 +
                            ag_sig1 + impermeable_sig1 + weedy_sig1 +
-                           water_sig1, # landcover effects
+                           water_sig1 + div_sig2 + divShan_sig2, # landcover effects
                          # nested random effects not fitted
                          data = df_fa_bin,
                          family = "binomial",
@@ -18,7 +18,7 @@ bin_gmod_sig2 <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                            wateringMethod + # non-landcover effects
                            alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 +
                            ag_sig2 + impermeable_sig2 + weedy_sig2 +
-                           water_sig2 + # landcover effects
+                           water_sig2 + div_sig2 + divShan_sig2 + # landcover effects
                            (1 | Site / Field), # nested random effects
                          data = df_fa_bin,
                          family = "binomial",
@@ -27,7 +27,7 @@ bin_gmod_sig3 <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                            wateringMethod + # non-landcover effects
                            alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 +
                            ag_sig3 + impermeable_sig3 + weedy_sig3 +
-                           water_sig3 + # landcover effects
+                           water_sig3 + div_sig3 + divShan_sig3 + # landcover effects
                            (1 | Site / Field), # nested random effects
                          data = df_fa_bin,
                          family = "binomial",
@@ -36,7 +36,7 @@ bin_gmod_sig4 <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                            wateringMethod + # non-landcover effects
                            alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 +
                            ag_sig4 + impermeable_sig4 + weedy_sig4 +
-                           water_sig4 + # landcover effects
+                           water_sig4 + div_sig4 + divShan_sig4 + # landcover effects
                            (1 | Site / Field), # nested random effects
                          data = df_fa_bin,
                          family = "binomial",
@@ -45,7 +45,7 @@ bin_gmod_sig5 <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                            wateringMethod + # non-landcover effects
                            alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 +
                            ag_sig5 + impermeable_sig5 + weedy_sig5 +
-                           water_sig5 + # landcover effects
+                           water_sig5 + div_sig5 + divShan_sig5 + # landcover effects
                            (1 | Site / Field), # nested random effects
                          data = df_fa_bin,
                          family = "binomial",
@@ -54,7 +54,7 @@ bin_gmod_const <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                             wateringMethod + # non-landcover effects
                             alfalfa_const + naturalArid_const + dirt_const +
                             ag_const + impermeable_const + weedy_const +
-                            water_const + # landcover effects
+                            water_const + div_const + divShan_const + # landcover effects
                             (1 | Site / Field), # nested random effects
                           data = df_fa_bin,
                           family = "binomial",
@@ -63,7 +63,7 @@ bin_gmod_no <- glmmTMB(CBinary ~ Treatment + log_AllAph +
                          wateringMethod + # non-landcover effects
                          alfalfa_no + naturalArid_no + dirt_no + ag_no +
                          impermeable_no + weedy_no +
-                         water_no + # landcover effects
+                         water_no + div_no + divShan_no + # landcover effects
                          (1 | Site / Field), # nested random effects
                        data = df_fa_bin,
                        family = "binomial",

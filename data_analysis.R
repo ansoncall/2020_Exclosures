@@ -128,7 +128,8 @@ lc_palette_experimental <- c(
   "grey40", # Impermeable
   "#ff6d00", # log(aphid dens.)
   "#393ebf", # flood irrigation
-  "#ff2d55"  # total cover (veg survey)
+  "#ff2d55",  # total cover (veg survey)
+  "#AAAA20"  # Shannon diversity (land cover)
   # "#5856d6", # riparian
   # "#cca266" # naturalArid
 )
@@ -159,34 +160,104 @@ source("data_analysis_classification_summary.R", echo = TRUE)
 # Wrangle data for model selection ####
 # regular (no rank transform)
 # spring
+
 df_sp <- subplot_data_raw %>%
   # spring only
   filter(Season == "Spring") %>%
   # "regular" landcover only
   select(!contains("fix")) %>% #"fix" landcover has manually fixed alfalfa areas
   # log-transform AllAph col
-  mutate(log_AllAph = log(AllAph + 1)) %>%
+  mutate(log_AllAph = log(AllAph + 1),
+         log_Anthocoridae = log(Anthocoridae + 1),
+         log_Arachnida = log(Arachnida + 1),
+         log_Geocoris = log(Geocoris + 1),
+         log_Ichneumonoidea = log(Ichneumonoidea + 1),
+         log_Coccinellidae = log(Coccinellidae + 1)) %>%
+  # diversity
+  rowwise() %>%
+  mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
+         div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
+         div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),
+         div_sig4 = diversity(across(ends_with("sig4")), index = "simpson"),
+         div_sig5 = diversity(across(ends_with("sig5")), index = "simpson"),
+         div_const = diversity(across(ends_with("const")), index = "simpson"),
+         div_no = diversity(across(ends_with("no")), index = "simpson"),
+         divShan_sig1 = diversity(across(ends_with("sig1")), index = "shannon"),
+         divShan_sig2 = diversity(across(ends_with("sig2")), index = "shannon"),
+         divShan_sig3 = diversity(across(ends_with("sig3")), index = "shannon"),
+         divShan_sig4 = diversity(across(ends_with("sig4")), index = "shannon"),
+         divShan_sig5 = diversity(across(ends_with("sig5")), index = "shannon"),
+         divShan_const = diversity(across(ends_with("const")),
+                                   index = "shannon"),
+         divShan_no = diversity(across(ends_with("no")), index = "shannon")
+         )  %>%
+  ungroup() %>%
   # center and scale (not needed with rank transform) all landcover + log_AllAph
+  # + log_predators
   mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
                 .fns = ~as.vector(scale(.)))) %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
+
 # fall
 df_fa <- subplot_data_raw %>%
   filter(Season == "Fall") %>%
   select(!contains("fix")) %>%
-  mutate(log_AllAph = log(AllAph + 1)) %>%
+  mutate(log_AllAph = log(AllAph + 1),
+         log_Anthocoridae = log(Anthocoridae + 1),
+         log_Arachnida = log(Arachnida + 1),
+         log_Geocoris = log(Geocoris + 1),
+         log_Ichneumonoidea = log(Ichneumonoidea + 1),
+         log_Coccinellidae = log(Coccinellidae + 1)) %>%
+  rowwise() %>%
+  mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
+         div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
+         div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),
+         div_sig4 = diversity(across(ends_with("sig4")), index = "simpson"),
+         div_sig5 = diversity(across(ends_with("sig5")), index = "simpson"),
+         div_const = diversity(across(ends_with("const")), index = "simpson"),
+         div_no = diversity(across(ends_with("no")), index = "simpson"),
+         divShan_sig1 = diversity(across(ends_with("sig1")), index = "shannon"),
+         divShan_sig2 = diversity(across(ends_with("sig2")), index = "shannon"),
+         divShan_sig3 = diversity(across(ends_with("sig3")), index = "shannon"),
+         divShan_sig4 = diversity(across(ends_with("sig4")), index = "shannon"),
+         divShan_sig5 = diversity(across(ends_with("sig5")), index = "shannon"),
+         divShan_const = diversity(across(ends_with("const")),
+                                   index = "shannon"),
+         divShan_no = diversity(across(ends_with("no")), index = "shannon")
+  )  %>%
+  ungroup() %>%
   mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
                 .fns = ~as.vector(scale(.)))) %>%
     mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
+
+
 
 # rank transform on landcover vars
 # spring
 df_sp_rnk <- subplot_data_raw %>%
   filter(Season == "Spring") %>%
   select(!contains("fix")) %>%
+  rowwise() %>%
+  mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
+         div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
+         div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),
+         div_sig4 = diversity(across(ends_with("sig4")), index = "simpson"),
+         div_sig5 = diversity(across(ends_with("sig5")), index = "simpson"),
+         div_const = diversity(across(ends_with("const")), index = "simpson"),
+         div_no = diversity(across(ends_with("no")), index = "simpson"),
+         divShan_sig1 = diversity(across(ends_with("sig1")), index = "shannon"),
+         divShan_sig2 = diversity(across(ends_with("sig2")), index = "shannon"),
+         divShan_sig3 = diversity(across(ends_with("sig3")), index = "shannon"),
+         divShan_sig4 = diversity(across(ends_with("sig4")), index = "shannon"),
+         divShan_sig5 = diversity(across(ends_with("sig5")), index = "shannon"),
+         divShan_const = diversity(across(ends_with("const")),
+                                   index = "shannon"),
+         divShan_no = diversity(across(ends_with("no")), index = "shannon")
+  )  %>%
+  ungroup() %>%
   # rank transform landcover to uniformly distribute values
   mutate(across(.cols = contains("_"), # all landcover + log_AllAph
                 .fns = ~dense_rank(.x))) %>%
@@ -201,6 +272,24 @@ df_sp_rnk <- subplot_data_raw %>%
 df_fa_rnk <- subplot_data_raw %>%
   filter(Season == "Fall") %>%
   select(!contains("fix")) %>%
+  rowwise() %>%
+  mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
+         div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
+         div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),
+         div_sig4 = diversity(across(ends_with("sig4")), index = "simpson"),
+         div_sig5 = diversity(across(ends_with("sig5")), index = "simpson"),
+         div_const = diversity(across(ends_with("const")), index = "simpson"),
+         div_no = diversity(across(ends_with("no")), index = "simpson"),
+         divShan_sig1 = diversity(across(ends_with("sig1")), index = "shannon"),
+         divShan_sig2 = diversity(across(ends_with("sig2")), index = "shannon"),
+         divShan_sig3 = diversity(across(ends_with("sig3")), index = "shannon"),
+         divShan_sig4 = diversity(across(ends_with("sig4")), index = "shannon"),
+         divShan_sig5 = diversity(across(ends_with("sig5")), index = "shannon"),
+         divShan_const = diversity(across(ends_with("const")),
+                                   index = "shannon"),
+         divShan_no = diversity(across(ends_with("no")), index = "shannon")
+  )  %>%
+  ungroup() %>%
   mutate(across(.cols = contains("_"), # all landcover + log_AllAph
                 .fns = ~dense_rank(.x))) %>%
   mutate(log_AllAph = log(AllAph + 1)) %>%
@@ -332,7 +421,7 @@ stats_df %>%
 #   select(where(~!all(is.na(.x)))) %>% View
 
 # choose model to review
-review_mod <- get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]]
+review_mod <- get.models(nb_scaled$tab_nb_cocc_fa_scaled, 1)[[1]]
 
 # show summary
 summary(review_mod) # no random effect variance. essentially equivalent to
@@ -401,8 +490,12 @@ r2(best.ich.sp.vd) ## new model has one less factor. new has better marginal r2,
 ### Fall
 # Anthocoridae
 r2(best_mod_list$best.ant.fa)
-r2(best.ant.fa.vd) ## total cover looking like the best predictor here
+r2(best.ant.fa.vd)
+## FORMERLY: total cover looking like the best predictor here
 ## verdict - OVERTURN. new model is better!
+## NOW (w/lc diversity factors): Scale changed from NA to sig3.
+## r2 is better in the new model.
+## verdict - OVERTURN.
 
 # Arachnida
 # must drop wateringMethod here because all sites are flooded.
@@ -416,6 +509,7 @@ r2(best.ara.fa.vd) ## new model with total cover instead of wateringMethod is
 r2(best_mod_list$best.coc.fa)
 r2(best.coc.fa.vd) ## new model has one less factor.
 ## verdict - keep original
+## NOW: scale has changed from no to const
 
 # Ichneumonoidea
 r2(best_mod_list$best.ich.fa)
@@ -447,10 +541,6 @@ for (i in seq_along(new_mods)){
 
 # plot table
 stats_df_new %>%
-  mutate(effects2 = case_when(Taxon == "Anthocoridae" ~ "None",
-                              Taxon != "Anthocoridae" ~  effects2, )) %>%
-  mutate(coefs2 = case_when(Taxon == "Anthocoridae" ~ 0,
-                              Taxon != "Anthocoridae" ~  coefs2, )) %>%
   group_by(Taxon) %>%
   tab_df(title = "Top predator models - vegdata")
 # note: these models are better than the corresponding "no veg" models
@@ -462,21 +552,24 @@ best_mod_list$best.ant.fa <- best.ant.fa.vd
 best_mod_list$best.ara.fa <- best.ara.fa.vd
 
 # build empty tibble to hold stats
-stats_df_veg <- tibble(Taxon = rep(c("Anthocoridae", "Arachnida", "Coccinellidae",
-                                 "Geocoris", "Ichneumonoidea"), 2),
-                   Season = c(rep("Spring", 5), rep("Fall", 5)),
-                   MarginalR2 = c(0),
-                   ConditionalR2 = c(0),
-                   effects1 = c("none"),
-                   effects2 = c("none"),
-                   coefs1 = c(0),
-                   coefs2 = c(0),
-                   coefsmin1 = c(0),
-                   coefsmax1 = c(0),
-                   coefsmin2 = c(0),
-                   coefsmax2 = c(0),
-                   coefsse1 = c(0),
-                   coefsse2 = c(0),
+stats_df_veg <- tibble(Taxon = rep(c("Anthocoridae",
+                                     "Arachnida",
+                                     "Coccinellidae",
+                                     "Geocoris",
+                                     "Ichneumonoidea"), 2),
+                       Season = c(rep("Spring", 5), rep("Fall", 5)),
+                       MarginalR2 = c(0),
+                       ConditionalR2 = c(0),
+                       effects1 = c("none"),
+                       effects2 = c("none"),
+                       coefs1 = c(0),
+                       coefs2 = c(0),
+                       coefsmin1 = c(0),
+                       coefsmax1 = c(0),
+                       coefsmin2 = c(0),
+                       coefsmax2 = c(0),
+                       coefsse1 = c(0),
+                       coefsse2 = c(0),
 )
 
 # fill tibble with stats
@@ -491,11 +584,11 @@ for (i in seq_along(best_mod_list)){
   stats_df_veg$coefsmin2[[i]] <- confint(best_mod_list[[i]])[3,1]
   stats_df_veg$coefsmax1[[i]] <- confint(best_mod_list[[i]])[2,2]
   stats_df_veg$coefsmax2[[i]] <- confint(best_mod_list[[i]])[3,2]
-  stats_df_veg$coefsse1[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[2,2]
-  stats_df_veg$coefsse2[[i]] <- summary(best_mod_list[[i]])$coefficients$cond[3,2]
-
+  stats_df_veg$coefsse1[[i]] <-
+    summary(best_mod_list[[i]])$coefficients$cond[2,2]
+  stats_df_veg$coefsse2[[i]] <-
+    summary(best_mod_list[[i]])$coefficients$cond[3,2]
 }
-
 
 # drop "Treatment" from fall anthocoridae model (only one fixed effect there)
 # use char "NA" to avoid problems with data wrangling below
@@ -513,9 +606,9 @@ stats_df_veg2 <- stats_df_veg %>%
                          effects2 != "NA" ~ coefsse2)
   )
 
-# predator effects figure ####
+# FIG predator effects ####
 # reshape stats table for plotting
-figDat <- stats_df_veg2 %>%
+figDat <- stats_df_veg %>%
   pivot_longer(effects1:coefsse2,
                names_to = c(".value", "effectRank"),
                names_pattern = "(.*)(.s*)",
@@ -545,6 +638,7 @@ figDat <- stats_df_veg2 %>%
                                                sig5 = "650",
                                                "NA" = "0",
                                                no = "1000",
+                                               const = "999",
                                                sig3 = "350"))),
          Effect = recode_factor(Effect,
                                 alfalfa = "Alfalfa",
@@ -557,6 +651,7 @@ figDat <- stats_df_veg2 %>%
                                 logAllAph = "log(Aphid density)",
                                 wateringMethod = "Flood irrigation",
                                 totalCover = "Total Cover",
+                                divShan = "Land cover diversity",
                                 # ensure factor order to match palette
                                 .ordered = TRUE
          ),
@@ -623,8 +718,9 @@ ggplot(figDat, aes(y = Taxon,
             parse = T,
             size = 2.5)
 
-# "predator spatial scale" figure ####
+# FIG predator spatial scale ####
 # import distance decay dataframe
+## TODO incorporate new landcover diversity mods ####
 source("distDecay.R", echo = TRUE)
 
 # wrangle figDat to make "nameplates" df
@@ -638,9 +734,9 @@ nameplates <- figDat %>%
   filter(dnum > 0) %>%
   # use to manually tune position of geom_label
   mutate(hjust = c(0.22,0.02,-0.07,-0.23,-0.21,
-                   -0,1.02,1.02,0),
+                   -0,1.02,1.02,0, 0),
          y = c(9,7,5,8,3,
-               4,9,7,7))  %>%
+               4,9,7,7, 0))  %>%
   # make factor for color coding labels
   mutate(col = as.factor(case_when(dnum == 75 ~ "Very aggressive",
                          dnum == 350 ~ "Moderate",
@@ -688,7 +784,7 @@ source("coccinellidae_binomial.R", echo = TRUE)
 # Aphid models ####
 ## Spring
 # AllAph spring
-r2(get.models(tab_nb_allaph_sp_scaled, 1)[[1]]) # good fit 0.8
+r2(get.models(tab_nb_allaph_sp_scaled, 1)[[1]]) # good fit 0.85
 plot(simulateResiduals(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])) # ok
 tab_nb_allaph_sp_scaled %>%
   tibble %>%
@@ -730,7 +826,7 @@ r2(get.models(tab_nb_allaph_fa_scaled, 1)[[1]]) # average fit 0.69
 plot(simulateResiduals(get.models(tab_nb_allaph_fa_scaled, 1)[[1]])) # ok
 tab_nb_allaph_fa_scaled %>%
   tibble %>%
-  slice(1:5) %>% # can change how inclusive this is
+  slice(1:14) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>%
   View
 
@@ -768,9 +864,9 @@ sp_best <- get.models(tab_nb_allaph_sp_scaled, 2)[[1]]
 fa_best <- get.models(tab_nb_allaph_fa_scaled, 1)[[1]]
 summary(sp_best)
 summary(fa_best)
-
+tab_nb_allaph_fa_scaled %>% View
 ## make aphid modstats table
-aph_mods <- list("allaphFA" = sp_best, "araFA" = fa_best)
+aph_mods <- list("allaphSP" = sp_best, "allaphFA" = fa_best)
 # build empty tibble to hold stats
 stats_df_aph <- tibble(Taxon = c("AllAph", "AllAph"),
                       Season = c("Spring", "Fall"),
@@ -806,7 +902,7 @@ df_fa_vd
 # add vegdata to top mods
 sp_best
 sp_best_veg <- glmmTMB(AllAph ~ Treatment + ag_sig1 + wateringMethod +
-                         log(Coccinellidae + 1) + shan + rich + totalCover +
+                         log_Coccinellidae + shan + rich + totalCover +
                          (1 | Site:Field),
                        data = df_sp_vd,
                        family = "nbinom2",
@@ -819,7 +915,7 @@ veg_dredge_sp <- dredge(sp_best_veg,
 
 fa_best
 fa_best_veg <- glmmTMB(AllAph ~ Treatment + impermeable_sig4 +
-                         naturalArid_sig4 + log(Ichneumonoidea + 1) + shan +
+                         naturalArid_sig4 + log_Ichneumonoidea + shan +
                          rich + totalCover + (1 | Site:Field),
                     data = df_fa_vd,
                     family = "nbinom2",
@@ -832,7 +928,10 @@ veg_dredge_fa <- dredge(fa_best_veg,
 
 # review model selection tables and best models
 ## Spring
-veg_dredge_sp %>% View
+veg_dredge_sp %>%
+  slice(1:15) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>%
+  View
 # new best mod!! +richness!!
 sp_best_veg <- get.models(veg_dredge_sp, 1)[[1]]
 summary(sp_best_veg)
@@ -845,7 +944,10 @@ abline(0, 1)
 plot(allEffects(sp_best_veg, resid = TRUE))
 
 ## Fall
-veg_dredge_fa %>% View
+veg_dredge_fa %>%
+  slice(1:15) %>% # can change how inclusive this is
+  # select(where(~!all(is.na(.x)))) %>%
+  View
 # new best mod!! -shan!!
 fa_best_veg <- get.models(veg_dredge_fa, 1)[[1]]
 summary(fa_best_veg)
@@ -856,6 +958,233 @@ plot(df_fa_vd$AllAph, fitted(fa_best_veg))
 abline(0, 1)
 
 plot(allEffects(fa_best_veg, resid = TRUE))
+
+# FIG best aphid model effects ####
+# check spring effs plot
+plot(allEffects(sp_best_veg, resid = TRUE))
+plot(Effect(c("rich", "log_Coccinellidae", "wateringMethod"), sp_best_veg, resid = TRUE))
+# try spring mod
+library(ggeffects)
+
+aphFigDf <- ggpredict(sp_best_veg, terms = c("rich",
+                                             "wateringMethod"))
+aphFigDfB <- ggpredict(sp_best_veg, terms = c("log_Coccinellidae",
+                                             "wateringMethod"))
+aphFigDfC <- ggpredict(sp_best_veg, terms = c("log_Coccinellidae",
+                                             "rich"))
+aphFigDfD <- ggpredict(sp_best_veg, terms = c("log_Coccinellidae",
+                                             "rich",
+                                             "wateringMethod"))
+aphFigDf %>% plot(log.y = T, add.data = T)
+aphFigDfB %>% plot(log.y = T, add.data = T)
+aphFigDfC %>% plot(log.y = T, add.data = T)
+aphFigDfD %>% plot(log.y = T, add.data = T)
+
+# check fall effs plot
+plot(allEffects(fa_best_veg, resid = TRUE))
+plot(Effect(c("naturalArid_sig4",
+              "impermeable_sig4",
+              "shan"), fa_best_veg, resid = TRUE))
+# try fall mod
+aphFigDf2 <- ggpredict(fa_best_veg, terms = c("impermeable_sig4",
+                                             "naturalArid_sig4",
+                                             "shan"))
+aphFigDf2 %>% plot(log.y = T, add.data = T)
+
+## seems like too many panels. try effects plot similar to predator thing.
+## make aphid modstats table
+aph_mods_veg <- list("allaphSPVeg" = sp_best_veg, "allaphFAVeg" = fa_best_veg)
+# build empty tibble to hold stats
+stats_df_aph_veg <- tibble(Taxon = c("AllAph", "AllAph"),
+                           Season = c("Spring", "Fall"),
+                           MarginalR2 = c(0),
+                           ConditionalR2 = c(0),
+                           effects1 = c("none"),
+                           effects2 = c("none"),
+                           effects3 = c("none"),
+                           coefs1 = c(0),
+                           coefs2 = c(0),
+                           coefs3 = c(0),
+                           coefsmin1 = c(0),
+                           coefsmax1 = c(0),
+                           coefsmin2 = c(0),
+                           coefsmax2 = c(0),
+                           coefsmin3 = c(0),
+                           coefsmax3 = c(0),
+                           coefsse1 = c(0),
+                           coefsse2 = c(0),
+                           coefsse3 = c(0)
+)
+
+# fill tibble with stats
+for (i in seq_along(aph_mods_veg)){
+  stats_df_aph_veg$MarginalR2[[i]] <- r2(aph_mods_veg[[i]])[[2]]
+  stats_df_aph_veg$ConditionalR2[[i]] <- r2(aph_mods_veg[[i]])[[1]]
+  stats_df_aph_veg$effects1[[i]] <- names(aph_mods_veg[[i]]$frame)[2]
+  stats_df_aph_veg$effects2[[i]] <- names(aph_mods_veg[[i]]$frame)[3]
+  stats_df_aph_veg$effects3[[i]] <- names(aph_mods_veg[[i]]$frame)[4]
+  stats_df_aph_veg$coefs1[[i]] <- fixef(aph_mods_veg[[i]])$cond[2]
+  stats_df_aph_veg$coefs2[[i]] <- fixef(aph_mods_veg[[i]])$cond[3]
+  stats_df_aph_veg$coefs3[[i]] <- fixef(aph_mods_veg[[i]])$cond[4]
+  stats_df_aph_veg$coefsmin1[[i]] <- confint(aph_mods_veg[[i]])[2,1]
+  stats_df_aph_veg$coefsmin2[[i]] <- confint(aph_mods_veg[[i]])[3,1]
+  stats_df_aph_veg$coefsmin3[[i]] <- confint(aph_mods_veg[[i]])[4,1]
+  stats_df_aph_veg$coefsmax1[[i]] <- confint(aph_mods_veg[[i]])[2,2]
+  stats_df_aph_veg$coefsmax2[[i]] <- confint(aph_mods_veg[[i]])[3,2]
+  stats_df_aph_veg$coefsmax3[[i]] <- confint(aph_mods_veg[[i]])[4,2]
+  stats_df_aph_veg$coefsse1[[i]] <-
+    summary(aph_mods_veg[[i]])$coefficients$cond[2,2]
+  stats_df_aph_veg$coefsse2[[i]] <-
+    summary(aph_mods_veg[[i]])$coefficients$cond[3,2]
+  stats_df_aph_veg$coefsse3[[i]] <-
+    summary(aph_mods_veg[[i]])$coefficients$cond[4,2]
+}
+
+#### TODO - Export table ####
+# plot table for now
+stats_df_aph_veg %>%
+  tab_df
+
+
+# FIG aphid effects ####
+# reshape stats table for plotting
+aphFigDat <- stats_df_aph_veg %>%
+  pivot_longer(effects1:coefsse3,
+               names_to = c(".value", "effectRank"),
+               names_pattern = "(.*)(.s*)",
+               values_to = c("var1, var2, var3, var4, var5, var6, var7, var8, var9")) %>%
+  mutate(effects = case_when(effects == "log_Coccinellidae" ~ "logCoccinellidae_NA",
+                             effects == "log_Ichneumonoidea" ~ "logIchneumonoidea_NA",
+                             effects == "wateringMethod" ~ "wateringMethod_NA",
+                             effects == "rich" ~ "rich_NA",
+                             effects == "shan" ~ "shan_NA",
+                             effects == "NA" ~ "NA_NA",
+                             effects != c("log_Coccinellidae",
+                                          "log_Ichneumonoidea",
+                                          "wateringMethod",
+                                          "rich",
+                                          "shan",
+                                          "NA") ~ effects)) %>%
+  separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
+  mutate(Taxon = fct_rev(as_factor(Taxon)),
+         Distance = factor(Distance, levels = c("NA",
+                                                "sig1",
+                                                "sig2",
+                                                "sig3",
+                                                "sig4",
+                                                "sig5",
+                                                "const",
+                                                "no"))) %>%
+  mutate(moe95 = coefsse*1.96,
+         dnum = as.numeric(as.character(recode(Distance,
+                                               sig1 = "75",
+                                               sig4 = "650",
+                                               "NA" = "0",
+                                               no = "1000",
+                                               sig3 = "350"))),
+         Effect = recode_factor(Effect,
+                                naturalArid = "Desert shrub,\n weak distance decay",
+                                impermeable = "Impermeable surfaces,\n weak distance decay",
+                                logCoccinellidae = "log(Coccinellidae density)",
+                                logIchneumonoidea = "log(Ichneumonoidea density)",
+                                wateringMethod = "Flood irrigation",
+                                shan = "Shannon Diversity",
+                                rich = "Plant species richness",
+                                # ensure factor order to match palette
+                                .ordered = TRUE
+         ),
+         Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
+         Taxon = recode_factor(Taxon,
+                               AllAph = "Aphid density"),
+         roundM = round(MarginalR2, 3),
+         roundC = round(ConditionalR2, 3),
+         quo = "{R^2}[M]~'='",
+         quoC = "{R^2}[C]~'='",
+         cat = paste0(quo, "~'", roundM, "'"),
+         catC = paste0(quoC, "~'", roundC, "'"),
+         expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
+         expr2C = list(bquote("{R^2}[C]~'='"~.(roundC))),
+         expr = paste0(round(MarginalR2,2)),
+         exprC = paste0(round(ConditionalR2,2)))
+
+
+# pull(cat)
+ggplot(aphFigDat, aes(y = Effect,
+                   x = coefs,
+                   # fill = Effect,
+                   # color = Effect,
+                   moe = moe95)) +
+  facet_wrap(~Season, ncol = 1, scales = "free_y") +
+  stat_confidence_density(height = 0.9,
+                          position = position_dodge(0.8),
+                          show.legend = TRUE) +
+  # coord_flip() +
+  # scale_y_discrete(drop = FALSE) +
+  geom_point(position = position_dodge(0.8)) +
+  geom_errorbar(aes(xmin = coefs+coefsse,
+                    xmax = coefs-coefsse),
+                position = position_dodge(0.8),
+                width = 0.2
+  ) +
+  # scale_fill_manual(values = lc_palette_experimental) +
+  xlim(c(-3.4,3)) +
+  geom_vline(xintercept = 0,
+             linetype = "dashed",
+             color = "red",
+             alpha = 0.5) +
+  xlab("Standardized effect size") +
+  ylab(NULL) +
+  theme_grey(base_size = 10) +
+  theme(#legend.position = c(0.1, 0.1),
+    legend.background = element_rect(linetype = 1, color = NA),
+    panel.background = element_rect(fill = NA, color = "black"),
+    plot.background = element_rect(fill = "white"),
+    # panel.grid.major.y = element_line(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    strip.background.x = element_rect(fill = "NA", color = "NA"),
+    legend.text = element_text(size = 10),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
+  guides(fill = guide_legend(nrow = 2)) +
+  geom_text(aes(x = 2.7,
+                y = 3.3,
+                label = cat),
+            inherit.aes = F,
+            parse = T,
+            size = 4) +
+  geom_text(aes(x = 2.7,
+                y = 2.8,
+                label = catC),
+            inherit.aes = F,
+            parse = T,
+            size = 4)
+
+
+df_fa_vd %>%
+  ggplot(aes(Site, impermeable_sig4, color = Field)) +
+  geom_jitter()
+df_fa %>%
+  ggplot(aes(alfalfa_sig4, impermeable_sig4, color = Site)) +
+  geom_jitter()+
+  geom_smooth(method = "lm")
+df_fa %>%
+  ggplot(aes(log_Ichneumonoidea, impermeable_sig4, color = Site)) +
+  geom_jitter()
+
+df_fa_vd %>%
+  ggplot(aes(impermeable_sig4, log_AllAph, color = shan)) +
+  geom_point()
+
+fa_best_veg %>% summary()
+
+dotplot(df_fa$impermeable_sig5)
+dotplot(df_fa$impermeable_sig4)
+dotplot(df_fa$impermeable_sig4)
+dotplot(df_fa$impermeable_sig3)
+dotplot(df_fa$impermeable_sig2)
+dotplot(df_fa$impermeable_sig1)
 
 
 
@@ -1097,7 +1426,7 @@ mod_specB <- "
 mod_fit1B <- sem(mod_specB, data = lavaan_df1)
 summary(mod_fit1B)
 
-lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = TRUE, stand = FALSE)
+lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = FALSE, stand = FALSE)
 
 
 lavResiduals(mod_fit1B)

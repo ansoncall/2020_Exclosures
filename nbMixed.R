@@ -129,8 +129,8 @@ gmod_const <- glmmTMB(Arachnida ~ Treatment + log_AllAph + wateringMethod + # no
                         (1 | Site / Field), # nested random effects
                       data = df_sp, family = "nbinom2") # convergence warning
 gmod_no <- glmmTMB(Arachnida ~ Treatment + log_AllAph + wateringMethod + # non-landcover effects
-                     alfalfa_no + naturalArid_no + dirt_no + ag_no + impermeable_no + weedy_no + water_no + div_no + divShan_no + # landcover effects
-                     (1 | Site / Field), # nested random effects
+                     alfalfa_no + naturalArid_no + dirt_no + ag_no + impermeable_no + weedy_no + water_no + div_no + divShan_no, # landcover effects
+                     # (1 | Site / Field), # nested random effects not fitted
                    data = df_sp, family = "nbinom2") # convergence warning
 
 # dredging

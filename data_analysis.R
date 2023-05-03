@@ -173,8 +173,19 @@ df_sp <- subplot_data_raw %>%
          log_Geocoris = log(Geocoris + 1),
          log_Ichneumonoidea = log(Ichneumonoidea + 1),
          log_Coccinellidae = log(Coccinellidae + 1)) %>%
-  # diversity
+
   rowwise() %>%
+  # change areascores to proportions
+  mutate(
+         across(ends_with("_sig1"), ~ .x/rowSums(across(ends_with("_sig1")))),
+         across(ends_with("_sig2"), ~ .x/rowSums(across(ends_with("_sig2")))),
+         across(ends_with("_sig3"), ~ .x/rowSums(across(ends_with("_sig3")))),
+         across(ends_with("_sig4"), ~ .x/rowSums(across(ends_with("_sig4")))),
+         across(ends_with("_sig5"), ~ .x/rowSums(across(ends_with("_sig5")))),
+         across(ends_with("_const"), ~ .x/rowSums(across(ends_with("_const")))),
+         across(ends_with("_no"), ~ .x/rowSums(across(ends_with("_no")))),
+         ) %>%
+  # make diversity cols
   mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
          div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
          div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),
@@ -194,8 +205,9 @@ df_sp <- subplot_data_raw %>%
   ungroup() %>%
   # center and scale (not needed with rank transform) all landcover + log_AllAph
   # + log_predators
-  mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
-                .fns = ~as.vector(scale(.)))) %>%
+    ## hold off on this until later
+  # mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
+  #               .fns = ~as.vector(scale(.)))) %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
@@ -211,6 +223,16 @@ df_fa <- subplot_data_raw %>%
          log_Ichneumonoidea = log(Ichneumonoidea + 1),
          log_Coccinellidae = log(Coccinellidae + 1)) %>%
   rowwise() %>%
+  # change areascores to proportions
+  mutate(
+    across(ends_with("_sig1"), ~ .x/rowSums(across(ends_with("_sig1")))),
+    across(ends_with("_sig2"), ~ .x/rowSums(across(ends_with("_sig2")))),
+    across(ends_with("_sig3"), ~ .x/rowSums(across(ends_with("_sig3")))),
+    across(ends_with("_sig4"), ~ .x/rowSums(across(ends_with("_sig4")))),
+    across(ends_with("_sig5"), ~ .x/rowSums(across(ends_with("_sig5")))),
+    across(ends_with("_const"), ~ .x/rowSums(across(ends_with("_const")))),
+    across(ends_with("_no"), ~ .x/rowSums(across(ends_with("_no")))),
+  ) %>%
   mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
          div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
          div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),

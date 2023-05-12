@@ -70,6 +70,55 @@ landcover <-
   read_csv('raw_data/superDoveSupervisedClassification_areaScore.csv',
            col_types = 'c')
 
+## perimeter data ####
+# a little wrangling here
+pData <- read_csv('raw_data/perimeters_by_field.csv',
+                  col_types = 'cdcc') %>%
+  select(fieldId, perimeters) %>%
+  separate(perimeters, c("alfalfa",
+                         "weedy",
+                         "naturalArid",
+                         "wet",
+                         "ag",
+                         "bare",
+                         "impermeable",
+                         "surfaceWater"), sep = ",") %>%
+  mutate(across(-fieldId,
+                ~ as.numeric(str_extract(.x, "\\d+\\.\\d+")),
+                .names = "{.col}Perim")) %>%
+  select(fieldId, contains('Perim'))
+### CHECK THIS ####
+# build list of site names
+site <- c('Minden',
+          'Minden',
+          'Minden',
+          'Lovelock',
+          'Lovelock',
+          'Lovelock',
+          'Fallon',
+          'Fallon',
+          'Fallon',
+          'Yerington',
+          'Yerington',
+          'Yerington')
+field <- c('01',
+           '02',
+           '03',
+           '03', # note non-numeric order here. this is correct.
+           '01',
+           '02',
+           '01',
+           '02',
+           '03',
+           '01',
+           '02',
+           '03')
+sitename = map2(site, field, ~ paste0(.x, .y)) %>% unlist
+
+pData$siteId <- sitename
+rm(site, field, sitename)
+
+
 # check data ####
 ## check arthropod data ####
 spring %>%
@@ -1144,6 +1193,7 @@ subplot_data <- data_long %>%
   left_join(landcoverBinned, by = 'siteId') %>%
   # join vegetation data
   left_join(field_margins, by = c('siteId', 'Season')) %>%
+  left_join(pData, by = "siteId") %>%
   select(-siteId, -site, -field)
 ## same, but don't div pre/3
 subplot_data_raw <- data_long %>%
@@ -1167,6 +1217,7 @@ subplot_data_raw <- data_long %>%
   left_join(landcoverBinned, by = 'siteId') %>%
   # join vegetation data
   left_join(field_margins, by = c('siteId', 'Season')) %>%
+  left_join(pData, by = "siteId") %>%
   select(-siteId, -site, -field)
 
 ## final export ####

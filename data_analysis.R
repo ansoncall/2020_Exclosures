@@ -83,12 +83,12 @@ rpaste0 <- function(x, y) {
 # subplot-level data, all vars
 # pre- data not /3, can use area offset to correct.
 # No transformations have been applied
-subplot_data_raw <- read_csv("tidy_data/subplotDataRaw.csv",
+subplot_data_raw <- read_csv("tidy_data/subplot_data_raw.csv",
                            col_types = "ffffff")
 
 # "Pre-" density has already been /3
 # No transformations have been applied
-subplot_data <- read_csv("tidy_data/subplotData.csv",
+subplot_data <- read_csv("tidy_data/subplot_data.csv",
                         col_types = "ffffff")
 
 # make plot-level data, excluding "Pre-" measurements
@@ -174,7 +174,7 @@ df_sp <- subplot_data_raw %>%
          log_Ichneumonoidea = log(Ichneumonoidea + 1),
          log_Coccinellidae = log(Coccinellidae + 1)) %>%
 
-  rowwise() %>%
+  # rowwise() %>%
   # # change areascores to proportions
   # mutate(
   #        across(ends_with("_sig1"), ~ .x/rowSums(across(ends_with("_sig1")))),
@@ -202,15 +202,16 @@ df_sp <- subplot_data_raw %>%
                                    index = "shannon"),
          divShan_no = diversity(across(ends_with("no")), index = "shannon")
          )  %>%
-  ungroup() %>%
+  # ungroup() %>%
   # center and scale (not needed with rank transform) all landcover + log_AllAph
   # + log_predators
   # hold off on this until later
-  mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
+  mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover", "Perim")),
                 .fns = ~as.vector(scale(.)))) %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
+
 dotchart(sort(df_sp$impermeable_sig4), main = "proportion")
 # fall
 df_fa <- subplot_data_raw %>%
@@ -222,7 +223,7 @@ df_fa <- subplot_data_raw %>%
          log_Geocoris = log(Geocoris + 1),
          log_Ichneumonoidea = log(Ichneumonoidea + 1),
          log_Coccinellidae = log(Coccinellidae + 1)) %>%
-  rowwise() %>%
+  # rowwise() %>%
   # # change areascores to proportions
   # mutate(
   #   across(ends_with("_sig1"), ~ .x/rowSums(across(ends_with("_sig1")))),
@@ -249,7 +250,7 @@ df_fa <- subplot_data_raw %>%
                                    index = "shannon"),
          divShan_no = diversity(across(ends_with("no")), index = "shannon")
   )  %>%
-  ungroup() %>%
+  # ungroup() %>%
   mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover")),
                 .fns = ~as.vector(scale(.)))) %>%
     mutate(Area = case_when(Treatment == "Pre-" ~ 3,
@@ -325,6 +326,14 @@ dotchart(sort(df_sp_rnk$AllAph))
 dotchart(sort(df_sp_rnk$AllAph))
 dotchart(sort(df_sp_rnk$AllAph))
 dotchart(sort(df_sp_rnk$AllAph))
+dotchart(sort(df_sp$log_AllAph))
+dotchart(sort(df_fa$log_AllAph))
+dotchart(sort(df_sp$alfalfaPerim))
+dotchart(sort(df_sp$naturalAridPerim))
+dotchart(sort(df_sp$naturalArid_no))
+dotchart(sort(df_sp$impermeable_no))
+dotchart(sort(df_sp$impermeablePerim))
+dotchart(sort(df_sp$AllAph))
 dotchart(sort(df_sp$log_AllAph))
 dotchart(sort(df_fa$log_AllAph))
 
@@ -475,13 +484,14 @@ stats_df %>%
 # best to review these by hand. change input models manually.
 
 # # # optional: review a single mod table
-# nb_scaled$tab_nb_anth_sp_scaled %>%
-#   tibble %>%
-#   slice(1:5) %>% # can change how inclusive this is
-#   select(where(~!all(is.na(.x)))) %>% View
+nb_scaled$tab_nb_geo_sp_scaled %>%
+  tibble %>%
+  slice(1:15) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+## surprised no perim variables are in here
 
 # choose model to review
-review_mod <- get.models(nb_scaled$tab_nb_anth_sp_scaled, 2)[[1]]
+review_mod <- get.models(nb_scaled$tab_nb_geo_sp_scaled, 1)[[1]]
 
 # show summary
 summary(review_mod) # no random effect variance. essentially equivalent to
@@ -865,6 +875,114 @@ ggplot(figDat, aes(y = Taxon,
             # position = position_nudge(x = 0.1, y = -0.3),
             position = position_dodge(width = 0.8),
             size = 2)
+
+## DIVERSION ####
+# conclusion: we don't have enough data to explore this.
+
+# look for specific plants associated with Geocoris
+veg_plots %>% View
+# look for most variable plants to narrow it down
+most_variable <- veg_plots %>%
+  group_by(field_id, type) %>%
+  summarize(across(SAVE4:UNK_POACEAE5, sum)) %>%
+  ungroup() %>%
+  group_by(type) %>%
+  summarize(across(SAVE4:UNK_POACEAE5, sd)) %>%
+  pivot_longer(c(SAVE4:UNK_POACEAE5),
+               names_to = "plant",
+               values_to = "sd") %>%
+  arrange(desc(sd)) %>%
+  mutate(plant_type = paste(plant, type, sep = "_"))
+
+ggplot(most_variable %>% slice_head(n = 10),
+       aes(fct_rev(fct_reorder(plant_type, sd)), sd)) +
+  geom_col()
+
+# Ag: MESA, TRAE, ZEMA, ALCE
+# BAHY Margin Bassia hyssopifolia (goosefoot sp. - fivehorn smotherweed)
+# SUMO Random Suaeda nigra (chenopodium sp. - bush seepweed)
+# ACRE3 Margin Acroptilon repens (thistle sp. - Russian knapweed)
+# PLLA Margin Plantago lanceolata
+# JUBA Random Juncus balticus (riparian)
+
+geocveg_fa <- veg_plots %>%
+  filter(season == "Fall",
+         !str_detect(field_id, "Yerington")) %>%
+  group_by(field_id, type) %>%
+  summarize(across(SAVE4:UNK_POACEAE5, mean), .groups = "keep") %>%
+  select(field_id, type, BAHY, SUMO, ACRE3, PLLA, JUBA, ERCI6) %>%
+  pivot_wider(names_from = type, values_from = BAHY:ERCI6) %>%
+  separate(field_id, into = c("Site", "Field"), sep = " ")
+
+geocData_fa <- df_fa %>%
+  left_join(geocveg_fa, by = c("Site", "Field")) %>%
+  select(Site, Field, contains("_Margin"), contains("_Random"),
+         impermeable_no, wateringMethod, Treatment, Geocoris) %>%
+  replace(is.na(.), 0)
+
+geocData_fa %>%
+  summarise_all(list(~n_distinct(.))) %>%
+  pivot_longer(everything(), names_to = "var")
+
+geocData_fa %>%
+  filter(wateringMethod == "Flooding") %>%
+  summarise_all(list(~n_distinct(.))) %>%
+  pivot_longer(everything(), names_to = "var")
+
+geocData_fa %>%
+  filter(wateringMethod == "Sprinklers") %>%
+  summarise_all(list(~n_distinct(.))) %>%
+  pivot_longer(everything(), names_to = "var")
+
+dotchart(geocData_fa$BAHY_Margin)
+dotchart(geocData_fa$SUMO_Margin) # no variation
+dotchart(geocData_fa$ACRE3_Margin)
+dotchart(geocData_fa$PLLA_Margin) # two levels
+dotchart(geocData_fa$JUBA_Margin) # no variation
+dotchart(geocData_fa$BAHY_Random) # two levels
+dotchart(geocData_fa$SUMO_Random)
+dotchart(geocData_fa$ACRE3_Random)
+dotchart(geocData_fa$PLLA_Random) # two levels
+dotchart(geocData_fa$JUBA_Random) # two levels
+
+geocData_fa %>% arrange(Geocoris) %>% select(Site, Field, Geocoris, ERCI6_Random, ERCI6_Margin)
+
+
+plant_gmod <- glmmTMB(Geocoris ~
+                        BAHY_Margin +
+                        SUMO_Margin +
+                        ACRE3_Margin +
+                        PLLA_Margin +
+                        JUBA_Margin +
+                        BAHY_Random +
+                        SUMO_Random +
+                        ACRE3_Random +
+                        PLLA_Random +
+                        JUBA_Random +
+                        # wateringMethod + too few levels!
+                        Treatment + (1 | Site/Field),
+                      family = "nbinom2",
+                      data = geocData_fa,
+                      na.action = "na.fail")
+clust <- try(makeCluster(getOption("cl.cores", n_cores), type = "PSOCK"))
+clusterExport(clust, "geocData_fa")
+clusterEvalQ(clust, library(glmmTMB))
+plant_gmod_dr <- dredge(plant_gmod, fixed = "cond(Treatment)", m.lim = c(2, 4), trace = 2, cluster = clust)
+stopCluster(clust)
+
+# plant_gmod_dr %>% head(10) %>% View
+
+# PLLA_margin?? ACRE3_random???
+
+mod <- get.models(plant_gmod_dr, 1)[[1]]
+ggplot(geocData_fa, aes(ACRE3_Random, Geocoris)) +
+  geom_point()
+
+plant_gmod <- glmmTMB(Geocoris ~ impermeable_no +
+                        wateringMethod + Treatment + (1 | Site/Field),
+                      family = "nbinom2",
+                      data = geocData_fa)
+### end diversion ####
 
 # not robust: fall ara, coc, ich
 best_mod_list$best.ara.fa

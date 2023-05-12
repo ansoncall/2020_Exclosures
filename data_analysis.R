@@ -130,7 +130,9 @@ lc_palette_experimental <- c(
   "#393ebf", # flood irrigation
   "#ff2d55",  # total cover (veg survey)
   "#AAAA20",  # Shannon diversity (land cover)
-  "#5856d6" # riparian
+  "#5856d6", # riparian
+  "#0000FF", # naturalAridPerimeter
+  "#FF0000" # impermeablePerimeter
   # "#cca266" # naturalArid
 )
 
@@ -406,19 +408,26 @@ if (rebuild == TRUE) {
 source("collectMods_preds.R", echo = TRUE)
 
 # # Compare top predator models
-# TODO review this after rescaling vars ####
-# anth_fams_sp %>% View # nb_scaled by at least delta>2
-# anth_fams_fa %>% View # nb_scaled by delta 1.27. NO RANDOM EFFECT in top mod
-# ara_fams_sp %>% View  # both pois mods close, and they disagree
-# ara_fams_fa %>% View  # nb mods agree, pois mods are delta+ 15
-# cocc_fams_sp %>% View # scaled mods agree, ranked mods differ,
-                        # but delta +4 anyway
-# cocc_fams_fa %>% View # scaled mods agree, ranked mods differ,
-#                       # ranked have slightly better fit but deltas are close
-# geo_fams_sp %>% View  # nb_scaled by delta+ 13
-# geo_fams_fa %>% View  # all mods agree and are generally close
-# ich_fams_sp %>% View  # mods mostly agree and deltas are close
-# ich_fams_fa %>% View  # nb_scaled by delta+7 NO RANDOM EFFECT in top mod
+
+anth_fams_sp %>% View # nb_scaled by at least delta>2
+anth_fams_fa %>% View # nb_scaled by delta 1.27. NO RANDOM EFFECT in top mod
+ara_fams_sp %>% View  # both pois mods close, and they disagree
+ara_fams_fa %>% View  # nb mods agree, pois mods are delta+ 15
+cocc_fams_sp %>% View # scaled mods agree, ranked mods differ,
+# but delta +4 anyway
+cocc_fams_fa %>% View # scaled mods agree, ranked mods differ,
+                      # ranked have slightly better fit but deltas are close ## naturalAridPerim now in here
+## get old best fall coccinellidae model and compare it
+rbind(cocc_fams_fa, nb_scaled$tab_nb_cocc_fa_scaled[18]) %>% View
+## new best model is >delta4
+geo_fams_sp %>% View  # nb_scaled by delta+ 13
+geo_fams_fa %>% View  # all mods agree and are generally close ## impermeablePerim is in best nb mod
+## get old best nb mod and compare
+rbind(geo_fams_fa, nb_scaled$tab_nb_geo_fa_scaled[6], nb_scaled$tab_nb_geo_fa_scaled[48]) %>% View
+## new best nb mod is only a very marginal improvement in fit over old best nb mod
+## replacing impermeablePerim in the old best mod makes it slightly worse
+ich_fams_sp %>% View  # mods mostly agree and deltas are close
+ich_fams_fa %>% View  # nb_scaled by delta+7 NO RANDOM EFFECT in top mod
 
 # Make table of top (no veg) predator models ####
 # make list of best models
@@ -484,14 +493,14 @@ stats_df %>%
 # best to review these by hand. change input models manually.
 
 # # # optional: review a single mod table
-nb_scaled$tab_nb_geo_sp_scaled %>%
+nb_scaled$tab_nb_geo_fa_scaled %>%
   tibble %>%
-  slice(1:15) %>% # can change how inclusive this is
+  slice(1:60) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
 ## surprised no perim variables are in here
 
 # choose model to review
-review_mod <- get.models(nb_scaled$tab_nb_geo_sp_scaled, 1)[[1]]
+review_mod <- get.models(nb_scaled$tab_nb_cocc_fa_scaled, 1)[[1]]
 
 # show summary
 summary(review_mod) # no random effect variance. essentially equivalent to
@@ -499,10 +508,10 @@ summary(review_mod) # no random effect variance. essentially equivalent to
 # basic effects plots
 plot(allEffects(review_mod, residuals = TRUE))
 
-plot(Effect(c("water_sig2"), review_mod, resid = TRUE))
+plot(Effect(c("impermeablePerim"), review_mod, resid = TRUE))
 # try fall mod
-reviewFigDf <- ggpredict(review_mod, terms = c("water_sig2",
-                                               "wateringMethod"))
+reviewFigDf <- ggpredict(review_mod, terms = c("naturalAridPerim",
+                                               "weedy_sig1"))
 reviewFigDf %>% plot(log.y = F, add.data = T)
 # review_mod$frame %>% View
 
@@ -700,6 +709,8 @@ figDat <- stats_df_veg %>%
                              effects == "wateringMethod" ~ "wateringMethod_NA",
                              effects == "totalCover" ~ "totalCover_NA",
                              effects == "NA" ~ "NA_NA",
+                             effects == "impermeablePerim" ~ "impermeablePerim_NA",
+                             effects == "naturaAridPerim" ~ "naturalAridPerim_NA",
                              effects != c("log_AllAph",
                                           "wateringMethod",
                                           "totalCover",
@@ -737,6 +748,8 @@ figDat <- stats_df_veg %>%
                                 totalCover = "Total Cover",
                                 divShan = "Land cover diversity",
                                 water = "Surface water",
+                                naturalAridPerim = "Desert shrub perimeter",
+                                impermeablePerim = "Impermeable perimeter",
                                 # ensure factor order to match palette
                                 .ordered = TRUE
          ),
@@ -764,6 +777,8 @@ figDat_boot <- all_boot %>%
   mutate(effects = case_when(effects == "log_AllAph" ~ "logAllAph_NA",
                              effects == "wateringMethod" ~ "wateringMethod_NA",
                              effects == "totalCover" ~ "totalCover_NA",
+                             effects == "impermeablePerim" ~ "impermeablePerim_NA",
+                             effects == "naturaAridPerim" ~ "naturalAridPerim_NA",
                              TRUE ~ effects)) %>%
   separate(effects, into = c("Effect", "Distance"), sep = "_") %>%
   mutate( Season = factor(Season, levels = c(Spring = "Spring", Fall = "Fall")),
@@ -804,6 +819,8 @@ figDat_boot <- all_boot %>%
                                 totalCover = "Total Cover",
                                 divShan = "Land cover diversity",
                                 water = "Surface water",
+                                naturalAridPerim = "Desert shrub perimeter",
+                                impermeablePerim = "Impermeable perimeter",
                                 # ensure factor order to match palette
                                 .ordered = TRUE
          )) %>%
@@ -821,7 +838,8 @@ ggplot(figDat, aes(y = Taxon,
   facet_grid(~Season) +
   stat_confidence_density(height = 0.9,
                           position = position_dodge(0.8),
-                          show.legend = TRUE) +
+                          show.legend = TRUE,
+                          n = 5000) +
   coord_flip() +
   # scale_y_discrete(drop = FALSE) +
   geom_point(position = position_dodge(0.8)) +
@@ -861,9 +879,11 @@ ggplot(figDat, aes(y = Taxon,
             parse = T,
             size = 2.5) +
   geom_jitter(aes(y = Taxon,
-                 x = coefs),
+                 x = coefs,
+                 fill = Effect),
              data = figDat_boot,
-             color = "black",
+             # color = "black",
+             shape = 21,
              position = position_jitterdodge(dodge.width = 0.8),
              alpha = 0.5) +
   geom_text(aes(y = Taxon,

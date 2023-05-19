@@ -236,8 +236,6 @@ tab_nb_anth_fa_scaled <- rbind(sig1_dredge,
                                const_dredge,
                                no_dredge)
 
-
-
 # Arachnida ####
 ## Spring ####
 gmod_sig1 <- glmmTMB(Arachnida ~
@@ -261,9 +259,9 @@ gmod_sig2 <- glmmTMB(Arachnida ~
 gmod_sig3 <- glmmTMB(Arachnida ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
-                     # landcover effects
-                       alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3
-                     impermeable_sig3 + weedy_sig3 + water_sig3 + div_sig3 +
+                       # landcover effects
+                       alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
+                       impermeable_sig3 + weedy_sig3 + water_sig3 + div_sig3 +
                        divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp, family = "nbinom2")
@@ -465,7 +463,6 @@ tab_nb_ara_fa_scaled <- rbind(sig1_dredge,
                               sig5_dredge,
                               const_dredge,
                               no_dredge)
-
 
 # Coccinellidae ####
 ## Spring ####
@@ -690,10 +687,6 @@ tab_nb_cocc_fa_scaled <- rbind(sig1_dredge,
                                const_dredge,
                                no_dredge)
 
-
-
-
-
 # Geocoris ####
 ## Spring ####
 gmod_sig1 <- glmmTMB(Geocoris ~
@@ -917,11 +910,6 @@ tab_nb_geo_fa_scaled <- rbind(sig1_dredge,
                               sig5_dredge,
                               const_dredge,
                               no_dredge)
-
-
-
-
-
 
 # Ichneumonoidea ####
 ## Spring ####

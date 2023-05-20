@@ -124,17 +124,17 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$MarginalR2[[i]] <- tryCatch({
         r2(bsMods_sp[[j]][[i]])[[2]]
       },
-      error = function(e){return(NA_real__)})
+      error = function(e){return(NA_real_)})
     }, error = function(e){
-      bsDFlist_sp[[j]]$MarginalR2[[i]] <- NA_real__
+      bsDFlist_sp[[j]]$MarginalR2[[i]] <- NA_real_
     })
     tryCatch({
       bsDFlist_sp[[j]]$ConditionalR2[[i]] <- tryCatch({
         tryCatch({
           r2(bsMods_sp[[j]][[i]])[[1]]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$ConditionalR2[[i]] <- NA_real_
       })
@@ -142,9 +142,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$effects1[[i]] <- tryCatch({
         tryCatch({
           names(bsMods_sp[[j]][[i]]$frame)[2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$effects1[[i]] <- NA_real_
       })
@@ -152,9 +152,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$effects2[[i]] <- tryCatch({
         tryCatch({
           names(bsMods_sp[[j]][[i]]$frame)[3]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$effects2[[i]] <- NA_real_
       })
@@ -162,9 +162,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefs1[[i]] <- tryCatch({
         tryCatch({
           fixef(bsMods_sp[[j]][[i]])$cond[2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefs1[[i]] <- NA_real_
       })
@@ -172,9 +172,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefs2[[i]] <- tryCatch({
         tryCatch({
           fixef(bsMods_sp[[j]][[i]])$cond[3]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefs2[[i]] <- NA_real_
       })
@@ -182,9 +182,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefsmin1[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_sp[[j]][[i]])[2,1]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefsmin1[[i]] <- NA_real_
       })
@@ -192,9 +192,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefsmin2[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_sp[[j]][[i]])[3,1]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefsmin2[[i]] <- NA_real_
       })
@@ -202,9 +202,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefsmax1[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_sp[[j]][[i]])[2,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefsmax1[[i]] <- NA_real_
       })
@@ -212,9 +212,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefsmax2[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_sp[[j]][[i]])[3,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefsmax2[[i]] <- NA_real_
       })
@@ -222,9 +222,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefsse1[[i]] <- tryCatch({
         tryCatch({
           summary(bsMods_sp[[j]][[i]])$coefficients$cond[2,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefsse1[[i]] <- NA_real_
       })
@@ -232,9 +232,9 @@ for (j in seq_along(bsMods_sp)){
       bsDFlist_sp[[j]]$coefsse2[[i]] <- tryCatch({
         tryCatch({
           summary(bsMods_sp[[j]][[i]])$coefficients$cond[3,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_sp[[j]]$coefsse2[[i]] <- NA_real_
       })
@@ -247,17 +247,17 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$MarginalR2[[i]] <- tryCatch({
         r2(bsMods_fa[[j]][[i]])[[2]]
       },
-      error = function(e){return(NA_real__)})
+      error = function(e){return(NA_real_)})
     }, error = function(e){
-      bsDFlist_fa[[j]]$MarginalR2[[i]] <- NA_real__
+      bsDFlist_fa[[j]]$MarginalR2[[i]] <- NA_real_
     })
     tryCatch({
       bsDFlist_fa[[j]]$ConditionalR2[[i]] <- tryCatch({
         tryCatch({
           r2(bsMods_fa[[j]][[i]])[[1]]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$ConditionalR2[[i]] <- NA_real_
       })
@@ -265,9 +265,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$effects1[[i]] <- tryCatch({
         tryCatch({
           names(bsMods_fa[[j]][[i]]$frame)[2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$effects1[[i]] <- NA_real_
       })
@@ -275,9 +275,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$effects2[[i]] <- tryCatch({
         tryCatch({
           names(bsMods_fa[[j]][[i]]$frame)[3]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$effects2[[i]] <- NA_real_
       })
@@ -285,9 +285,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefs1[[i]] <- tryCatch({
         tryCatch({
           fixef(bsMods_fa[[j]][[i]])$cond[2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefs1[[i]] <- NA_real_
       })
@@ -295,9 +295,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefs2[[i]] <- tryCatch({
         tryCatch({
           fixef(bsMods_fa[[j]][[i]])$cond[3]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefs2[[i]] <- NA_real_
       })
@@ -305,9 +305,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefsmin1[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_fa[[j]][[i]])[2,1]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefsmin1[[i]] <- NA_real_
       })
@@ -315,9 +315,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefsmin2[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_fa[[j]][[i]])[3,1]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefsmin2[[i]] <- NA_real_
       })
@@ -325,9 +325,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefsmax1[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_fa[[j]][[i]])[2,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefsmax1[[i]] <- NA_real_
       })
@@ -335,9 +335,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefsmax2[[i]] <- tryCatch({
         tryCatch({
           confint(bsMods_fa[[j]][[i]])[3,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefsmax2[[i]] <- NA_real_
       })
@@ -345,9 +345,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefsse1[[i]] <- tryCatch({
         tryCatch({
           summary(bsMods_fa[[j]][[i]])$coefficients$cond[2,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefsse1[[i]] <- NA_real_
       })
@@ -355,9 +355,9 @@ for (j in seq_along(bsMods_fa)){
       bsDFlist_fa[[j]]$coefsse2[[i]] <- tryCatch({
         tryCatch({
           summary(bsMods_fa[[j]][[i]])$coefficients$cond[3,2]},
-          error = function(e){return(NA_real__)}
+          error = function(e){return(NA_real_)}
         )},
-        error = function(e){return(NA_real__)}
+        error = function(e){return(NA_real_)}
       )},
       error = function(e){bsDFlist_fa[[j]]$coefsse2[[i]] <- NA_real_
       })
@@ -372,7 +372,7 @@ fall_boot <- bind_rows(bsDFlist_fa, .id = "model")
 all_boot <- bind_rows(list("Spring" = spring_boot, "Fall" = fall_boot),
                       .id = "Season") %>%
   # replace NaN with NA
-  mutate_all(~ifelse(is.nan(.), NA_real__, .)) %>%
+  mutate_all(~ifelse(is.nan(.), NA_real_, .)) %>%
   # make Taxon column
   mutate(Taxon = case_when(
     grepl(".ant.", model) ~"Anthocoridae",

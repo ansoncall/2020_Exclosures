@@ -122,7 +122,9 @@ lavaan_df.fa <- subplot_data_raw %>%
   left_join(diffData_wide) %>%
   filter(Season == 'Fall',
          Treatment != 'Pre-',
-         diffIchneumonoidea > 40) # no treatment effect, regardless of how strict you are here
+         diffIchneumonoidea > 40)
+# no treatment effect, regardless of how strict you are here^
+
 ich.eff <- glmmTMB(AllAph~ Treatment + log(Ichneumonoidea+1) + (1|Site:Field),
                    data = lavaan_df,
                    family = 'nbinom2')
@@ -145,7 +147,10 @@ ncol(ara.tidy)
 ncol(cocc.tidy)
 ncol(ich.tidy)
 tidy.mods <- rbind(anth.tidy, ara.tidy, cocc.tidy, ich.tidy)
-tidy.mods$model <- c("Anthocoridae", "Arachnida", "Coccinellidae", "Ichneumonoidea")
+tidy.mods$model <- c("Anthocoridae",
+                     "Arachnida",
+                     "Coccinellidae",
+                     "Ichneumonoidea")
 
 dwplot(tidy.mods) %>%
   relabel_predictors(c(TreatmentSham = "Biocontrol effect")) +

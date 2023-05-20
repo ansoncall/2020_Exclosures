@@ -716,11 +716,11 @@ gmod_sig4 <- glmmTMB(Geocoris ~
 gmod_sig5 <- glmmTMB(Geocoris ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
-                       (1 | Site / Field), # nested random effects
+                       # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + div_sig5 +
                        divShan_sig5 +
-                       # landcover effects
+                       (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = poisson())
 gmod_const <- glmmTMB(Geocoris ~
                         # non-landcover effects

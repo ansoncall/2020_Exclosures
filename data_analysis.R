@@ -379,7 +379,7 @@ if (rebuild == TRUE) {
 
   ## source external scripts to build model selection tables
   ## set number of cores to be used in parallel processing
-  n_cores <- detectCores() - 4
+  n_cores <- detectCores() - 2
   # glmer, negative binomial, scaled vars
   source("nbMixed.R", echo = TRUE) # system.time 161 seconds
   # glmer, negative binomial, ranked vars
@@ -1045,8 +1045,6 @@ plot(dharma_res)
 plot(fitted, pearson_res)
 plot(fitted, default_res)
 
-
-leveragePlot(review_mod)
 source(system.file("other_methods","influence_mixed.R", package="glmmTMB"))
 influ <- influence_mixed(review_mod)
 infIndexPlot(influ)
@@ -1810,6 +1808,6 @@ glm_model <- psem(glm.nb(Coccinellidae ~ weedy_sig1 +
               glm.nb(AllAph ~ wateringMethod_Flooding + ag_sig1 +
                    Treatment_Sham*Coccinellidae, lavaan_df2))
 summary(glm_model)
-plot(glm_model)
+# plot(glm_model) # error
 
 

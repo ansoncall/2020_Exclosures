@@ -23,7 +23,7 @@ gmod_sig1 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Anthocoridae ~
@@ -32,7 +32,7 @@ gmod_sig2 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Anthocoridae ~
@@ -41,7 +41,7 @@ gmod_sig3 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig4 <- glmmTMB(Anthocoridae ~
@@ -50,7 +50,7 @@ gmod_sig4 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig5 <- glmmTMB(Anthocoridae ~
@@ -59,7 +59,7 @@ gmod_sig5 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Anthocoridae ~
@@ -132,7 +132,7 @@ gmod_sig1 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Anthocoridae ~
@@ -141,7 +141,7 @@ gmod_sig2 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig3 <- glmmTMB(Anthocoridae ~
@@ -150,7 +150,7 @@ gmod_sig3 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig4 <- glmmTMB(Anthocoridae ~
@@ -159,7 +159,7 @@ gmod_sig4 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig5 <- glmmTMB(Anthocoridae ~
@@ -168,7 +168,7 @@ gmod_sig5 <- glmmTMB(Anthocoridae ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Anthocoridae ~
@@ -242,7 +242,7 @@ gmod_sig1 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Arachnida ~
@@ -251,7 +251,7 @@ gmod_sig2 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Arachnida ~
@@ -260,7 +260,7 @@ gmod_sig3 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2") # convergence warning
 gmod_sig4 <- glmmTMB(Arachnida ~
@@ -269,7 +269,7 @@ gmod_sig4 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2") # convergence warning
 gmod_sig5 <- glmmTMB(Arachnida ~
@@ -278,7 +278,7 @@ gmod_sig5 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Arachnida ~
@@ -351,7 +351,7 @@ gmod_sig1 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Arachnida ~
@@ -360,7 +360,7 @@ gmod_sig2 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig3 <- glmmTMB(Arachnida ~
@@ -369,7 +369,7 @@ gmod_sig3 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig4 <- glmmTMB(Arachnida ~
@@ -378,7 +378,7 @@ gmod_sig4 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig5 <- glmmTMB(Arachnida ~
@@ -387,7 +387,7 @@ gmod_sig5 <- glmmTMB(Arachnida ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Arachnida ~
@@ -462,7 +462,7 @@ gmod_sig1 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Coccinellidae ~
@@ -471,7 +471,7 @@ gmod_sig2 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Coccinellidae ~
@@ -480,7 +480,7 @@ gmod_sig3 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig4 <- glmmTMB(Coccinellidae ~
@@ -489,7 +489,7 @@ gmod_sig4 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig5 <- glmmTMB(Coccinellidae ~
@@ -498,7 +498,7 @@ gmod_sig5 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Coccinellidae ~
@@ -571,7 +571,7 @@ gmod_sig1 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Coccinellidae ~
@@ -580,7 +580,7 @@ gmod_sig2 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Coccinellidae ~
@@ -589,7 +589,7 @@ gmod_sig3 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        # nested random effects NOT fitted,
                        # simplifying to site only
                        (1 | Site),
@@ -600,7 +600,7 @@ gmod_sig4 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        # nested random effects NOT fitted,
                        # simplify to site only
                        (1 | Site),
@@ -611,7 +611,7 @@ gmod_sig5 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Coccinellidae ~
@@ -686,7 +686,7 @@ gmod_sig1 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Geocoris ~
@@ -695,7 +695,7 @@ gmod_sig2 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Geocoris ~
@@ -704,7 +704,7 @@ gmod_sig3 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig4 <- glmmTMB(Geocoris ~
@@ -713,7 +713,7 @@ gmod_sig4 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig5 <- glmmTMB(Geocoris ~
@@ -722,7 +722,7 @@ gmod_sig5 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Geocoris ~
@@ -795,7 +795,7 @@ gmod_sig1 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig2 <- glmmTMB(Geocoris ~
@@ -804,7 +804,7 @@ gmod_sig2 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig3 <- glmmTMB(Geocoris ~
@@ -813,7 +813,7 @@ gmod_sig3 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig4 <- glmmTMB(Geocoris ~
@@ -822,7 +822,7 @@ gmod_sig4 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig5 <- glmmTMB(Geocoris ~
@@ -831,7 +831,7 @@ gmod_sig5 <- glmmTMB(Geocoris ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_const <- glmmTMB(Geocoris ~
@@ -906,7 +906,7 @@ gmod_sig1 <- glmmTMB(Ichneumonoidea ~
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        # landcover effects
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        Treatment + log_AllAph + wateringMethod +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
@@ -916,7 +916,7 @@ gmod_sig2 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Ichneumonoidea ~
@@ -925,7 +925,7 @@ gmod_sig3 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig4 <- glmmTMB(Ichneumonoidea ~
@@ -934,7 +934,7 @@ gmod_sig4 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_sig5 <- glmmTMB(Ichneumonoidea ~
@@ -943,7 +943,7 @@ gmod_sig5 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_sp_rnk, family = "nbinom2")
 gmod_const <- glmmTMB(Ichneumonoidea ~
@@ -1016,7 +1016,7 @@ gmod_sig1 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1 + dirt_sig1 +
-                       divShan_sig1 +
+                       div_sig1 + divShan_sig1 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig2 <- glmmTMB(Ichneumonoidea ~
@@ -1025,7 +1025,7 @@ gmod_sig2 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
                        impermeable_sig2 + weedy_sig2 + water_sig2 + dirt_sig2 +
-                       divShan_sig2 +
+                       div_sig2 + divShan_sig2 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2")
 gmod_sig3 <- glmmTMB(Ichneumonoidea ~
@@ -1034,7 +1034,7 @@ gmod_sig3 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
                        impermeable_sig3 + weedy_sig3 + water_sig3 + dirt_sig3 +
-                       divShan_sig3 +
+                       div_sig3 + divShan_sig3 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig4 <- glmmTMB(Ichneumonoidea ~
@@ -1043,7 +1043,7 @@ gmod_sig4 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
                        impermeable_sig4 + weedy_sig4 + water_sig4 + dirt_sig4 +
-                       divShan_sig4 +
+                       div_sig4 + divShan_sig4 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_sig5 <- glmmTMB(Ichneumonoidea ~
@@ -1052,7 +1052,7 @@ gmod_sig5 <- glmmTMB(Ichneumonoidea ~
                        # landcover effects
                        alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
                        impermeable_sig5 + weedy_sig5 + water_sig5 + dirt_sig5 +
-                       divShan_sig5 +
+                       div_sig5 + divShan_sig5 +
                        (1 | Site / Field), # nested random effects
                      data = df_fa_rnk, family = "nbinom2") # convergence warning
 gmod_const <- glmmTMB(Ichneumonoidea ~

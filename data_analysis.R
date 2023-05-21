@@ -55,7 +55,6 @@ library(webshot) # to capture tab_model output (or other html output) as png
 # p value formatting function
 # not sure how this works. from stackexchange
 pvalr <- function(pvals, sig_limit = .001, digits = 3, html = FALSE) {
-
   roundr <- function(x, digits = 1) {
     res <- sprintf(paste0("%.", digits, "f"), x)
     zzz <- paste0("0.", paste(rep("0", digits), collapse = ""))
@@ -72,11 +71,6 @@ pvalr <- function(pvals, sig_limit = .001, digits = 3, html = FALSE) {
       return(roundr(x, digits = 2)) else
         return(roundr(x, digits = digits))
   }, sig_limit = sig_limit)
-}
-
-# define stupid "reverse paste" function for mapping paste0() over a list
-rpaste0 <- function(x, y) {
-  paste0(y, x)
 }
 
 # import/wrangle data ####
@@ -407,26 +401,9 @@ if (rebuild == TRUE) {
 # model selection table.
 source("collectMods_preds.R", echo = TRUE)
 
-# # Compare top predator models
-# anth_fams_sp %>% View # nb_scaled by at least delta>2
-# anth_fams_fa %>% View # nb_scaled by delta 1.27. NO RANDOM EFFECT in top mod
-# ara_fams_sp %>% View  # both pois mods close, and they disagree
-# ara_fams_fa %>% View  # nb mods agree, pois mods are delta+ 15
-# cocc_fams_sp %>% View # scaled mods agree, ranked mods differ,
-# # but delta +4 anyway
-# cocc_fams_fa %>% View # scaled mods agree, ranked mods differ,
-#                       # ranked have slightly better fit but deltas are close ## naturalAridPerim now in here
-# ## get old best fall coccinellidae model and compare it
-# rbind(cocc_fams_fa, nb_scaled$tab_nb_cocc_fa_scaled[18]) %>% View
-# ## new best model is >delta4
-# geo_fams_sp %>% View  # nb_scaled by delta+ 13
-# geo_fams_fa %>% View  # all mods agree and are generally close ## impermeablePerim is in best nb mod
-# ## get old best nb mod and compare
-# rbind(geo_fams_fa, nb_scaled$tab_nb_geo_fa_scaled[6], nb_scaled$tab_nb_geo_fa_scaled[48]) %>% View
-# ## new best nb mod is only a very marginal improvement in fit over old best nb mod
-# ## replacing impermeablePerim in the old best mod makes it slightly worse
-# ich_fams_sp %>% View  # mods mostly agree and deltas are close
-# ich_fams_fa %>% View  # nb_scaled by delta+7 NO RANDOM EFFECT in top mod
+# Optional: compare top predator models by viewing model selection tables, ex.
+# anth_fams_sp for the top Anthocoridae spring models from each family.
+
 
 # Make table of top (no veg) predator models ####
 # make list of best models
@@ -836,28 +813,29 @@ ggplot(figDat, aes(y = Taxon,
                    moe = moe95)) +
   facet_grid(~Season) +
   stat_confidence_density(height = 0.9,
-                          position = position_dodge(0.8),
+                          position = position_dodge(0.9),
                           show.legend = TRUE,
                           n = 5000) +
   coord_flip() +
   # scale_y_discrete(drop = FALSE) +
-  geom_point(position = position_dodge(0.8)) +
+  geom_point(position = position_dodge(0.9)) +
   geom_errorbar(aes(xmin = coefs+coefsse,
                     xmax = coefs-coefsse),
-                position = position_dodge(0.8),
+                position = position_dodge(0.9),
                 width = 0.2
   ) +
   scale_fill_manual(values = lc_palette_experimental) +
-  # xlim(c(-3.4,3)) +
+  xlim(c(-4,4)) +
   geom_vline(xintercept = 0,
              linetype = "dashed",
              color = "red",
-             alpha = 0.5) +
+             alpha = 0.5,
+             size = 1.2) +
   geom_hline(yintercept = (1:4)+0.5,
              color = "grey70") +
   xlab("Standardized effect size") +
   ylab("Predator Taxon") +
-  theme_grey(base_size = 11) +
+  theme_grey(base_size = 10) +
   theme(#legend.position = c(0.1, 0.1),
     legend.background = element_rect(linetype = 1, color = NA),
     panel.background = element_rect(fill = NA, color = "black"),
@@ -865,18 +843,22 @@ ggplot(figDat, aes(y = Taxon,
     # panel.grid.major.y = element_line(),
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank(),
+    axis.text = element_text(color = "black"),
     strip.background.x = element_rect(fill = "NA", color = "NA"),
     legend.text = element_text(size = 10),
     legend.position = "bottom",
     legend.title = element_blank(),
     legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
   guides(fill = guide_legend(nrow = 2)) +
-  geom_text(aes(x = 3,
+  geom_text(aes(x = 3.7,
                 y = Taxon,
                 label = cat),
             inherit.aes = F,
             parse = T,
-            size = 2.5)
+            size = 8 / .pt)
+
+ggsave("predator_effects.pdf", width = 18, height = 12, units = "cm", dpi = 600)
+
 # to add data from bootstrapping exercise:
   # geom_jitter(aes(y = Taxon,
   #                x = coefs,
@@ -1305,7 +1287,6 @@ plot(allEffects(fa_best_veg, resid = TRUE))
 plot(allEffects(sp_best_veg, resid = TRUE))
 plot(Effect(c("rich", "log_Coccinellidae", "wateringMethod"), sp_best_veg, resid = TRUE))
 # try spring mod
-library(ggeffects)
 
 aphFigDf <- ggpredict(sp_best_veg, terms = c("rich",
                                              "wateringMethod"))
@@ -1785,29 +1766,4 @@ summary(mod2) # better fit, stronger sham effect.
 plot(allEffects(mod1))
 plot(allEffects(mod2))
 
-# what is the deal with the diffCoccinellidae
-
-
-
-# for negbin SEM - maybe do blavaan, export jags model syntax, edit link
-# function, fit w/rjags. nightmarish.
-
-## back to sem?
-library(piecewiseSEM)
-
-model <- psem(lm(logCoccinellidae ~ weedy_sig1 + dirt_sig1, lavaan_df2),
-              lm(logAllAph ~ wateringMethod_Flooding + ag_sig1 +
-                   Treatment_Sham*logCoccinellidae, lavaan_df2))
-summary(model)
-plot(model)
-
-library(MASS)
-# glm version
-glm_model <- psem(glm.nb(Coccinellidae ~ weedy_sig1 +
-                             dirt_sig1, lavaan_df2),
-              glm.nb(AllAph ~ wateringMethod_Flooding + ag_sig1 +
-                   Treatment_Sham*Coccinellidae, lavaan_df2))
-summary(glm_model)
-# plot(glm_model) # error
-
-
+# what is the deal with the diffCoccinellidae?

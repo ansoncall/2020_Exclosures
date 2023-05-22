@@ -1051,10 +1051,10 @@ nameplates <- figDat %>%
   # use only landcover vars that have a spatial scale
   filter(dnum > 0) %>%
   # use to manually tune position of geom_label
-  mutate(hjust = c(0.22,0.02,-0.07,-0.23,-0.21,
-                   -0,1.02,1.02,0, 0),
+  mutate(hjust = c(0.3,0.12,0.02,-0.25,-0.12,
+                   0.58,0.26,1.32,1.02,0.18),
          y = c(9,7,5,8,3,
-               4,9,7,7, 0))  %>%
+               8,6,2.5,8,8))  %>% # anth, ara, cocc, geoc, ich
   # make factor for color coding labels
   mutate(col = as.factor(case_when(dnum == 75 ~ "Very aggressive",
                          dnum == 350 ~ "Moderate",
@@ -1069,7 +1069,7 @@ nameplates <- figDat %>%
 
 ggplot(dist_decay_df, aes(Distance, value, color = `Decay function`)) +
   geom_line(size = 1) +
-  theme_classic() +
+  theme_classic(base_size = 10) +
   scale_color_manual(values = dist_palette) +
   scale_fill_manual(values = dist_palette, drop = F, guide = "none") +
   labs(y = "Weighting value") +
@@ -1079,11 +1079,14 @@ ggplot(dist_decay_df, aes(Distance, value, color = `Decay function`)) +
                              label = Taxon,
                              fill = col),
              inherit.aes = FALSE,
-             alpha = 0.8) +
+             alpha = 0.8,
+             size = 6/.pt) +
   facet_wrap(~Season, ncol = 1) +
   theme(strip.background = element_blank(),
-        legend.position = "bottom")
+        legend.position = "right",
+        axis.text = element_text(color = "black"))
 
+ggsave("predator_distance.pdf", width = 18, height = 6, units = "cm", dpi = 600)
 # Extra ladybug model ####
 # try a binomial cocc mod for fall (low coc density in fall)
 # source: build models for each distweight and dredge
@@ -1104,6 +1107,7 @@ source("coccinellidae_binomial.R", echo = TRUE)
 # AllAph spring
 r2(get.models(tab_nb_allaph_sp_scaled, 1)[[1]]) # good fit 0.85
 plot(simulateResiduals(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])) # ok
+summary(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])
 # tab_nb_allaph_sp_scaled %>%
 #   tibble %>%
 #   slice(1:5) %>% # can change how inclusive this is
@@ -1144,6 +1148,7 @@ plot(simulateResiduals(get.models(tab_nb_nonacy_sp_scaled, 1)[[1]])) # great
 # AllAph fall
 r2(get.models(tab_nb_allaph_fa_scaled, 1)[[1]]) # average fit 0.69
 plot(simulateResiduals(get.models(tab_nb_allaph_fa_scaled, 1)[[1]])) # ok
+summary(get.models(tab_nb_allaph_fa_scaled, 1)[[1]])
 # tab_nb_allaph_fa_scaled %>%
 #   tibble %>%
 #   slice(1:14) %>% # can change how inclusive this is
@@ -1153,7 +1158,7 @@ plot(simulateResiduals(get.models(tab_nb_allaph_fa_scaled, 1)[[1]])) # ok
 plot(allEffects(get.models(tab_nb_allaph_fa_scaled, 1)[[1]], residuals = TRUE))
 # high leverage
 dotchart(sort(df_fa$impermeable_sig4), main = "fall impermeable sig4 dotchart")
-df_fa %>% arrange(impermeable_sig4) %>% select(Site, Field, impermeable_sig4, AllAph) %>% View
+# df_fa %>% arrange(impermeable_sig4) %>% select(Site, Field, impermeable_sig4, AllAph) %>% View
 
 # Acyrthosiphon fall
 r2(get.models(tab_nb_acy_fa_scaled, 1)[[1]]) # pretty good fit 0.7
@@ -1258,7 +1263,9 @@ veg_dredge_fa <- dredge(fa_best_veg,
 # new best mod!! +richness!!
 sp_best_veg <- get.models(veg_dredge_sp, 1)[[1]]
 summary(sp_best_veg)
+summary(sp_best)
 r2(sp_best_veg)
+r2(sp_best)
 plot(simulateResiduals(sp_best_veg))
 plot(fitted(sp_best_veg), residuals(sp_best_veg, type = "pearson"))
 plot(df_sp_vd$AllAph, fitted(sp_best_veg))
@@ -1274,7 +1281,9 @@ plot(allEffects(sp_best_veg, resid = TRUE))
 # new best mod!! -shan!!
 fa_best_veg <- get.models(veg_dredge_fa, 1)[[1]]
 summary(fa_best_veg)
+summary(fa_best)
 r2(fa_best_veg)
+r2(fa_best)
 plot(simulateResiduals(fa_best_veg))
 plot(fitted(fa_best_veg), residuals(fa_best_veg, type = "pearson"))
 plot(df_fa_vd$AllAph, fitted(fa_best_veg))
@@ -1447,7 +1456,7 @@ ggplot(aphFigDat, aes(y = Effect,
                 width = 0.2
   ) +
   # scale_fill_manual(values = lc_palette_experimental) +
-  xlim(c(-3.4,3)) +
+  xlim(c(-2,2)) +
   geom_vline(xintercept = 0,
              linetype = "dashed",
              color = "red",
@@ -1464,22 +1473,26 @@ ggplot(aphFigDat, aes(y = Effect,
     panel.grid.minor.x = element_blank(),
     strip.background.x = element_rect(fill = "NA", color = "NA"),
     legend.text = element_text(size = 10),
+    axis.text = element_text(color = "black", size = 6),
+    axis.title.x = element_text(size = 6),
     legend.position = "bottom",
     legend.title = element_blank(),
     legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
   guides(fill = guide_legend(nrow = 2)) +
-  geom_text(aes(x = 2.7,
-                y = 3.3,
+  geom_text(aes(x = -1.5,
+                y = 1.5,
                 label = cat),
             inherit.aes = F,
             parse = T,
-            size = 4) +
-  geom_text(aes(x = 2.7,
-                y = 2.8,
+            size = 6/.pt) +
+  geom_text(aes(x = -1.5,
+                y = 0.8,
                 label = catC),
             inherit.aes = F,
             parse = T,
-            size = 4)
+            size = 6/.pt)
+
+ggsave("aphid_effects.pdf", width = 8.5, height = 6, units = "cm", dpi = 600)
 
 
 df_fa_vd %>%
@@ -1608,7 +1621,7 @@ lavaan_df1 <- lavaan_df_prep2 %>%
          diffCoccinellidae,
          wateringMethod_Flooding,
          ag_sig1, weedy_sig1, dirt_sig1,
-         AllAph, Treatment,
+         AllAph, Treatment, rich,
          Treatment_Sham, Site, Field) %>%
   mutate(diffCoccinellidae =
            case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
@@ -1641,8 +1654,8 @@ sd(subplot_data_raw$weedy_sig1)-> lala
 # 2. review aphid/ladybug/landcover relationships from glm
 ## from "top-down" effects model....
 cocc_eff <- lmer(logAllAph ~ Treatment + logCoccinellidae +
-                      (1 | Site:Field),
-                    data = lavaan_df1)
+                   (1 | Site:Field),
+                 data = lavaan_df1)
 summary(cocc_eff) # !!! Treatment_Sham N.S. unless diffCoccinellidae > 0
 plot(allEffects(cocc_eff))
 plot(simulateResiduals(cocc_eff))
@@ -1668,7 +1681,7 @@ lavaan_df2 <- lavaan_df_prep2 %>%
   mutate(logAllAph = log(AllAph + 1),
          logCoccinellidae = log(Coccinellidae + 1)) %>%
   select(logAllAph, logCoccinellidae, Coccinellidae, # dump other cols
-         diffCoccinellidae,
+         diffCoccinellidae, rich,
          wateringMethod_Flooding,
          ag_sig1, weedy_sig1, dirt_sig1,
          AllAph, Treatment,
@@ -1677,7 +1690,7 @@ lavaan_df2 <- lavaan_df_prep2 %>%
            case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
                      Treatment_Sham == 0 ~ 0)) %>%
   mutate(across(.cols = -c(Treatment, Site, Field,
-                           wateringMethod_Flooding,
+                           wateringMethod_Flooding, rich,
                            Treatment_Sham, diffCoccinellidae),
                 .fns = ~(./sd(.)))) # scale, don't center
 ## specify model (with no constraints)
@@ -1685,7 +1698,7 @@ mod_specA <- "
   # direct effects
     logCoccinellidae ~ w*weedy_sig1 + d*dirt_sig1
 
-    logAllAph ~ f*wateringMethod_Flooding + a*ag_sig1 + t*Treatment_Sham
+    logAllAph ~ f*wateringMethod_Flooding + a*rich + t*Treatment_Sham
 
   # mediator
     # ?
@@ -1711,7 +1724,7 @@ mod_fitA <- sem(mod_specA, data = lavaan_df2)
 
 summary(mod_fitA)
 # Trt_Sham effect is:
-# Trtmnt_Shm (t) Est: -0.758    Std.err: 0.133   z: -5.708    P: 0.000
+# Trtmnt_Shm (t) Est: -0.847    Std.err: 0.126   z: -6.732    P: 0.000
 
 lavaanPlot(model = mod_fitA, coefs = TRUE, covs = F, stand = FALSE)
 
@@ -1721,7 +1734,7 @@ mod_specB <- "
   # direct effects
     logCoccinellidae ~ w*weedy_sig1 + d*dirt_sig1
 
-    logAllAph ~ f*wateringMethod_Flooding + a*ag_sig1 + t*Treatment_Sham
+    logAllAph ~ f*wateringMethod_Flooding + a*rich + t*Treatment_Sham
 
   # mediator
     # ?
@@ -1739,7 +1752,7 @@ mod_specB <- "
    logAllAph ~~ l*logCoccinellidae
 
   # constraints
-   t == -0.758
+   t == -0.847
 "
 
 # ML is default estimator
@@ -1747,12 +1760,70 @@ mod_fit1B <- sem(mod_specB, data = lavaan_df1)
 summary(mod_fit1B)
 
 lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = FALSE, stand = FALSE)
+lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = TRUE, stand = FALSE)
 
 
 lavResiduals(mod_fit1B)
 
+### fall lavaan ####
+# 1. prepare data
+## binary watering method var
+lavaan_df_prep <- subplot_data_raw %>%
+  to_dummy(wateringMethod, suffix = "label") %>%
+  bind_cols(subplot_data_raw)
+## binary site vars
+lavaan_df_prep2 <- lavaan_df_prep %>%
+  to_dummy(Site, suffix = "label") %>%
+  bind_cols(lavaan_df_prep)
+## binary treatment vars, bind other data
 
+## one version only - you get lost if you make multiple dfs!
+lavaan_df1 <- lavaan_df_prep2 %>%
+  to_dummy(Treatment, suffix = "label") %>%
+  bind_cols(lavaan_df_prep2) %>%
+  left_join(diffData_wide) %>%
+  filter(Season == "Fall",
+         Treatment != "Pre-") %>%
+  # diffCoccinellidae > 0) %>%
+  mutate(logAllAph = log(AllAph + 1),
+         logCoccinellidae = log(Coccinellidae + 1)) %>%
+  select(logAllAph, impermeable_sig4, naturalArid_sig4, shan,
+         AllAph, Treatment,
+         Treatment_Sham, Site, Field) %>%
+  mutate(across(.cols = -c(Treatment, Site, Field, Treatment_Sham,
+                           shan),
+                .fns = ~as.vector(scale(.x))))
+# alternative: ~(. -mean(.)/ sd(.))
+## specify model (with no constraints)
+mod_specA <- "
+  # direct effects
 
+    logAllAph ~ i*impermeable_sig4 + n*naturalArid_sig4 + t*Treatment_Sham
+
+  # mediator
+    # ?
+
+  # indirect effects
+    # ?
+    # multiply coefs here - use :=
+
+  # total effects
+    # add coefs here - use :=
+
+  # covariance
+    # add covs here
+
+  # constraints
+   # none yet!
+"
+
+mod_fitA <- sem(mod_specA, data = lavaan_df1)
+
+summary(mod_fitA)
+# Trt_Sham effect is:
+# Trtmnt_Shm (t) Est: -0.758    Std.err: 0.133   z: -5.708    P: 0.000
+
+lavaanPlot(model = mod_fitA, coefs = TRUE, covs = F, stand = FALSE)
 # exploratory regression
 ## how does filtering change the sham > diff relationship?
 mod1 <- lm(diffCoccinellidae ~ Treatment_Sham + logCoccinellidae,

@@ -26,6 +26,7 @@ cocc_fams_sp <- model.sel(best_nb_scaled,
                          best_nb_ranked,
                          best_pois_scaled,
                          best_pois_ranked)
+cocc_sp_best_nb_fix_scaled <- get.models(tab_nb_cocc_sp_fix_scaled, 1)[[1]]
 # Geocoris
 best_nb_scaled <- get.models(nb_scaled$tab_nb_geo_sp_scaled, 1)[[1]]
 best_nb_ranked <- get.models(nb_ranked$tab_nb_geo_sp_ranked, 1)[[1]]
@@ -93,4 +94,5 @@ ich_fams_fa <- model.sel(best_nb_scaled,
                         best_pois_ranked)
 
 ## clean env ####
-rm(best_nb_scaled, best_nb_ranked, best_pois_scaled, best_pois_ranked)
+rm(best_nb_scaled, best_nb_fix_scaled, best_nb_ranked,
+   best_pois_scaled, best_pois_ranked)

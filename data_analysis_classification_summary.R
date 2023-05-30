@@ -65,6 +65,124 @@ field_data %>%
 
 # in summary, manual classification seems to change Yerington the most
 
+## figure: "fixing" effect on yerington 2
+field_data %>%
+  # only need one season
+  filter(Season == "Spring", Treatment == "Control",
+         Site == "Yerington", Field == 2) %>%
+  # calculate change in alfalfa area
+  mutate(Change_sig1 = alfalfa_fix_sig1 - alfalfa_sig1,
+         Change_sig2 = alfalfa_fix_sig2 - alfalfa_sig2,
+         Change_sig3 = alfalfa_fix_sig3 - alfalfa_sig3,
+         Change_sig4 = alfalfa_fix_sig4 - alfalfa_sig4,
+         Change_sig5 = alfalfa_fix_sig5 - alfalfa_sig5,
+         Change_const = alfalfa_fix_const - alfalfa_const,
+         Change_no = alfalfa_fix_no - alfalfa_no) %>%
+  rowwise() %>%
+  # change areascores to proportions
+  mutate(
+         across(ends_with("_sig1"), ~ .x/rowSums(across(ends_with("_sig1")))),
+         across(ends_with("_sig2"), ~ .x/rowSums(across(ends_with("_sig2")))),
+         across(ends_with("_sig3"), ~ .x/rowSums(across(ends_with("_sig3")))),
+         across(ends_with("_sig4"), ~ .x/rowSums(across(ends_with("_sig4")))),
+         across(ends_with("_sig5"), ~ .x/rowSums(across(ends_with("_sig5")))),
+         across(ends_with("_const"), ~ .x/rowSums(across(ends_with("_const")))),
+         across(ends_with("_no"), ~ .x/rowSums(across(ends_with("_no")))),
+         ) %>%
+  ungroup %>%
+  select(Site,
+         Field,
+         contains("alfalfa"),
+         contains("weedy"),
+         -contains("Perim"),
+         -contains("Wet")) %>%
+  pivot_longer(contains(c("alfalfa","weedy")),
+               names_to = "dist_weight",
+               values_to = "proportion") %>%
+  separate(dist_weight, c("cover", "dist"), sep = "_(?!f)") %>%
+  separate(cover, c("cover", "fix"), sep = "_", fill = "right") %>%
+  mutate(fix = replace_na(fix, "regular"),
+         dist = fct_relevel(dist,
+                            "sig1",
+                            "sig2",
+                            "sig3",
+                            "sig4",
+                            "sig5",
+                            "const",
+                            "no"
+                            ),
+         dist = fct_recode( dist,
+                            `Very aggressive` = "sig1",
+                            `Aggressive` = "sig2",
+                            `Moderate` = "sig3",
+                            `Weak` = "sig4",
+                            `Very weak` = "sig5",
+                            `Constant` = "const",
+                            `None` = "no"),
+         fix = fct_relevel(fix, "regular", "fix"),
+         fix = fct_recode(fix,
+                          `Automatically classified` = "regular",
+                          `Manually classified` = "fix"),
+         cover = fct_recode(cover,
+                            `Alfalfa cover` = "alfalfa",
+                            `Weedy cover` = "weedy")) %>%
+  filter(cover == "Weedy cover") %>%
+    ggplot(aes(dist, proportion*100, fill = fix)) +
+    geom_col(
+      position = position_dodge(0.9)
+      ) +
+    # facet_wrap(~ cover, ncol = 1) +
+    labs(x = "Distance weighting",
+         y = "% weighted area") +
+    theme(legend.background = element_rect(linetype = 1, color = NA),
+          legend.position = c(0.68, 0.82),
+          panel.background = element_rect(fill = NA, color = "black"),
+          plot.background = element_rect(fill = "white"),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.text = element_text(color = "black"),
+          axis.text.x = element_text(angle = 35, hjust = 0.9),
+          strip.background.x = element_rect(fill = "NA", color = "NA"),
+          legend.title = element_blank())
+
+ggsave("corrected_classifications.pdf", height = 8.5, width = 8.5, units = "cm",
+       dpi = 600)
+
+scales::hue_pal()(2)
+
+## ladybug/weedy and fixing
+subplot_data_raw %>%
+  # spring only
+  filter(Season == "Spring") %>%
+  # log-transform AllAph col
+  rowwise() %>%
+  # change areascores to proportions
+  mutate(
+    across(contains("fix") & ends_with("_sig1"), ~ .x/rowSums(across(contains("fix") & ends_with("_sig1")))),
+    across(contains("fix") & ends_with("_sig2"), ~ .x/rowSums(across(contains("fix") & ends_with("_sig2")))),
+    across(contains("fix") & ends_with("_sig3"), ~ .x/rowSums(across(contains("fix") & ends_with("_sig3")))),
+    across(contains("fix") & ends_with("_sig4"), ~ .x/rowSums(across(contains("fix") & ends_with("_sig4")))),
+    across(contains("fix") & ends_with("_sig5"), ~ .x/rowSums(across(contains("fix") & ends_with("_sig5")))),
+    across(contains("fix") & ends_with("_const"), ~ .x/rowSums(across(contains("fix") & ends_with("_const")))),
+    across(contains("fix") & ends_with("_no"), ~ .x/rowSums(across(contains("fix") & ends_with("_no")))),
+  ) %>%
+  mutate(
+    across(!contains("fix") & ends_with("_sig1"), ~ .x/rowSums(across(!contains("fix") & ends_with("_sig1")))),
+    across(!contains("fix") & ends_with("_sig2"), ~ .x/rowSums(across(!contains("fix") & ends_with("_sig2")))),
+    across(!contains("fix") & ends_with("_sig3"), ~ .x/rowSums(across(!contains("fix") & ends_with("_sig3")))),
+    across(!contains("fix") & ends_with("_sig4"), ~ .x/rowSums(across(!contains("fix") & ends_with("_sig4")))),
+    across(!contains("fix") & ends_with("_sig5"), ~ .x/rowSums(across(!contains("fix") & ends_with("_sig5")))),
+    across(!contains("fix") & ends_with("_const"), ~ .x/rowSums(across(!contains("fix") & ends_with("_const")))),
+    across(!contains("fix") & ends_with("_no"), ~ .x/rowSums(across(!contains("fix") & ends_with("_no")))),
+  ) %>%
+  ungroup() %>%
+  mutate(log_Coccinellidae = log(Coccinellidae + 1)) %>%
+  select(log_Coccinellidae, Coccinellidae, weedy_sig1, weedy_fix_sig1) %>%
+  pivot_longer(contains("weedy"), names_to = "fix", values_to = "area") %>%
+  ggplot(aes(area, log_Coccinellidae, color = fix)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
 ## weedy/wet binning effect ####
 # what is the correlation between weedy and wet cover?
 field_data %>%

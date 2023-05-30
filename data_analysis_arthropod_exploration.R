@@ -27,8 +27,8 @@ subplot_data %>%
 
 # histogram plot
 # all taxa
-taxalist <- c("Acyrthosiphon", "NonAcy","Arachnida", "Anthocoridae", "Nabis", "Coccinellidae",
-              "Geocoris", "Ichneumonoidea")
+taxalist <- c("Acyrthosiphon", "NonAcy","Arachnida", "Anthocoridae",
+              "Coccinellidae", "Geocoris", "Ichneumonoidea")
 subplot_data %>%
   # lengthen (aphids only)
   pivot_longer(all_of(taxalist),
@@ -68,6 +68,53 @@ subplot_data %>%
 
 ggsave("season_histogram.pdf", width = 8.5, height = 20, units = "cm",
        dpi = 600)
+
+subplot_data %>%
+  # lengthen (aphids only)
+  pivot_longer(all_of(taxalist),
+               names_to = "Taxa",
+               values_to = "Mean_Density") %>%
+  mutate(Taxa = case_when(Taxa == "NonAcy" ~ "Non-Acyrthosiphon aphid",
+                          Taxa != "NonAcy" ~ Taxa)) %>%
+  mutate(Taxa = fct_relevel(Taxa, "Acyrthosiphon", "Non-Acyrthosiphon aphid")) %>%
+  # log-transform
+  mutate(Mean_Density = log(Mean_Density + 1)) %>%
+  # relevel factors
+  mutate(Taxa = fct_relevel(Taxa, "Acyrthosiphon"),
+         Season = fct_relevel(Season, "Spring")) %>%
+  ggplot(aes(x = Mean_Density, y = rev(Taxa), fill = Season, color = Season)) +
+  geom_density_ridges(alpha = 0.4,
+                      scale = 1,
+                      panel_scaling = TRUE)+
+  labs(x = "log(Density + 1)",
+       y = "Count") +
+  theme_grey(base_size = 10) +
+  facet_wrap(~ Taxa, ncol = 1, scales = "free") +
+  scale_fill_manual(values = seasons_palette) +
+  scale_color_manual(values = seasons_palette) +
+  scale_y_discrete(expand = expansion(add = c(0.05, 0.6))) +
+  xlim(-1, 10.1) +
+  theme(#legend.position = c(0.1, 0.1),
+    legend.background = element_rect(linetype = 1, color = NA),
+    panel.background = element_rect(fill = NA, color = "black"),
+    plot.background = element_rect(fill = "white"),
+    # panel.grid.major.y = element_line(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.text = element_text(color = "black"),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    strip.background.x = element_rect(fill = "NA", color = "NA"),
+    legend.text = element_text(size = 10),
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.box.margin =  margin(r = 0, l = 0, t = 0, b = 0),
+    strip.text = element_text(margin = margin(b = 1)))
+
+ggsave("season_density_plot.pdf", width = 8.5, height = 20, units = "cm",
+       dpi = 600)
+## all taxa - density version
 
 
 aphlist <- c("Acyrthosiphon", "Aphis", "Therioaphis")
@@ -222,3 +269,4 @@ subplot_data %>%
        y = "Taxon") +
   # theme(legend.position = "none") +
   scale_fill_brewer(palette = "Spectral")
+

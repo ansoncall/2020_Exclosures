@@ -145,6 +145,7 @@ dist_palette <- c(
 )
 
 # Data exploration ####
+### SOURCE ####
 ## Arthropod data summary
 source("data_analysis_arthropod_exploration.R", echo = TRUE)
 
@@ -207,6 +208,56 @@ df_sp <- subplot_data_raw %>%
   # make area offset
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
+
+## special - fixed only
+df_sp_fixed <- subplot_data_raw %>%
+  # spring only
+  filter(Season == "Spring") %>%
+  # "regular" landcover only
+  select(!(contains(c("sig1",
+                      "sig2",
+                      "sig3",
+                      "sig4",
+                      "sig5",
+                      "const",
+                      "no")
+  ) & !contains("fix")), Ichneumonoidea) %>% #"fix" landcover has manually fixed alfalfa areas
+  rename_with(str_replace, pattern = "_fix", replacement = "", .cols=contains("_fix")) %>%
+  # log-transform AllAph col
+  mutate(log_AllAph = log(AllAph + 1),
+         log_Anthocoridae = log(Anthocoridae + 1),
+         log_Arachnida = log(Arachnida + 1),
+         log_Geocoris = log(Geocoris + 1),
+         log_Ichneumonoidea = log(Ichneumonoidea + 1),
+         log_Coccinellidae = log(Coccinellidae + 1)) %>%
+  # make diversity cols
+  mutate(div_sig1 = diversity(across(ends_with("sig1")), index = "simpson"),
+         div_sig2 = diversity(across(ends_with("sig2")), index = "simpson"),
+         div_sig3 = diversity(across(ends_with("sig3")), index = "simpson"),
+         div_sig4 = diversity(across(ends_with("sig4")), index = "simpson"),
+         div_sig5 = diversity(across(ends_with("sig5")), index = "simpson"),
+         div_const = diversity(across(ends_with("const")), index = "simpson"),
+         div_no = diversity(across(ends_with("no")), index = "simpson"),
+         divShan_sig1 = diversity(across(ends_with("sig1")), index = "shannon"),
+         divShan_sig2 = diversity(across(ends_with("sig2")), index = "shannon"),
+         divShan_sig3 = diversity(across(ends_with("sig3")), index = "shannon"),
+         divShan_sig4 = diversity(across(ends_with("sig4")), index = "shannon"),
+         divShan_sig5 = diversity(across(ends_with("sig5")), index = "shannon"),
+         divShan_const = diversity(across(ends_with("const")),
+                                   index = "shannon"),
+         divShan_no = diversity(across(ends_with("no")), index = "shannon")
+  )  %>%
+  # ungroup() %>%
+  # center and scale (not needed with rank transform) all landcover + log_AllAph
+  # + log_predators
+  # hold off on this until later
+  mutate(across(.cols = contains(c("_", "shan", "rich", "totalCover", "Perim")),
+                .fns = ~as.vector(scale(.)))) %>%
+  # make area offset
+  mutate(Area = case_when(Treatment == "Pre-" ~ 3,
+                          Treatment != "Pre-" ~ 1))
+
+
 
 dotchart(sort(df_sp$impermeable_sig4), main = "proportion")
 # fall
@@ -411,6 +462,7 @@ best_mod_list <- list(
   "best.ant.sp" = get.models(nb_scaled$tab_nb_anth_sp_scaled, 1)[[1]],
   "best.ara.sp" = get.models(nb_scaled$tab_nb_ara_sp_scaled, 1)[[1]],
   "best.coc.sp" = get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]],
+  # "best.coc.sp.fix" = get.models(nb_scaled$tab_nb_cocc_sp_fix_scaled, 1)[[1]],
   "best.geo.sp" = get.models(nb_scaled$tab_nb_geo_sp_scaled, 1)[[1]],
   "best.ich.sp" = get.models(nb_scaled$tab_nb_ich_sp_scaled, 1)[[1]],
   "best.ant.fa" = get.models(nb_scaled$tab_nb_anth_fa_scaled, 1)[[1]],
@@ -469,14 +521,137 @@ stats_df %>%
 # best to review these by hand. change input models manually.
 
 # # # optional: review a single mod table
-# nb_scaled$tab_nb_geo_fa_scaled %>%
-#   tibble %>%
-#   slice(1:60) %>% # can change how inclusive this is
-#   select(where(~!all(is.na(.x)))) %>% View
+foo <- nb_scaled$tab_nb_cocc_sp_scaled %>%
+  tibble %>%
+  slice(1:6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>%
+  mutate(data = "RandomForest", .before = everything())
 ## surprised no perim variables are in here
 
+bar <- tab_nb_cocc_sp_fix_scaled %>%
+  tibble %>%
+  slice(1:6) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>%
+  mutate(data = "Manual", .before = everything())
+
+importance_tab <- sw(tab_nb_cocc_sp_fix_scaled) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names) %>%
+  mutate(names = case_when(names == "cond(Treatment)" ~ "cond(Treatment)_NA",
+                           names == "cond(wateringMethod)" ~ "cond(wateringMethod)_NA",
+                           names == "cond(log_AllAph)" ~ "cond(logAllAph)_NA",
+                           TRUE ~ as.character(names))) %>%
+  separate(names, c('class', 'distWeight'), sep = "_") %>%
+  mutate(distWeight = as_factor(recode(distWeight,
+                                       `sig1` = 'Very aggressive',
+                                       `sig2` = 'Aggressive',
+                                       `sig3` = 'Moderately aggressive',
+                                       `sig4` = 'Moderate',
+                                       `sig5` = 'Slight',
+                                       `sig6` = 'Minimal',
+                                       `const` = 'Constant',
+                                       `no` = 'None',
+                                       `NA` = "N/A"))) %>%
+  # mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+  mutate(class = recode(class,
+                        ag = 'Agricultural',
+                        alfalfa = 'Alfalfa',
+                        dirt = 'Bare soil +\n dirt road',
+                        impermeable = 'Impermeable',
+                        naturalArid = 'Natural',
+                        water = 'Surface\nwater',
+                        weedy = 'Weedy',
+                        wet = 'Riparian',
+                        shan = "Shannon diversity",
+                        div = "Simpson diversity"),
+         class = fct_relevel(class,
+                             "cond(logAllAph)",
+                             "cond(Treatment)",
+                             "cond(wateringMethod)",
+                             .after = "cond(weedy"
+                             ))
+
+p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
+  geom_tile() +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 0),
+    axis.text.y = element_text(angle = 45))+
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Landcover class',
+       y = 'Distance weighting algorithm',
+       title = paste0('log(Coccinellidae)',
+                      ' Variable importance, ',
+                      "Spring fixed")
+  )
+
+pp <- ggplotly(p, tooltip = 'sw')
+pp
+
+importance_tab2 <- sw(nb_scaled$tab_nb_cocc_sp_scaled) %>% #tibble(names = names(.))
+  tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
+  arrange(names) %>%
+  mutate(names = case_when(names == "cond(Treatment)" ~ "cond(Treatment)_NA",
+                           names == "cond(wateringMethod)" ~ "cond(wateringMethod)_NA",
+                           names == "cond(log_AllAph)" ~ "cond(logAllAph)_NA",
+                           TRUE ~ as.character(names))) %>%
+  separate(names, c('class', 'distWeight'), sep = "_") %>%
+  mutate(distWeight = as_factor(recode(distWeight,
+                                       `sig1` = 'Very aggressive',
+                                       `sig2` = 'Aggressive',
+                                       `sig3` = 'Moderately aggressive',
+                                       `sig4` = 'Moderate',
+                                       `sig5` = 'Slight',
+                                       `sig6` = 'Minimal',
+                                       `const` = 'Constant',
+                                       `no` = 'None',
+                                       `NA` = "N/A"))) %>%
+  # mutate(distWeight = fct_relevel(distWeight, 'Constant', 'None', after = Inf),
+  mutate(class = recode(class,
+                        ag = 'Agricultural',
+                        alfalfa = 'Alfalfa',
+                        dirt = 'Bare soil +\n dirt road',
+                        impermeable = 'Impermeable',
+                        naturalArid = 'Natural',
+                        water = 'Surface\nwater',
+                        weedy = 'Weedy',
+                        wet = 'Riparian',
+                        shan = "Shannon diversity",
+                        div = "Simpson diversity"),
+         class = fct_relevel(class,
+                             "cond(logAllAph)",
+                             "cond(Treatment)",
+                             "cond(wateringMethod)",
+                             .after = "cond(weedy"
+         ))
+
+q <- ggplot(data = importance_tab2, aes(x = class, y = distWeight, fill = sw)) +
+  geom_tile() +
+  theme(
+    axis.text.x=element_text(angle = 45, hjust = 0),
+    axis.text.y = element_text(angle = 45))+
+  scale_fill_gradient(low="blue", high="red") +
+  labs(x = 'Landcover class',
+       y = 'Distance weighting algorithm',
+       title = paste0('log(Coccinellidae)',
+                      ' Variable importance, ',
+                      "Spring randomForest")
+  )
+
+qq <- ggplotly(q, tooltip = 'sw')
+qq
+p
+ggsave("spring_manual_varimportance.pdf")
+q
+ggsave("spring_randomforest_varimportance.pdf")
+
+
+
+
+plyr::rbind.fill(foo, bar) %>% tab_df(file = "models.html")
+webshot("models.html", "models.pdf")
+
 # choose model to review
-review_mod <- get.models(nb_scaled$tab_nb_cocc_fa_scaled, 1)[[1]]
+review_mod <- get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]]
 
 # show summary
 summary(review_mod) # no random effect variance. essentially equivalent to
@@ -486,9 +661,8 @@ plot(allEffects(review_mod, residuals = TRUE))
 
 # plot(Effect(c("impermeablePerim"), review_mod, resid = TRUE))
 # try fall mod
-reviewFigDf <- ggpredict(review_mod, terms = c("ag_const",
-                                               "divShan_const"))
-reviewFigDf %>% plot(log.y = F, add.data = T)
+reviewFigDf <- ggpredict(review_mod, terms = c("weedy_sig1"))
+reviewFigDf %>% plot(log.y = T, add.data = T)
 # review_mod$frame %>% View
 
 # tidy coeffs plot
@@ -513,6 +687,40 @@ plot(fitted, pearson_res)
 plot(fitted, default_res)
 
 
+
+fixed_mod <- update(review_mod, data = df_sp_fixed)
+
+summary(review_mod)
+summary(fixed_mod)
+
+fixedFigDf <- ggpredict(fixed_mod, terms = c("weedy_sig1"))
+reviewFigDf %>% plot(log.y = T, add.data = T)
+fixedFigDfAttr <- fixedFigDf %>% attributes()
+reviewFigDfAttr <- reviewFigDf %>% attributes()
+fixedRaw <- fixedFigDfAttr$rawdata
+reviewRaw <- reviewFigDfAttr$rawdata
+
+r2(review_mod)
+r2(fixed_mod)
+
+ggplot(fixedRaw, aes(x, response)) +
+  geom_point(color = "red") +
+  geom_point(data = reviewRaw,
+             color = "blue") +
+  geom_smooth(aes(x, log(predicted)), data = fixedFigDf, color = "red") +
+  geom_smooth(aes(x, log(conf.low)), data = fixedFigDf, color = "red", alpha = 0.5) +
+  geom_smooth(aes(x, log(conf.high)), data = fixedFigDf, color = "red", alpha = 0.5) +
+  geom_smooth(aes(x, log(predicted)), data = reviewFigDf, color = "blue") +
+  geom_smooth(aes(x, log(conf.high)), data = reviewFigDf, color = "blue", alpha = 0.5) +
+  geom_smooth(aes(x, log(conf.low)), data = reviewFigDf, color = "blue", alpha = 0.5) +
+  geom_text(aes(-1,10, label = "R2m = 0.447\nR2c = NA\nAICc=428.2"), color = "blue") +
+  geom_text(aes(-1,9, label = "R2m = 0.380\nR2c = 0.472\nAICc=434.9"), color = "red") +
+  labs(title = "marginal effects of weedy_sig1 on ladybug density",
+       subtitle = "red = manually classified alfalfa fields\nblue = classified by random forest")
+
+model.sel(review_mod, fixed_mod)
+
+fixedFigDf %>% plot()
 # Predator models with vegdata ####
 # drop Yerington (NA vegdata values)
 df_sp_vd <- df_sp %>% filter(!is.na(shan))
@@ -740,7 +948,31 @@ figDat <- stats_df %>%
          quo = "{R^2}[M]~'='",
          cat = paste0(quo, "~'", roundM, "'"),
          expr2 = list(bquote("{R^2}[M]~'='"~.(roundM))),
-         expr = paste0(round(MarginalR2,2)))
+         expr = paste0(round(MarginalR2,2))) %>%
+  ## order factors by L to R appearance
+  mutate(Effect = fct_relevel(Effect,
+                     "Non-alfalfa agriculture",
+                     "Impermeable surfaces",
+                     "Weedy cover",
+                     "Bare soil",
+                     "Alfalfa",
+                     "log(Aphid density)",
+                     "Land cover diversity",
+                     "Flood irrigation"
+                     ))
+
+# color palette in correct order
+# landcover: Use palette derived from actual colors?
+lc_palette_predators <- c(
+  "#5b3769", # non-alfalfa  ag
+  "grey40", # Impermeable
+  "#aecf7a", # weedy cover
+  "#801f19", # Bare group
+  "#105405", # alfalfa
+  "#ff6d00", # log(aphid dens.)
+  "#393ebf", # flood irrigation
+  "#ff2d55"  # Shannon diversity (land cover)
+)
 
 # figDat_boot <- all_boot %>%
 #   select(-model) %>%
@@ -824,7 +1056,7 @@ ggplot(figDat, aes(y = Taxon,
                 position = position_dodge(0.9),
                 width = 0.2
   ) +
-  scale_fill_manual(values = lc_palette_experimental) +
+  scale_fill_manual(values = lc_palette_predators) +
   xlim(c(-4,4)) +
   geom_vline(xintercept = 0,
              linetype = "dashed",
@@ -840,13 +1072,14 @@ ggplot(figDat, aes(y = Taxon,
     legend.background = element_rect(linetype = 1, color = NA),
     panel.background = element_rect(fill = NA, color = "black"),
     plot.background = element_rect(fill = "white"),
-    # panel.grid.major.y = element_line(),
+    axis.title.x = element_blank(),
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank(),
     axis.text = element_text(color = "black"),
+    axis.text.x = element_text(angle = 35, hjust = 0.8, vjust = 0.95),
     strip.background.x = element_rect(fill = "NA", color = "NA"),
     legend.text = element_text(size = 10),
-    legend.position = "bottom",
+    legend.position = "top",
     legend.title = element_blank(),
     legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
   guides(fill = guide_legend(nrow = 2)) +
@@ -855,7 +1088,8 @@ ggplot(figDat, aes(y = Taxon,
                 label = cat),
             inherit.aes = F,
             parse = T,
-            size = 8 / .pt)
+            size = 8 / .pt) +
+  guides(fill = guide_legend(nrow = 2, byrow = TRUE))
 
 ggsave("predator_effects.pdf", width = 18, height = 12, units = "cm", dpi = 600)
 
@@ -877,6 +1111,10 @@ ggsave("predator_effects.pdf", width = 18, height = 12, units = "cm", dpi = 600)
   #           # position = position_nudge(x = 0.1, y = -0.3),
   #           position = position_dodge(width = 0.8),
   #           size = 2)
+
+
+
+
 
 ## DIVERSION ####
 # conclusion: we don't have enough data to explore this.
@@ -1051,23 +1289,23 @@ nameplates <- figDat %>%
   # use only landcover vars that have a spatial scale
   filter(dnum > 0) %>%
   # use to manually tune position of geom_label
-  mutate(hjust = c(0.3,0.12,0.02,-0.25,-0.12,
-                   0.58,0.26,1.32,1.02,0.18),
-         y = c(9,7,5,8,3,
-               8,6,2.5,8,8))  %>% # anth, ara, cocc, geoc, ich
+  mutate(hjust = c(0.2,0.02,-0.08,-0.38,-0.26,
+                   0.4,0.08,1.22,1.02,0.1),
+         y = c(9,6.5,4,8,1.5,
+               8,5.5,3,8,8))  %>% # anth, ara, cocc, geoc, ich
   # make factor for color coding labels
-  mutate(col = as.factor(case_when(dnum == 75 ~ "Very aggressive",
-                         dnum == 350 ~ "Moderate",
-                         dnum == 650 ~ "Very weak",
+  mutate(col = as.factor(case_when(dnum == 75 ~ "Proximate",
+                         dnum == 350 ~ "Intermediate",
+                         dnum == 650 ~ "Most distant",
                          dnum == 1000 ~ "None"))
          ) %>%
   # add in missing factor levels
-  mutate(col = fct_expand(col, "Aggressive", "Weak", "Constant", "None")) %>%
+  mutate(col = fct_expand(col, "Near", "Distant", "Constant", "None")) %>%
   # relevel factor order
-  mutate(col = fct_relevel(col, "Very aggressive", "Aggressive", "Moderate",
-                            "Weak", "Very weak", "Constant", "None"))
+  mutate(col = fct_relevel(col, "Proximate", "Near", "Intermediate",
+                            "Distant", "Most distant", "Constant", "None"))
 
-ggplot(dist_decay_df, aes(Distance, value, color = `Decay function`)) +
+ggplot(dist_decay_df, aes(distance, value, color = `Decay function`)) +
   geom_line(size = 1) +
   theme_classic(base_size = 10) +
   scale_color_manual(values = dist_palette) +
@@ -1080,7 +1318,7 @@ ggplot(dist_decay_df, aes(Distance, value, color = `Decay function`)) +
                              fill = col),
              inherit.aes = FALSE,
              alpha = 0.8,
-             size = 6/.pt) +
+             size = 8/.pt) +
   facet_wrap(~Season, ncol = 1) +
   theme(strip.background = element_blank(),
         legend.position = "right",
@@ -1414,13 +1652,13 @@ aphFigDat <- stats_df_aph_veg %>%
                                                no = "1000",
                                                sig3 = "350"))),
          Effect = recode_factor(Effect,
-                                naturalArid = "Desert shrub,\n weak distance decay",
-                                impermeable = "Impermeable surfaces,\n weak distance decay",
+                                naturalArid = "Desert shrub,\n\"Distant\" range",
+                                impermeable = "Impermeable surfaces,\n\"Distant\" range",
                                 logCoccinellidae = "log(Coccinellidae density)",
                                 logIchneumonoidea = "log(Ichneumonoidea density)",
                                 wateringMethod = "Flood irrigation",
-                                shan = "Shannon Diversity",
-                                rich = "Plant species richness",
+                                shan = "Shannon Diversity\n(in field margins)",
+                                rich = "Plant species richness\n(in field margins)",
                                 # ensure factor order to match palette
                                 .ordered = TRUE
          ),
@@ -1518,6 +1756,71 @@ dotplot(df_fa$impermeable_sig4)
 dotplot(df_fa$impermeable_sig3)
 dotplot(df_fa$impermeable_sig2)
 dotplot(df_fa$impermeable_sig1)
+
+## FIG watering method ####
+
+library(ggbeeswarm)
+
+
+flood_mean <- pull(df_sp %>% filter(wateringMethod == "Flooding"),
+     log_AllAph) %>% mean
+
+sprinklers_mean <- pull(df_sp %>% filter(wateringMethod == "Sprinklers"),
+     log_AllAph) %>% mean
+
+ggblue <- scales::hue_pal()(2)[2]
+ggred <- scales::hue_pal()(2)[1]
+
+p <-ggplot(df_sp, aes(wateringMethod, log_AllAph, fill = wateringMethod))+
+  geom_boxplot() +
+  geom_quasirandom(bandwidth = 0.3) +
+  theme(legend.position = "none",
+        panel.background = element_rect(fill = NA, color = "black"),
+        plot.background = element_rect(fill = "white"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(color = "black")) +
+  labs(y = "log(Aphid density)",
+       x = "Watering method")
+
+q <- ggplot(df_sp, aes(water_no, log_AllAph, color = wateringMethod))+
+  geom_point() +
+  geom_smooth(method = "lm", color = "black") +
+  # geom_hline(yintercept = flood_mean,
+  #            color = ggblue) +
+  # geom_hline(yintercept = sprinklers_mean,
+  #            color = ggred) +
+  # geom_text(aes(-0.9, flood_mean+0.1),
+  #           label = "Flooding - mean",
+  #           color = ggblue,
+  #           size = 8/.pt) +
+  # geom_text(aes(1, sprinklers_mean+0.1),
+  #           label = "Sprinklers - mean",
+  #           color = ggred,
+  #           size = 8/.pt) +
+  theme_grey(base_size = 10) +
+  theme(legend.position = c(0.9, 0.15),
+        legend.background = element_rect(linetype = 1, color = NA),
+        panel.background = element_rect(fill = NA, color = "black"),
+        plot.background = element_rect(fill = "white"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(color = "black"),
+        axis.title.y = element_blank(),
+        legend.title = element_blank(),
+        legend.box.margin =  margin(r = 0.2, l = -40, t = 0),
+        legend.key = element_blank()) +
+  labs(x = "Surface water, no distance weighting",
+       y = "log(Aphid density)")
+
+
+p
+q
+
+
+ggsave(file = "flood_effect.pdf",
+       plot = marrangeGrob(list(p, q), ncol = 2, nrow = 1, top = NULL),
+       width = 18, height = 8.5, units = "cm", dpi = 600)
 
 
 

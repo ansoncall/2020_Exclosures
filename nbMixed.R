@@ -12,6 +12,7 @@ options(na.action = "na.fail")
 # make it parallel
 clust <- try(makeCluster(getOption("cl.cores", n_cores), type = "PSOCK"))
 clusterExport(clust, "df_sp")
+clusterExport(clust, "df_sp_fixed")
 clusterExport(clust, "df_fa")
 clusterEvalQ(clust, library(glmmTMB))
 
@@ -576,6 +577,118 @@ tab_nb_cocc_sp_scaled <- rbind(sig1_dredge,
                                sig5_dredge,
                                const_dredge,
                                no_dredge)
+## Spring "Fixed" ####
+gmod_sig1 <- glmmTMB(Coccinellidae ~
+                       # non-landcover effects
+                       Treatment + log_AllAph + wateringMethod +
+                       # landcover effects
+                       alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
+                       impermeable_sig1 + weedy_sig1 + water_sig1 + div_sig1 +
+                       divShan_sig1 +
+                       (1 | Site / Field), # nested random effects
+                     data = df_sp_fixed, family = "nbinom2")
+gmod_sig2 <- glmmTMB(Coccinellidae ~
+                       # non-landcover effects
+                       Treatment + log_AllAph + wateringMethod +
+                       # landcover effects
+                       alfalfa_sig2 + naturalArid_sig2 + dirt_sig2 + ag_sig2 +
+                       impermeable_sig2 + weedy_sig2 + water_sig2 + div_sig2 +
+                       divShan_sig2 +
+                       (1 | Site / Field), # nested random effects
+                     data = df_sp_fixed, family = "nbinom2")
+gmod_sig3 <- glmmTMB(Coccinellidae ~
+                       # non-landcover effects
+                       Treatment + log_AllAph + wateringMethod +
+                       # landcover effects
+                       alfalfa_sig3 + naturalArid_sig3 + dirt_sig3 + ag_sig3 +
+                       impermeable_sig3 + weedy_sig3 + water_sig3 + div_sig3 +
+                       divShan_sig3 +
+                       (1 | Site / Field), # nested random effects
+                     data = df_sp_fixed, family = "nbinom2")
+gmod_sig4 <- glmmTMB(Coccinellidae ~
+                       # non-landcover effects
+                       Treatment + log_AllAph + wateringMethod +
+                       # landcover effects
+                       alfalfa_sig4 + naturalArid_sig4 + dirt_sig4 + ag_sig4 +
+                       impermeable_sig4 + weedy_sig4 + water_sig4 + div_sig4 +
+                       divShan_sig4 +
+                       (1 | Site / Field), # nested random effects
+                     data = df_sp_fixed, family = "nbinom2")
+gmod_sig5 <- glmmTMB(Coccinellidae ~
+                       # non-landcover effects
+                       Treatment + log_AllAph + wateringMethod +
+                       # landcover effects
+                       alfalfa_sig5 + naturalArid_sig5 + dirt_sig5 + ag_sig5 +
+                       impermeable_sig5 + weedy_sig5 + water_sig5 + div_sig5 +
+                       divShan_sig5 +
+                       (1 | Site / Field), # nested random effects
+                     data = df_sp_fixed, family = "nbinom2")
+gmod_const <- glmmTMB(Coccinellidae ~
+                        # non-landcover effects
+                        Treatment + log_AllAph + wateringMethod +
+                        # landcover effects
+                        alfalfa_const + naturalArid_const + dirt_const +
+                        ag_const + impermeable_const + weedy_const +
+                        water_const + div_const + divShan_const +
+                        (1 | Site / Field), # nested random effects
+                      data = df_sp_fixed, family = "nbinom2")
+gmod_no <- glmmTMB(Coccinellidae ~
+                     # non-landcover effects
+                     Treatment + log_AllAph + wateringMethod +
+                     # landcover effects
+                     alfalfa_no + naturalArid_no + dirt_no + ag_no +
+                     impermeable_no + weedy_no + water_no + div_no +
+
+                     divShan_no +
+                     (1 | Site / Field), # nested random effects
+                   data = df_sp_fixed, family = "nbinom2")
+
+# dredging
+sig1_dredge <- dredge(gmod_sig1,
+                      m.lim = c(0, 3),
+                      fixed = "cond(Treatment)",
+                      trace = 2,
+                      cluster = clust)
+sig2_dredge <- dredge(gmod_sig2,
+                      m.lim = c(0, 3),
+                      fixed = "cond(Treatment)",
+                      trace = 2,
+                      cluster = clust)
+sig3_dredge <- dredge(gmod_sig3,
+                      m.lim = c(0, 3),
+                      fixed = "cond(Treatment)",
+                      trace = 2,
+                      cluster = clust)
+sig4_dredge <- dredge(gmod_sig4,
+                      m.lim = c(0, 3),
+                      fixed = "cond(Treatment)",
+                      trace = 2,
+                      cluster = clust)
+sig5_dredge <- dredge(gmod_sig5,
+                      m.lim = c(0, 3),
+                      fixed = "cond(Treatment)",
+                      trace = 2,
+                      cluster = clust)
+const_dredge <- dredge(gmod_const,
+                       m.lim = c(0, 3),
+                       fixed = "cond(Treatment)",
+                       trace = 2,
+                       cluster = clust)
+no_dredge <- dredge(gmod_no,
+                    m.lim = c(0, 3),
+                    fixed = "cond(Treatment)",
+                    trace = 2,
+                    cluster = clust)
+
+# rbind and recalc AIC
+tab_nb_cocc_sp_fix_scaled <- rbind(sig1_dredge,
+                               sig2_dredge,
+                               sig3_dredge,
+                               sig4_dredge,
+                               sig5_dredge,
+                               const_dredge,
+                               no_dredge)
+
 
 ## Fall ####
 gmod_sig1 <- glmmTMB(Coccinellidae ~

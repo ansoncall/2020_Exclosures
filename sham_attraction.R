@@ -7,7 +7,7 @@
 # this df contains plot-level DIFFERENCES between sham and control
 # this must use UNLOGGED data because subtraction on the log scale doesn't make
 # sense
-diffData_wide <- subplot_data_raw %>% # long-format counts
+diff_data_wide <- subplot_data_raw %>% # long-format counts
   filter(Treatment != 'Pre-') %>% # remove 'Pre-' treatments
   # make separate cols for each treatment (AND taxon)
   pivot_wider(names_from = Treatment, values_from = Arachnida:NonAcy) %>%
@@ -33,7 +33,7 @@ diffData_wide <- subplot_data_raw %>% # long-format counts
 # NOTE: this did not end up being useful, but I tried it!
 
 # join diffdata to plot_data
-plot_w_diff <- left_join(plot_data, diffData_wide)
+plot_w_diff <- left_join(plot_data, diff_data_wide)
 # ready to model? no transforms applied yet
 # not all predictor vars are uniformly distributed
 dotchart(plot_w_diff$Arachnida)
@@ -118,3 +118,5 @@ for (i in 1:6){
   diff_stats_fa$P[[i]] <- summary(diffMods[[i]])$coefficients[[5]]
 
 }
+summary(dCoc.mod)
+summary(d_ich_mod)

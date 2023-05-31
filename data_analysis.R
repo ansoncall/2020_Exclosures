@@ -257,7 +257,7 @@ df_sp_fixed <- subplot_data_raw %>%
   mutate(Area = case_when(Treatment == "Pre-" ~ 3,
                           Treatment != "Pre-" ~ 1))
 
-
+df_sp$alfalfa_const == df_sp_fixed$alfalfa_const
 
 dotchart(sort(df_sp$impermeable_sig4), main = "proportion")
 # fall
@@ -534,7 +534,8 @@ bar <- tab_nb_cocc_sp_fix_scaled %>%
   select(where(~!all(is.na(.x)))) %>%
   mutate(data = "Manual", .before = everything())
 
-importance_tab <- sw(tab_nb_cocc_sp_fix_scaled) %>% #tibble(names = names(.))
+tab_nb_cocc_sp_fix_scaled == nb_scaled$tab_nb_cocc_sp_scaled
+importance_tab_fix <- sw(tab_nb_cocc_sp_fix_scaled) %>% #tibble(names = names(.))
   tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   mutate(names = case_when(names == "cond(Treatment)" ~ "cond(Treatment)_NA",
@@ -569,9 +570,10 @@ importance_tab <- sw(tab_nb_cocc_sp_fix_scaled) %>% #tibble(names = names(.))
                              "cond(Treatment)",
                              "cond(wateringMethod)",
                              .after = "cond(weedy"
-                             ))
+                             )) %>%
+  rename("sw_fix" = sw, "class_fix" = class, "distWeight_fix" = distWeight)
 
-p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
+ggplot(data = importance_tab_fix, aes(x = class_fix, y = distWeight_fix, fill = sw_fix)) +
   geom_tile() +
   theme(
     axis.text.x=element_text(angle = 45, hjust = 0),
@@ -581,13 +583,10 @@ p <- ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
        y = 'Distance weighting algorithm',
        title = paste0('log(Coccinellidae)',
                       ' Variable importance, ',
-                      "Spring fixed")
-  )
+                      "Spring fixed"))
 
-pp <- ggplotly(p, tooltip = 'sw')
-pp
 
-importance_tab2 <- sw(nb_scaled$tab_nb_cocc_sp_scaled) %>% #tibble(names = names(.))
+importance_tab <- sw(nb_scaled$tab_nb_cocc_sp_scaled) %>% #tibble(names = names(.))
   tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   mutate(names = case_when(names == "cond(Treatment)" ~ "cond(Treatment)_NA",
@@ -621,10 +620,10 @@ importance_tab2 <- sw(nb_scaled$tab_nb_cocc_sp_scaled) %>% #tibble(names = names
                              "cond(logAllAph)",
                              "cond(Treatment)",
                              "cond(wateringMethod)",
-                             .after = "cond(weedy"
-         ))
+                             .after = "cond(weedy"))
 
-q <- ggplot(data = importance_tab2, aes(x = class, y = distWeight, fill = sw)) +
+
+ggplot(data = importance_tab, aes(x = class, y = distWeight, fill = sw)) +
   geom_tile() +
   theme(
     axis.text.x=element_text(angle = 45, hjust = 0),
@@ -634,15 +633,143 @@ q <- ggplot(data = importance_tab2, aes(x = class, y = distWeight, fill = sw)) +
        y = 'Distance weighting algorithm',
        title = paste0('log(Coccinellidae)',
                       ' Variable importance, ',
-                      "Spring randomForest")
-  )
+                      "Spring randomForest"))
 
-qq <- ggplotly(q, tooltip = 'sw')
-qq
-p
-ggsave("spring_manual_varimportance.pdf")
-q
-ggsave("spring_randomforest_varimportance.pdf")
+# for figure
+
+all_tabs <- cbind(importance_tab_fix, importance_tab) %>%
+  mutate(difference = sw_fix - sw,
+         distWeight = case_when(
+           distWeight == "const)" ~ "Constant",
+           distWeight == "no)" ~ "None",
+           distWeight == "sig1)" ~ "Proximate",
+           distWeight == "sig2)" ~ "Near",
+           distWeight == "sig3)" ~ "Intermediate",
+           distWeight == "sig4)" ~ "Distant",
+           distWeight == "sig5)" ~ "Most Distant",
+           distWeight == "N/A" ~ "N/A",
+         ),
+         class = case_when(
+           class == "cond(weedy" ~ "Weedy cover",
+           class == "cond(ag" ~ "Non-alfalfa agriculture",
+           class == "cond(alfalfa" ~ "Alfalfa",
+           class == "cond(dirt" ~ "Bare soil",
+           class == "cond(div" ~ "Landcover diversity (Simpson)",
+           class == "cond(divShan" ~ "Landcover diversity (Shannon)",
+           class == "cond(impermeable" ~ "Impermeable surfaces",
+           class == "cond(naturalArid" ~ "Desert shrub",
+           class == "cond(water" ~ "Surface water",
+           class == "cond(logAllAph)" ~ "log(Aphid density)",
+           class == "cond(Treatment)" ~ "Treatment",
+           class == "cond(wateringMethod)" ~ "Flood\nirrigation",
+         )) %>%
+  mutate(distWeight = fct_relevel(distWeight,
+    "Proximate",
+    "Near",
+    "Intermediate",
+    "N/A",
+    "Distant",
+    "Most Distant",
+    "Constant",
+    "None"
+  ),
+  class = fct_relevel(class,
+                      "Alfalfa",
+                      "Bare soil",
+                      "Desert shrub",
+                      "Flood\nirrigation",
+                      "Impermeable surfaces",
+                      "Landcover diversity (Simpson)",
+                      "Landcover diversity (Shannon)",
+                      "log(Aphid density)",
+                      "Non-alfalfa agriculture",
+                      "Surface water",
+                      "Treatment",
+                      "Weedy cover"
+                      ))
+
+# to extract legend
+g_legend<-function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  legend
+}
+
+
+#left side - distance-weighted factors
+for_legend <- ggplot(data = all_tabs,
+       aes(x = class, y = distWeight, fill = difference)) +
+  geom_tile() +
+  scale_fill_gradient2(low="blue", mid="white", high="red",
+                      limits = c(-0.3, 0.3)) +
+  theme(legend.key.size = unit(25, "pt")) +
+  guides(fill = guide_colourbar(title = "Difference in\nvariable importance",
+                                title.position = "top",
+                                direction = "horizontal"))
+
+legend <- g_legend(for_legend)
+
+left <- ggplot(data = all_tabs %>% filter(distWeight != "N/A"),
+               aes(x = class, y = distWeight, fill = difference)) +
+  geom_tile() +
+  theme()+
+  scale_fill_gradient2(low="blue", mid="white", high="red",
+                       limits = c(-0.3, 0.3)) +
+  labs(x = 'Landcover factor',
+       y = 'Distance weighting') +
+  theme_grey(base_size = 10) +
+  theme(legend.position = "none",
+        ### general theme
+        panel.background = element_rect(fill = NA, color = "black"),
+        plot.background = element_rect(fill = "white"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(color = "black"),
+        axis.text.x = element_text(angle = 40, hjust = 1),
+        strip.background.x = element_rect(fill = "NA", color = "NA"),
+        axis.text.y = element_text(angle = 40))
+
+
+# right side
+right <- ggplot(data = all_tabs %>% filter(distWeight == "N/A"),
+       aes(x = class, y = distWeight, fill = difference)) +
+  geom_tile() +
+  scale_fill_gradient2(low="blue", mid="white", high="red",
+                       limits = c(-0.3, 0.3)) +
+  labs(x = 'Landcover factor\n(Distance weighting N/A)') +
+  theme_grey(base_size = 10) +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        # axis.text.x=element_text(angle = 45, hjust = 0),
+        axis.text.x = element_text(angle = 40, hjust = 1),
+        panel.background = element_rect(fill = NA, color = "black"),
+        plot.background = element_rect(fill = "white"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text = element_text(color = "black"),
+        strip.background.x = element_rect(fill = "NA", color = "NA")
+        )
+
+
+grid.arrange(left, right, legend,
+             layout_matrix = rbind(c(1, 1, 2),
+                                   c(1, 1, 2),
+                                   c(1, 1, 3),
+                                   c(1, 1, 3)))
+
+g <- arrangeGrob(left, right, legend,
+             layout_matrix = rbind(c(1, 1, 1, 2),
+                                   c(1, 1, 1, 2),
+                                   c(1, 1, 1, 3),
+                                   c(1, 1, 1, 3)))
+ggsave("spring_randomforest_varimportance.pdf",
+       g,
+       height = 10,
+       width = 18,
+       units = "cm")
 
 
 
@@ -1779,7 +1906,8 @@ p <-ggplot(df_sp, aes(wateringMethod, log_AllAph, fill = wateringMethod))+
         plot.background = element_rect(fill = "white"),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
-        axis.text = element_text(color = "black")) +
+        axis.text = element_text(color = "black"),
+        axis.title.y = element_blank()) +
   labs(y = "log(Aphid density)",
        x = "Watering method")
 
@@ -1806,7 +1934,7 @@ q <- ggplot(df_sp, aes(water_no, log_AllAph, color = wateringMethod))+
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
         axis.text = element_text(color = "black"),
-        axis.title.y = element_blank(),
+        # axis.title.y = element_blank(),
         legend.title = element_blank(),
         legend.box.margin =  margin(r = 0.2, l = -40, t = 0),
         legend.key = element_blank()) +
@@ -1819,7 +1947,7 @@ q
 
 
 ggsave(file = "flood_effect.pdf",
-       plot = marrangeGrob(list(p, q), ncol = 2, nrow = 1, top = NULL),
+       plot = marrangeGrob(list(q, p), ncol = 2, nrow = 1, top = NULL),
        width = 18, height = 8.5, units = "cm", dpi = 600)
 
 

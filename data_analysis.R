@@ -660,7 +660,7 @@ all_tabs <- cbind(importance_tab_fix, importance_tab) %>%
            class == "cond(naturalArid" ~ "Desert shrub",
            class == "cond(water" ~ "Surface water",
            class == "cond(logAllAph)" ~ "log(Aphid density)",
-           class == "cond(Treatment)" ~ "Treatment",
+           class == "cond(Treatment)" ~ "Canopy",
            class == "cond(wateringMethod)" ~ "Flood\nirrigation",
          )) %>%
   mutate(distWeight = fct_relevel(distWeight,
@@ -684,7 +684,7 @@ all_tabs <- cbind(importance_tab_fix, importance_tab) %>%
                       "log(Aphid density)",
                       "Non-alfalfa agriculture",
                       "Surface water",
-                      "Treatment",
+                      "Canopy",
                       "Weedy cover"
                       ))
 
@@ -704,19 +704,20 @@ for_legend <- ggplot(data = all_tabs,
   scale_fill_gradient2(low="blue", mid="white", high="red",
                       limits = c(-0.3, 0.3)) +
   theme(legend.key.size = unit(25, "pt")) +
-  guides(fill = guide_colourbar(title = "Difference in\nvariable importance",
+  guides(fill = guide_colourbar(title = "Difference in\nvariable importance,\nManual - Random Forest\nalfalfa classification",
                                 title.position = "top",
                                 direction = "horizontal"))
 
 legend <- g_legend(for_legend)
 
-left <- ggplot(data = all_tabs %>% filter(distWeight != "N/A"),
+left <- ggplot(data = all_tabs %>%
+                 filter(!distWeight %in% c("Constant", "None", "N/A")),
                aes(x = class, y = distWeight, fill = difference)) +
   geom_tile() +
   theme()+
   scale_fill_gradient2(low="blue", mid="white", high="red",
                        limits = c(-0.3, 0.3)) +
-  labs(x = 'Landcover factor',
+  labs(x = NULL,
        y = 'Distance weighting') +
   theme_grey(base_size = 10) +
   theme(legend.position = "none",
@@ -737,7 +738,7 @@ right <- ggplot(data = all_tabs %>% filter(distWeight == "N/A"),
   geom_tile() +
   scale_fill_gradient2(low="blue", mid="white", high="red",
                        limits = c(-0.3, 0.3)) +
-  labs(x = 'Landcover factor\n(Distance weighting N/A)') +
+  labs(x = 'Additional predictors\n(Distance weighting N/A)') +
   theme_grey(base_size = 10) +
   theme(legend.position = "none",
         axis.title.y = element_blank(),
@@ -757,12 +758,18 @@ right <- ggplot(data = all_tabs %>% filter(distWeight == "N/A"),
 grid.arrange(left, right, legend,
              layout_matrix = rbind(c(1, 1, 2),
                                    c(1, 1, 2),
+                                   c(1, 1, 2),
+                                   c(1, 1, 3),
+                                   c(1, 1, 3),
                                    c(1, 1, 3),
                                    c(1, 1, 3)))
 
 g <- arrangeGrob(left, right, legend,
              layout_matrix = rbind(c(1, 1, 1, 2),
                                    c(1, 1, 1, 2),
+                                   c(1, 1, 1, 2),
+                                   c(1, 1, 1, 3),
+                                   c(1, 1, 1, 3),
                                    c(1, 1, 1, 3),
                                    c(1, 1, 1, 3)))
 ggsave("spring_randomforest_varimportance.pdf",
@@ -2042,7 +2049,7 @@ lavaan_df_prep2 <- lavaan_df_prep %>%
 lavaan_df1 <- lavaan_df_prep2 %>%
   to_dummy(Treatment, suffix = "label") %>%
   bind_cols(lavaan_df_prep2) %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == "Spring",
          Treatment != "Pre-") %>%
          # diffCoccinellidae > 0) %>%
@@ -2058,7 +2065,7 @@ lavaan_df1 <- lavaan_df_prep2 %>%
            case_when(Treatment_Sham == 1 ~ diffCoccinellidae,
                      Treatment_Sham == 0 ~ 0)) %>%
   mutate(across(.cols = -c(Treatment, Site, Field, Treatment_Sham,
-                           wateringMethod_Flooding),
+                           wateringMethod_Flooding, diffCoccinellidae),
                 .fns = ~as.vector(scale(.x))))
                   # alternative: ~(. -mean(.)/ sd(.))
 
@@ -2105,7 +2112,7 @@ summary(best_mod_list$best.coc.sp)
 lavaan_df2 <- lavaan_df_prep2 %>%
   to_dummy(Treatment, suffix = "label") %>%
   bind_cols(lavaan_df_prep2) %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == "Spring",
          Treatment != "Pre-",
          diffCoccinellidae > 0) %>% # filter here!
@@ -2212,7 +2219,7 @@ lavaan_df_prep2 <- lavaan_df_prep %>%
 lavaan_df1 <- lavaan_df_prep2 %>%
   to_dummy(Treatment, suffix = "label") %>%
   bind_cols(lavaan_df_prep2) %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == "Fall",
          Treatment != "Pre-") %>%
   # diffCoccinellidae > 0) %>%
@@ -2251,8 +2258,11 @@ mod_specA <- "
 mod_fitA <- sem(mod_specA, data = lavaan_df1)
 
 summary(mod_fitA)
+## WHAT IS THIS BELOW? ##########
+# cant figure out where this came from
 # Trt_Sham effect is:
 # Trtmnt_Shm (t) Est: -0.758    Std.err: 0.133   z: -5.708    P: 0.000
+#################################
 
 lavaanPlot(model = mod_fitA, coefs = TRUE, covs = F, stand = FALSE)
 # exploratory regression

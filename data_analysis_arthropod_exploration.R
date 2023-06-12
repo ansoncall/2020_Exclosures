@@ -143,8 +143,11 @@ subplot_data %>%
             median_Acyrthosiphon = median(Acyrthosiphon),
             median_NonAcy = median(NonAcy),
             mean_AllAph = mean(AllAph),
+            sd_AllAph = sd(AllAph),
             mean_Acyrthosiphon = mean(Acyrthosiphon),
+            sd_Acyrthosiphon = sd(Acyrthosiphon),
             mean_NonAcy = mean(NonAcy),
+            sd_NonAcy = sd(NonAcy),
             median_Anth = median(Anthocoridae),
             median_Ara = median(Arachnida),
             median_Cocc = median(Coccinellidae),
@@ -152,13 +155,19 @@ subplot_data %>%
             median_Ich = median(Ichneumonoidea),
             median_Nab = median(Nabis),
             mean_Anth = mean(Anthocoridae),
+            sd_Anth = sd(Anthocoridae),
             mean_Ara = mean(Arachnida),
+            sd_Ara = sd(Arachnida),
             mean_Cocc = mean(Coccinellidae),
+            sd_Cocc = sd(Coccinellidae),
             mean_Geoc = mean(Geocoris),
+            sd_Geoc = sd(Geocoris),
             mean_Ich = mean(Ichneumonoidea),
-            mean_Nab = mean(Nabis)) %>%
+            sd_Ich = sd(Ichneumonoidea),
+            mean_Nab = mean(Nabis)
+  ) %>%
   # move all stats into a single col
-  pivot_longer(starts_with("mean") | starts_with("median"),
+  pivot_longer(starts_with("mean") | starts_with("median") | starts_with("sd"),
                names_to = "Taxon", values_to = "Value") %>%
   # parse "Taxon" col
   separate(Taxon, c("Stat", "Taxon"), "_", remove = FALSE) %>%
@@ -166,12 +175,14 @@ subplot_data %>%
   arrange(Taxon, Season, Stat) %>%
   # relocate columns
   relocate(Taxon, Season, Stat) %>%
+  # x16 to get value in density/m2
+  mutate(Value = Value*4) %>%
   # print table to viewer
   tab_df(alternate.rows = TRUE)
 
 # statistical tests
 # aphids
-lm(log(AllAph + 1) ~ Season, subplot_data) %>% anova
+lm(log(AllAph + 1) ~ Season, subplot_data) %>% summary
 lm(log(Acyrthosiphon + 1) ~ Season, subplot_data) %>% summary
 lm(log(NonAcy + 1) ~ Season, subplot_data) %>% summary
 # predators
@@ -183,19 +194,16 @@ lm(log(Ichneumonoidea + 1) ~ Season, subplot_data) %>% summary
 lm(log(Nabis + 1) ~ Season, subplot_data) %>% summary
 # print p values with bonferonni correction for predators
 summary(lm(log(Anthocoridae + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
-  p.adjust("bonferroni", 6)
+  p.adjust("bonferroni", 5)
 summary(lm(log(Arachnida + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
-  p.adjust("bonferroni", 6)
+  p.adjust("bonferroni", 5)
 summary(lm(log(Coccinellidae + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
-  p.adjust("bonferroni", 6)
+  p.adjust("bonferroni", 5)
 summary(lm(log(Geocoris + 1) ~ Season, subplot_data))$coefficients[2, 4] %>%
-  p.adjust("bonferroni", 6)
+  p.adjust("bonferroni", 5)
 summary(lm(log(Ichneumonoidea + 1) ~ Season,
            subplot_data))$coefficients[2, 4] %>%
-  p.adjust("bonferroni", 6)
-summary(lm(log(Nabis + 1) ~ Season,
-           subplot_data))$coefficients[2, 4] %>%
-  p.adjust("bonferroni", 6)
+  p.adjust("bonferroni", 5)
 
 # calculate relative skewness of aphid density across seasons
 # use datawizard package

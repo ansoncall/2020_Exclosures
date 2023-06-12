@@ -21,7 +21,7 @@ plot(allEffects(anth.eff))
 # literally no effect of sham in any of these models
 # constrain data to when sham diff is +0
 lavaan_df <- subplot_data_raw %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == 'Spring',
          Treatment != 'Pre-',
          diffAnthocoridae > 0)
@@ -63,7 +63,7 @@ plot(allEffects(ara.eff))
 # literally no effect of sham in any of these models
 # constrain data to when sham diff is +0
 lavaan_df <- subplot_data_raw %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == 'Spring',
          Treatment != 'Pre-',
          diffArachnida > 0)
@@ -106,7 +106,7 @@ plot(allEffects(cocc_eff))
 # constrain data to when sham diff is +0
 ### THIS is when the coccinellidae effects show up ####
 lavaan_df <- subplot_data_raw %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == 'Spring',
          Treatment != 'Pre-',
          diffCoccinellidae > 0)
@@ -119,7 +119,7 @@ plot(simulateResiduals(cocc_eff))
 
 ## try fall effect of ichneumonoida
 lavaan_df.fa <- subplot_data_raw %>%
-  left_join(diffData_wide) %>%
+  left_join(diff_data_wide) %>%
   filter(Season == 'Fall',
          Treatment != 'Pre-',
          diffIchneumonoidea > 40)

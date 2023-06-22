@@ -144,8 +144,13 @@ subplot_data %>%
             median_NonAcy = median(NonAcy),
             mean_AllAph = mean(AllAph),
             sd_AllAph = sd(AllAph),
+            se_AllAph = sd(AllAph)/sqrt(189),
+            se_NonAcy = sd(NonAcy)/sqrt(189),
+            se_Geoc = sd(Geocoris)/sqrt(189),
+            se_Ara = sd(Arachnida)/sqrt(189),
             mean_Acyrthosiphon = mean(Acyrthosiphon),
             sd_Acyrthosiphon = sd(Acyrthosiphon),
+            se_Acyrthosiphon = sd(Acyrthosiphon)/sqrt(189),
             mean_NonAcy = mean(NonAcy),
             sd_NonAcy = sd(NonAcy),
             median_Anth = median(Anthocoridae),
@@ -167,7 +172,7 @@ subplot_data %>%
             mean_Nab = mean(Nabis)
   ) %>%
   # move all stats into a single col
-  pivot_longer(starts_with("mean") | starts_with("median") | starts_with("sd"),
+  pivot_longer(starts_with("mean") | starts_with("median") | starts_with("sd") | starts_with("se", ignore.case = F),
                names_to = "Taxon", values_to = "Value") %>%
   # parse "Taxon" col
   separate(Taxon, c("Stat", "Taxon"), "_", remove = FALSE) %>%
@@ -176,13 +181,29 @@ subplot_data %>%
   # relocate columns
   relocate(Taxon, Season, Stat) %>%
   # x16 to get value in density/m2
-  mutate(Value = Value*4) %>%
-  # print table to viewer
+  mutate(Value = Value*4) -> tb
+tb %>%
+  pivot_wider(names_from = Taxon, values_from = Value) %>%
   tab_df(alternate.rows = TRUE)
+tb %>% filter(Stat == "mean") %>%
+  pivot_wider(values_from = Value, names_from = Season) %>%
+  mutate(change = Fall/Spring) %>%
+  filter(Taxon %in% c('Anth', 'Ara', 'Cocc', 'Geoc', 'Ich')) %>% summarize(
+    spMean = mean(Spring),
+    faMean = mean(Fall),
+    changeMean = mean(change),
+    spSD = sd(Spring),
+    sdFa = sd(Fall),
+    seSp = spSD/(sqrt(189)),
+    seFa = sdFa/(sqrt(189))
+  )
+  # print table to viewer
+
 
 # statistical tests
 # aphids
 lm(log(AllAph + 1) ~ Season, subplot_data) %>% summary
+lm(log(AllAph + 1) ~ Season, subplot_data) %>% confint()
 lm(log(Acyrthosiphon + 1) ~ Season, subplot_data) %>% summary
 lm(log(NonAcy + 1) ~ Season, subplot_data) %>% summary
 # predators

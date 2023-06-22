@@ -26,9 +26,7 @@ diff_data_wide <- subplot_data_raw %>% # long-format counts
          diffOther = Other_Sham - Other_Control,
          diffAllAph = AllAph_Sham - AllAph_Control,
          diffNonAcy = NonAcy_Sham - NonAcy_Control,
-         .before = 'alfalfa_no') %>%
-  # remove original Sham and Control cols to retain only differences
-  select(-ends_with('_Sham'), -ends_with('_Control'))
+         .before = 'alfalfa_no')
 # maybe add scaled+summed pred col here?
 # NOTE: this did not end up being useful, but I tried it!
 
@@ -58,6 +56,29 @@ dotchart(plot_w_diff$diffIchneumonoidea)
 dotchart(plot_w_diff$diffAllAph)
 
 ### Make models ####
+# try simple cocc. model
+lm(Coccinellidae~Treatment, data = subplot_data_raw %>%
+     left_join(diff_data_wide) %>%
+     filter(Season == "Spring",
+            Treatment != "Pre-"))
+lm(Coccinellidae~Treatment, data = subplot_data_raw %>%
+     left_join(diff_data_wide) %>%
+     filter(Season == "Spring",
+            Treatment != "Pre-",
+            diffCoccinellidae > 0))
+
+1.944*4
+1.028*4
+
+1.571*4
+2.429*4
+
+subplot_data_raw %>%
+  left_join(diff_data_wide) %>%
+  filter(Season == "Spring",
+         Treatment != "Pre-") %>%
+  summarise(mean(Coccinellidae)*4,
+            (sd(Coccinellidae)/sqrt(72))*4)
 # Mixed effects needed?
 # linear and linear mixed-effects often give different results.
 # must use mixed effects to account for non-independence
@@ -120,3 +141,41 @@ for (i in 1:6){
 }
 summary(dCoc.mod)
 summary(d_ich_mod)
+
+# *4 to change untis to m2
+diff_stats_sp %>%
+  mutate(Est = Est*4,
+         Ste = Ste*4,
+         Pcorr = p.adjust(P, "bonferroni", 6) ) %>%
+  tab_df()
+
+diff_stats_fa %>%
+  mutate(Est = Est*4,
+         Ste = Ste*4,
+         Pcorr = p.adjust(P, "bonferroni", 6) ) %>%
+  tab_df()
+
+diff_data_wide %>%
+  filter(Season == "Spring") %>%
+  summarize(
+    mSAra = mean(Arachnida_Sham)*4,
+    mCAra = mean(Arachnida_Control)*4,
+    pcAra = mSAra/mCAra,
+    mSAnth = mean(Anthocoridae_Sham)*4,
+    mCAnth = mean(Anthocoridae_Control)*4,
+    pcAnth = mSAnth/mCAnth,
+    mSCoc = mean(Coccinellidae_Sham)*4,
+    mCCoc = mean(Coccinellidae_Control)*4,
+    pcCoc = mSCoc/mCCoc
+            )
+
+diff_data_wide %>%
+  filter(Season == "Fall") %>%
+      summarize(
+        mSIch = mean(Ichneumonoidea_Sham)*4,
+        mCIch = mean(Ichneumonoidea_Control)*4,
+        pcIch = mSIch/mCIch,
+        medSIch = median(Ichneumonoidea_Sham)*4,
+        medCIch = median(Ichneumonoidea_Control)*4,
+        pcMed = medSIch/medCIch
+  )

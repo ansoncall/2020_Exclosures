@@ -116,6 +116,14 @@ cocc_eff <- glmmTMB(AllAph~ Treatment + log(Coccinellidae+1) + (1|Site:Field),
 summary(cocc_eff) # -TreatmentSham**
 plot(allEffects(cocc_eff))
 plot(simulateResiduals(cocc_eff))
+r2(cocc_eff)
+library(MASS)
+cocc_eff2 <- glm.nb(AllAph ~ Treatment + log(Coccinellidae+1),
+                     data = lavaan_df)
+r2(cocc_eff2)
+r2_efron(cocc_eff2)
+r2_efron(cocc_eff)
+
 
 ## try fall effect of ichneumonoida
 lavaan_df.fa <- subplot_data_raw %>%
@@ -132,27 +140,3 @@ summary(ich.eff) # no apparent effect of sham
 plot(allEffects(ich.eff))
 plot(simulateResiduals(ich.eff))
 
-
-
-
-## figure for paper (WIP) ####
-anth.tidy <- tidy(anth.eff) %>% filter(term == 'TreatmentSham')
-ara.tidy <- tidy(ara.eff) %>% filter(term == 'TreatmentSham')
-cocc.tidy <- tidy(cocc_eff) %>% filter(term == 'TreatmentSham') %>%
-  select(term:p.value)
-ich.tidy <- tidy(ich.eff) %>% filter(term == 'TreatmentSham') %>%
-  select(term:p.value)
-ncol(anth.tidy)
-ncol(ara.tidy)
-ncol(cocc.tidy)
-ncol(ich.tidy)
-tidy.mods <- rbind(anth.tidy, ara.tidy, cocc.tidy, ich.tidy)
-tidy.mods$model <- c("Anthocoridae",
-                     "Arachnida",
-                     "Coccinellidae",
-                     "Ichneumonoidea")
-
-dwplot(tidy.mods) %>%
-  relabel_predictors(c(TreatmentSham = "Biocontrol effect")) +
-  geom_vline(xintercept = 0, color = 'red') +
-  theme_classic()

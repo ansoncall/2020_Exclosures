@@ -418,7 +418,9 @@ for(i in 1:10){
 
 # Fit models ####
 
-rebuild <- askYesNo("Would you like to rebuild model selection tables?")
+rebuild <- askYesNo("Would you like to rebuild model selection tables?",
+                    prompts = getOption("askYesNo",
+                                        gettext(c("Yes", "No", "Cancel"))))
 
 if (rebuild == TRUE) {
 
@@ -520,13 +522,13 @@ stats_df %>%
 
 # best to review these by hand. change input models manually.
 
-# # # optional: review a single mod table
-foo <- nb_scaled$tab_nb_cocc_sp_scaled %>%
+# # optional: review a single mod table
+foo <- nb_scaled$tab_nb_anth_fa_scaled %>%
   tibble %>%
   slice(1:6) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>%
   mutate(data = "RandomForest", .before = everything())
-## surprised no perim variables are in here
+# surprised no perim variables are in here
 
 bar <- tab_nb_cocc_sp_fix_scaled %>%
   tibble %>%
@@ -1628,10 +1630,10 @@ veg_dredge_fa <- dredge(fa_best_veg,
 
 # review model selection tables and best models
 ## Spring
-# veg_dredge_sp %>%
-#   slice(1:15) %>% # can change how inclusive this is
-#   select(where(~!all(is.na(.x)))) %>%
-#   View
+veg_dredge_sp %>%
+  slice(1:10) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>%
+  View("Spring_Veg")
 # new best mod!! +richness!!
 sp_best_veg <- get.models(veg_dredge_sp, 1)[[1]]
 summary(sp_best_veg)
@@ -1646,10 +1648,10 @@ abline(0, 1)
 plot(allEffects(sp_best_veg, resid = TRUE))
 
 ## Fall
-# veg_dredge_fa %>%
-#   slice(1:15) %>% # can change how inclusive this is
-#   # select(where(~!all(is.na(.x)))) %>%
-#   View
+veg_dredge_fa %>%
+  slice(1:10) %>% # can change how inclusive this is
+  # select(where(~!all(is.na(.x)))) %>%
+  View("Fall_Veg")
 # new best mod!! -shan!!
 fa_best_veg <- get.models(veg_dredge_fa, 1)[[1]]
 summary(fa_best_veg)
@@ -2044,7 +2046,7 @@ lavaan_df_prep2 <- lavaan_df_prep %>%
   to_dummy(Site, suffix = "label") %>%
   bind_cols(lavaan_df_prep)
 ## binary treatment vars, bind other data
-
+detach("package:MASS")
 ## one version only - you get lost if you make multiple dfs!
 lavaan_df1 <- lavaan_df_prep2 %>%
   to_dummy(Treatment, suffix = "label") %>%
@@ -2055,7 +2057,7 @@ lavaan_df1 <- lavaan_df_prep2 %>%
          # diffCoccinellidae > 0) %>%
   mutate(logAllAph = log(AllAph + 1),
          logCoccinellidae = log(Coccinellidae + 1)) %>%
-  select(logAllAph, logCoccinellidae, Coccinellidae, # dump other cols
+  dplyr::select(logAllAph, logCoccinellidae, Coccinellidae, # dump other cols
          diffCoccinellidae,
          wateringMethod_Flooding,
          ag_sig1, weedy_sig1, dirt_sig1,
@@ -2086,7 +2088,7 @@ dotchart(lavaan_df1$weedy_sig1)
 dotchart(lavaan_df1$dirt_sig1)
 dotchart(lavaan_df1$Treatment_Sham)
 dotchart(lavaan_df1$wateringMethod_Flooding)
-dotchart(subplot_data_raw$weedy_sig1/lala)
+dotchart(subplot_data_raw$weedy_sig1)
 dotchart(subplot_data_raw$weedy_sig1)
 sd(subplot_data_raw$weedy_sig1)-> lala
 # 2. review aphid/ladybug/landcover relationships from glm
@@ -2098,6 +2100,28 @@ summary(cocc_eff) # !!! Treatment_Sham N.S. unless diffCoccinellidae > 0
 plot(allEffects(cocc_eff))
 plot(simulateResiduals(cocc_eff))
 
+
+subplot_data_raw %>%
+  left_join(diff_data_wide) %>%
+  filter(Season == "Spring",
+         Treatment == "Sham",
+         diffCoccinellidae > 0) %>%
+  summarize(mean(diffCoccinellidae)*4,
+            sd(diffCoccinellidae)*4,
+            (sd(diffCoccinellidae)/sqrt(21))*4,
+            mean(Coccinellidae))
+
+subplot_data_raw %>%
+  left_join(diff_data_wide) %>%
+  filter(Season == "Spring",
+         Treatment != "Pre-") %>%
+  summarize(mean(diffCoccinellidae)*4,
+            sd(diffCoccinellidae)*4,
+            (sd(diffCoccinellidae)/sqrt(72))*4,
+            mean(Coccinellidae)*4,
+            (sd(Coccinellidae)/sqrt(72))*4)
+
+lavaan_df1 %>% summarize(mean(Coccinellidae))
 ## from spring allaph model....
 summary(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])
 
@@ -2182,8 +2206,8 @@ mod_specB <- "
     # multiply coefs here - use :=
 
   # total effects
-    wd := w+(-d) # landcover -> ladybugs
-    fa := f+(-a) # landcover -> aphids
+    wd := w+(d) # landcover -> ladybugs
+    fa := f+(a) # landcover -> aphids
     # add coefs here - use :=
 
   # covariance
@@ -2196,7 +2220,7 @@ mod_specB <- "
 # ML is default estimator
 mod_fit1B <- sem(mod_specB, data = lavaan_df1)
 summary(mod_fit1B)
-
+fitmeasures(mod_fit1B)
 lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = FALSE, stand = FALSE)
 lavaanPlot(model = mod_fit1B, coefs = TRUE, covs = TRUE, stand = FALSE)
 
@@ -2258,24 +2282,4 @@ mod_specA <- "
 mod_fitA <- sem(mod_specA, data = lavaan_df1)
 
 summary(mod_fitA)
-## WHAT IS THIS BELOW? ##########
-# cant figure out where this came from
-# Trt_Sham effect is:
-# Trtmnt_Shm (t) Est: -0.758    Std.err: 0.133   z: -5.708    P: 0.000
-#################################
 
-lavaanPlot(model = mod_fitA, coefs = TRUE, covs = F, stand = FALSE)
-# exploratory regression
-## how does filtering change the sham > diff relationship?
-mod1 <- lm(diffCoccinellidae ~ Treatment_Sham + logCoccinellidae,
-           data = lavaan_df1)
-mod2 <- lm(diffCoccinellidae ~ Treatment_Sham + logCoccinellidae,
-           data = lavaan_df2)
-
-summary(mod1)
-summary(mod2) # better fit, stronger sham effect.
-
-plot(allEffects(mod1))
-plot(allEffects(mod2))
-
-# what is the deal with the diffCoccinellidae?

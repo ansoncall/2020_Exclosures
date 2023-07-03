@@ -459,6 +459,7 @@ source("collectMods_preds.R", echo = TRUE)
 
 
 # Make table of top (no veg) predator models ####
+
 # make list of best models
 best_mod_list <- list(
   "best.ant.sp" = get.models(nb_scaled$tab_nb_anth_sp_scaled, 1)[[1]],
@@ -519,11 +520,32 @@ stats_df %>%
   tab_df(title = "Top predator models (no vegetation data included)")
 
 # Review predator models ####
+# Collect model selection table, and get all models < 5 deltaAICc
+get_delta_five <- function(table) {
+  nb_scaled$tab_nb_cocc_sp_scaled %>%
+    tibble %>%
+    filter(delta < 5) %>%
+    select(where(~!all(is.na(.x))))
+}
 
-# best to review these by hand. change input models manually.
+top_five_models <- list()
+for (i in seq_along(nb_scaled)) {
+  top_five_models[[i]] <- get_delta_five(nb_scaled[[i]])
+  names(top_five_models)[i] <- names(nb_scaled[i])
+}
 
-# # optional: review a single mod table
-foo <- nb_scaled$tab_nb_anth_fa_scaled %>%
+# Count number of models with < 5 deltaAICc
+for (i in seq_along(top_five_models)) {
+  print(names(top_five_models[i]))
+  print(nrow(top_five_models[[i]]))
+}
+
+for (i in seq_along(top_five_models)) {
+  top_five_models[[i]] %>% View(names(top_five_models[i]))
+}
+
+
+nb_scaled$tab_nb_anth_fa_scaled %>% View
   tibble %>%
   slice(1:6) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>%

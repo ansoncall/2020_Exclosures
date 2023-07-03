@@ -475,7 +475,7 @@ gmod_sig1 <- glmmTMB(Coccinellidae ~
                        impermeable_sig1 + weedy_sig1 + water_sig1 + div_sig1 +
                        divShan_sig1 +
                        (1 | Site / Field), # nested random effects
-                     data = df_sp, family = "nbinom2")
+                     data = df_sp, family = "nbinom2", na.action = "na.fail")
 gmod_sig2 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -484,7 +484,7 @@ gmod_sig2 <- glmmTMB(Coccinellidae ~
                        impermeable_sig2 + weedy_sig2 + water_sig2 + div_sig2 +
                        divShan_sig2 +
                        (1 | Site / Field), # nested random effects
-                     data = df_sp, family = "nbinom2")
+                     data = df_sp, family = "nbinom2", na.action = "na.fail")
 gmod_sig3 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -493,7 +493,7 @@ gmod_sig3 <- glmmTMB(Coccinellidae ~
                        impermeable_sig3 + weedy_sig3 + water_sig3 + div_sig3 +
                        divShan_sig3 +
                        (1 | Site / Field), # nested random effects
-                     data = df_sp, family = "nbinom2")
+                     data = df_sp, family = "nbinom2", na.action = "na.fail")
 gmod_sig4 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -502,7 +502,7 @@ gmod_sig4 <- glmmTMB(Coccinellidae ~
                        impermeable_sig4 + weedy_sig4 + water_sig4 + div_sig4 +
                        divShan_sig4 +
                        (1 | Site / Field), # nested random effects
-                     data = df_sp, family = "nbinom2")
+                     data = df_sp, family = "nbinom2", na.action = "na.fail")
 gmod_sig5 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -511,7 +511,7 @@ gmod_sig5 <- glmmTMB(Coccinellidae ~
                        impermeable_sig5 + weedy_sig5 + water_sig5 + div_sig5 +
                        divShan_sig5 +
                        (1 | Site / Field), # nested random effects
-                     data = df_sp, family = "nbinom2")
+                     data = df_sp, family = "nbinom2", na.action = "na.fail")
 gmod_const <- glmmTMB(Coccinellidae ~
                         # non-landcover effects
                         Treatment + log_AllAph + wateringMethod +
@@ -520,7 +520,7 @@ gmod_const <- glmmTMB(Coccinellidae ~
                         ag_const + impermeable_const + weedy_const +
                         water_const + div_const + divShan_const +
                         (1 | Site / Field), # nested random effects
-                      data = df_sp, family = "nbinom2")
+                      data = df_sp, family = "nbinom2", na.action = "na.fail")
 gmod_no <- glmmTMB(Coccinellidae ~
                      # non-landcover effects
                      Treatment + log_AllAph + wateringMethod +
@@ -530,7 +530,7 @@ gmod_no <- glmmTMB(Coccinellidae ~
 
                      divShan_no +
                      (1 | Site / Field), # nested random effects
-                   data = df_sp, family = "nbinom2")
+                   data = df_sp, family = "nbinom2", na.action = "na.fail")
 
 # dredging
 sig1_dredge <- dredge(gmod_sig1,
@@ -697,7 +697,7 @@ gmod_sig1 <- glmmTMB(Coccinellidae ~
                        # landcover effects
                        alfalfa_sig1 + naturalArid_sig1 + dirt_sig1 + ag_sig1 +
                        impermeable_sig1 + weedy_sig1 + water_sig1,
-                     data = df_fa, family = "nbinom2")
+                     data = df_fa, family = "nbinom2", na.action = "na.fail")
 gmod_sig2 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -706,7 +706,7 @@ gmod_sig2 <- glmmTMB(Coccinellidae ~
                        impermeable_sig2 + weedy_sig2 + water_sig2 + div_sig2 +
                        divShan_sig2 +
                        (1 | Site / Field), # nested random effects
-                     data = df_fa, family = "nbinom2") # convergence warning
+                     data = df_fa, family = "nbinom2", na.action = "na.fail") # convergence warning
 gmod_sig3 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -715,7 +715,7 @@ gmod_sig3 <- glmmTMB(Coccinellidae ~
                        impermeable_sig3 + weedy_sig3 + water_sig3 + div_sig3 +
                        divShan_sig3 +
                        (1 | Site / Field), # nested random effects
-                     data = df_fa, family = "nbinom2")
+                     data = df_fa, family = "nbinom2", na.action = "na.fail")
 gmod_sig4 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -724,7 +724,7 @@ gmod_sig4 <- glmmTMB(Coccinellidae ~
                        impermeable_sig4 + weedy_sig4 + water_sig4 + div_sig4 +
                        divShan_sig4 +
                        (1 | Site / Field), # nested random effects
-                     data = df_fa, family = "nbinom2")
+                     data = df_fa, family = "nbinom2", na.action = "na.fail")
 gmod_sig5 <- glmmTMB(Coccinellidae ~
                        # non-landcover effects
                        Treatment + log_AllAph + wateringMethod +
@@ -733,7 +733,7 @@ gmod_sig5 <- glmmTMB(Coccinellidae ~
                        impermeable_sig5 + weedy_sig5 + water_sig5 + div_sig5 +
                        divShan_sig5 +
                        (1 | Site / Field), # nested random effects
-                     data = df_fa, family = "nbinom2")
+                     data = df_fa, family = "nbinom2", na.action = "na.fail")
 gmod_const <- glmmTMB(Coccinellidae ~
                         # non-landcover effects
                         Treatment + log_AllAph + wateringMethod +
@@ -743,7 +743,7 @@ gmod_const <- glmmTMB(Coccinellidae ~
                         impermeable_const + weedy_const +
                         water_const + div_const + divShan_const +
                         (1 | Site / Field), # nested random effects
-                      data = df_fa, family = "nbinom2")
+                      data = df_fa, family = "nbinom2", na.action = "na.fail")
 gmod_no <- glmmTMB(Coccinellidae ~
                      # non-landcover effects
                      Treatment + log_AllAph + wateringMethod +
@@ -752,7 +752,7 @@ gmod_no <- glmmTMB(Coccinellidae ~
                      impermeable_no + weedy_no + water_no + div_no +
                      divShan_no +
                      (1 | Site / Field), # nested random effects
-                   data = df_fa, family = "nbinom2")
+                   data = df_fa, family = "nbinom2", na.action = "na.fail")
 
 # dredging
 sig1_dredge <- dredge(gmod_sig1,
@@ -780,6 +780,9 @@ sig5_dredge <- dredge(gmod_sig5,
                       fixed = "cond(Treatment)",
                       trace = 2,
                       cluster = clust)
+get.models(sig5_dredge, 34)
+library(MuMIn)
+subset(sig5_dredge, subset = !is.na(AICc), recalc.weights = F)
 const_dredge <- dredge(gmod_const,
                        m.lim = c(0, 3),
                        fixed = "cond(Treatment)",

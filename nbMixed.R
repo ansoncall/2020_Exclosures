@@ -15,6 +15,7 @@ clusterExport(clust, "df_sp")
 clusterExport(clust, "df_sp_fixed")
 clusterExport(clust, "df_fa")
 clusterEvalQ(clust, library(glmmTMB))
+clusterEvalQ(clust, library(MuMIn))
 
 # Anthocoridae ####
 ## Spring ####
@@ -780,9 +781,9 @@ sig5_dredge <- dredge(gmod_sig5,
                       fixed = "cond(Treatment)",
                       trace = 2,
                       cluster = clust)
-get.models(sig5_dredge, 34)
-library(MuMIn)
-subset(sig5_dredge, subset = !is.na(AICc), recalc.weights = F)
+# selection table contains models with no AICc.
+# filter to calculate model weights.
+sig5_dredge <- subset(sig5_dredge, subset = !is.na(AICc), recalc.weights = T)
 const_dredge <- dredge(gmod_const,
                        m.lim = c(0, 3),
                        fixed = "cond(Treatment)",
@@ -1002,16 +1003,25 @@ sig4_dredge <- dredge(gmod_sig4,
                       fixed = "cond(Treatment)",
                       trace = 2,
                       cluster = clust)
+# selection table contains models with no AICc.
+# filter to calculate model weights.
+sig4_dredge <- subset(sig4_dredge, subset = !is.na(AICc), recalc.weights = T)
 sig5_dredge <- dredge(gmod_sig5,
                       m.lim = c(0, 3),
                       fixed = "cond(Treatment)",
                       trace = 2,
                       cluster = clust)
+# selection table contains models with no AICc.
+# filter to calculate model weights.
+sig5_dredge <- subset(sig5_dredge, subset = !is.na(AICc), recalc.weights = T)
 const_dredge <- dredge(gmod_const,
                        m.lim = c(0, 3),
                        fixed = "cond(Treatment)",
                        trace = 2,
                        cluster = clust)
+# selection table contains models with no AICc.
+# filter to calculate model weights.
+const_dredge <- subset(const_dredge, subset = !is.na(AICc), recalc.weights = T)
 no_dredge <- dredge(gmod_no,
                     m.lim = c(0, 3),
                     fixed = "cond(Treatment)",

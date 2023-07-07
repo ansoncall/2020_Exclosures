@@ -411,7 +411,7 @@ for(i in 1:10){
     var <- varlist[[i]]
     dist <- distlist[[j]]
     varDist <- paste0(var, dist)
-    dotchart(sort(df_sp[[varDist]]), main = varDist)
+    # dotchart(sort(df_sp[[varDist]]), main = varDist) # slow
   }
 }
 
@@ -522,7 +522,7 @@ stats_df %>%
 # Review predator models ####
 # Collect model selection table, and get all models < 5 deltaAICc
 get_delta_five <- function(table) {
-  nb_scaled$tab_nb_cocc_sp_scaled %>%
+  table %>%
     tibble %>%
     filter(delta < 5) %>%
     select(where(~!all(is.na(.x))))
@@ -545,21 +545,19 @@ for (i in seq_along(top_five_models)) {
 }
 
 
-nb_scaled$tab_nb_anth_fa_scaled %>% View
+nb_scaled$tab_nb_ich_sp_scaled %>%
   tibble %>%
-  slice(1:6) %>% # can change how inclusive this is
-  select(where(~!all(is.na(.x)))) %>%
-  mutate(data = "RandomForest", .before = everything())
+  slice(1:15) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>% View
+  mutate(data = "RandomForest",
+         .before = everything()) %>% select(AICc)
+
 # surprised no perim variables are in here
+get.models(nb_scaled$tab_nb_anth_fa_scaled, 2)[[1]]
 
-bar <- tab_nb_cocc_sp_fix_scaled %>%
-  tibble %>%
-  slice(1:6) %>% # can change how inclusive this is
-  select(where(~!all(is.na(.x)))) %>%
-  mutate(data = "Manual", .before = everything())
 
-tab_nb_cocc_sp_fix_scaled == nb_scaled$tab_nb_cocc_sp_scaled
-importance_tab_fix <- sw(tab_nb_cocc_sp_fix_scaled) %>% #tibble(names = names(.))
+importance_tab_fix <- sw(nb_scaled$tab_nb_geo_fa_scaled %>%
+                           filter(delta < 2)) %>% #tibble(names = names(.))
   tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   mutate(names = case_when(names == "cond(Treatment)" ~ "cond(Treatment)_NA",
@@ -604,10 +602,10 @@ ggplot(data = importance_tab_fix, aes(x = class_fix, y = distWeight_fix, fill = 
     axis.text.y = element_text(angle = 45))+
   scale_fill_gradient(low="blue", high="red") +
   labs(x = 'Landcover class',
-       y = 'Distance weighting algorithm',
-       title = paste0('log(Coccinellidae)',
+       y = 'Distance weighting ??',
+       title = paste0('log(?)',
                       ' Variable importance, ',
-                      "Spring fixed"))
+                      "Season?"))
 
 
 importance_tab <- sw(nb_scaled$tab_nb_cocc_sp_scaled) %>% #tibble(names = names(.))
@@ -804,9 +802,6 @@ ggsave("spring_randomforest_varimportance.pdf",
 
 
 
-
-plyr::rbind.fill(foo, bar) %>% tab_df(file = "models.html")
-webshot("models.html", "models.pdf")
 
 # choose model to review
 review_mod <- get.models(nb_scaled$tab_nb_cocc_sp_scaled, 1)[[1]]
@@ -1504,11 +1499,11 @@ source("coccinellidae_binomial.R", echo = TRUE)
 r2(get.models(tab_nb_allaph_sp_scaled, 1)[[1]]) # good fit 0.85
 plot(simulateResiduals(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])) # ok
 summary(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])
-# tab_nb_allaph_sp_scaled %>%
-#   tibble %>%
-#   slice(1:5) %>% # can change how inclusive this is
-#   select(where(~!all(is.na(.x)))) %>%
-#   View
+tab_nb_allaph_sp_scaled %>%
+  tibble %>%
+  filter(delta < 2) %>% # can change how inclusive this is
+  select(where(~!all(is.na(.x)))) %>%
+  View("Spring AllAph No Veg")
 # basic effects plots
 plot(allEffects(get.models(tab_nb_allaph_sp_scaled, 1)[[1]], residuals = TRUE))
 # wateringMethod in all top mods, which are close in deltas w/low weights
@@ -1584,7 +1579,7 @@ plot(simulateResiduals(get.models(tab_nb_nonacy_fa_scaled, 1)[[1]])) # weird?
 # Review aphid models ####
 # spring - #1 mod is inappropriate because it combines wateringmethod and
 # water_sig1
-sp_best <- get.models(tab_nb_allaph_sp_scaled, 1)[[1]]
+sp_best <- get.models(tab_nb_allaph_sp_scaled, 2)[[1]]
 fa_best <- get.models(tab_nb_allaph_fa_scaled, 1)[[1]]
 summary(sp_best)
 summary(fa_best)
@@ -1625,17 +1620,32 @@ df_sp_vd
 df_fa_vd
 # add vegdata to top mods
 sp_best
-sp_best_veg <- glmmTMB(AllAph ~ Treatment + ag_sig1 + wateringMethod +
-                         log_Coccinellidae + shan + rich + totalCover +
+# including all factors from top 3 mods
+sp_best_veg1 <- glmmTMB(AllAph ~ Treatment + ag_sig1 + water_sig1 +
+                         wateringMethod + log_Coccinellidae +
+                         shan + rich + totalCover +
                          (1 | Site:Field),
                        data = df_sp_vd,
                        family = "nbinom2",
                        na.action = "na.fail")
 
-veg_dredge_sp <- dredge(sp_best_veg,
+sp_best_veg2 <- glmmTMB(AllAph ~ Treatment + alfalfa_sig4 + div_sig4 +
+                          water_sig4 + wateringMethod + log_Coccinellidae +
+                          shan + rich + totalCover +
+                          (1 | Site:Field),
+                        data = df_sp_vd,
+                        family = "nbinom2",
+                        na.action = "na.fail")
+
+veg_dredge_sp1 <- dredge(sp_best_veg1,
                         fixed = "cond(Treatment)",
                         m.lim = c(0, 4),
                         trace = 2)
+veg_dredge_sp2 <- dredge(sp_best_veg2,
+                         fixed = "cond(Treatment)",
+                         m.lim = c(0, 4),
+                         trace = 2)
+veg_dredge_sp <- rbind(veg_dredge_sp1, veg_dredge_sp2)
 
 fa_best
 fa_best_veg <- glmmTMB(AllAph ~ Treatment + impermeable_sig4 +
@@ -1653,14 +1663,22 @@ veg_dredge_fa <- dredge(fa_best_veg,
 # review model selection tables and best models
 ## Spring
 veg_dredge_sp %>%
-  slice(1:10) %>% # can change how inclusive this is
+  tibble %>%
+  filter(delta < 2) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>%
-  View("Spring_Veg")
+  View("Spring_Veg1")
 # new best mod!! +richness!!
 sp_best_veg <- get.models(veg_dredge_sp, 1)[[1]]
+compare_surfaceWater <- glmmTMB(AllAph ~ log_Coccinellidae +
+                                  rich + water_no + Treatment +
+                                  (1 | Site:Field),
+                                data = df_sp_vd,
+                                family = nbinom2())
 summary(sp_best_veg)
+summary(compare_surfaceWater)
 summary(sp_best)
 r2(sp_best_veg)
+r2(compare_surfaceWater)
 r2(sp_best)
 plot(simulateResiduals(sp_best_veg))
 plot(fitted(sp_best_veg), residuals(sp_best_veg, type = "pearson"))
@@ -1671,8 +1689,9 @@ plot(allEffects(sp_best_veg, resid = TRUE))
 
 ## Fall
 veg_dredge_fa %>%
+  tibble %>%
   slice(1:10) %>% # can change how inclusive this is
-  # select(where(~!all(is.na(.x)))) %>%
+  select(where(~!all(is.na(.x)))) %>%
   View("Fall_Veg")
 # new best mod!! -shan!!
 fa_best_veg <- get.models(veg_dredge_fa, 1)[[1]]

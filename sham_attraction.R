@@ -69,9 +69,12 @@ lm(Coccinellidae~Treatment, data = subplot_data_raw %>%
 
 1.944*4
 1.028*4
+1.028/1.944
 
 1.571*4
 2.429*4
+
+2.429/1.571
 
 subplot_data_raw %>%
   left_join(diff_data_wide) %>%

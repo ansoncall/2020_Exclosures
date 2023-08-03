@@ -5,5 +5,7 @@
 *.gdbtable
 *.png
 *.jpg
+*.html
+*.pdf
 predModTabs
 predModTabsSpring

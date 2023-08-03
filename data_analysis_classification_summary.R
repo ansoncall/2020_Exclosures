@@ -65,6 +65,25 @@ field_data %>%
 
 # in summary, manual classification seems to change Yerington the most
 
+## total change in alfalfa
+field_data %>%
+  # only need one season
+  filter(Season == "Spring") %>%
+  ungroup() %>%
+  summarize(reg_alf_sum = sum(alfalfa_no),
+            fix_alf_sum = sum(alfalfa_fix_no),
+            reg_weed_sum = sum(weedy_no),
+            fix_weed_sum = sum (weedy_fix_no),
+            reg_close_alf = sum(alfalfa_sig1),
+            fix_close_alf = sum(alfalfa_fix_sig1),
+            reg_weed_close = sum(weedy_sig1),
+            fix_weed_close = sum(weedy_fix_sig1)) %>%
+  mutate(alf_change = fix_alf_sum / reg_alf_sum,
+         weed_change = fix_weed_sum / reg_weed_sum,
+         alf_close_change = fix_close_alf / reg_close_alf,
+         weed_close_change = fix_weed_close / reg_weed_close) %>%
+  transpose
+
 ## figure: "fixing" effect on yerington 2
 field_data %>%
   # only need one season

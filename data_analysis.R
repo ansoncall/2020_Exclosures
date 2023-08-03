@@ -444,7 +444,7 @@ if (rebuild == TRUE) {
 
 } else {
 
-  # Optional: start here ####
+  # Optional: start here (but load packages first) ####
   load("analysis_env.RData")
 }
 
@@ -474,6 +474,63 @@ best_mod_list <- list(
   "best.geo.fa" = get.models(nb_scaled$tab_nb_geo_fa_scaled, 1)[[1]],
   "best.ich.fa" = get.models(nb_scaled$tab_nb_ich_fa_scaled, 1)[[1]]
 )
+
+## PREDATORS INITIAL full modtables ####
+mod_tables_list <- list(
+  "Anthocoridae_Spring" = nb_scaled$tab_nb_anth_sp_scaled,
+  "Arachnida_Spring" = nb_scaled$tab_nb_ara_sp_scaled,
+  "Coccinellidae_Spring" = nb_scaled$tab_nb_cocc_sp_scaled,
+  "Geocoris_Spring" = nb_scaled$tab_nb_geo_sp_scaled,
+  "Ichneumonoidea_Spring" = nb_scaled$tab_nb_ich_sp_scaled,
+  "Anthocoridae_Fall" = nb_scaled$tab_nb_anth_fa_scaled,
+  "Arachnida_Fall" = nb_scaled$tab_nb_ara_fa_scaled,
+  "Coccinellidae_Fall" = nb_scaled$tab_nb_cocc_fa_scaled,
+  "Geocoris_Fall" = nb_scaled$tab_nb_geo_fa_scaled,
+  "Ichneumodoidea_Fall" = nb_scaled$tab_nb_ich_fa_scaled
+)
+
+master_table <- bind_rows(mod_tables_list, .id = "Taxon_Season") %>%
+  as_tibble() %>% # must drop "model.selection" class
+  separate(Taxon_Season, into = c("Taxon", "Season"), sep = "_") %>%
+  select(where(~!all(is.na(.x)))) %>%
+  rename_with(~str_replace(.x, coll("cond("), "")) %>%
+  rename_with(~str_replace(.x, coll(")"), "")) %>%
+  rename_with(~str_replace(.x, coll("sig1"), "Proximate")) %>%
+  rename_with(~str_replace(.x, coll("sig2"), "Near")) %>%
+  rename_with(~str_replace(.x, coll("sig3"), "Intermediate")) %>%
+  rename_with(~str_replace(.x, coll("sig4"), "Distant")) %>%
+  rename_with(~str_replace(.x, coll("sig5"), "MostDistant")) %>%
+  rename_with(~str_replace(.x, coll("const"), "Constant")) %>%
+  rename_with(~str_replace(.x, coll("no"), "None")) %>%
+  rename_with(~str_replace(.x, coll("ag"), "OtherAgriculture")) %>%
+  rename_with(~str_replace(.x, coll("alfalfa"), "Alfalfa")) %>%
+  rename_with(~str_replace(.x, coll("impermeable"), "Impermeable")) %>%
+  rename_with(~str_replace(.x, coll("dirt"), "BareSoil")) %>%
+  rename_with(~str_replace(.x, coll("naturalArid"), "DesertShrub")) %>%
+  rename_with(~str_replace(.x, coll("weedy"), "Weedy")) %>%
+  rename_with(~str_replace(.x, coll("wateringMethod"), "IrrigationMethod")) %>%
+  rename_with(~str_replace(.x, coll("water"), "SurfaceWater")) %>%
+  rename_with(~str_replace(.x, coll("divShan"), "ShannonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("div"), "SimpsonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("(Int)"), "Intercept")) %>%
+  select(-`disp(Intercept`, -Taxon, -Treatment)
+
+
+names(master_table)
+## export to .csv for tidying there
+write_csv(master_table, "predator_models.csv")
+library("xtable")
+
+print(xtable(master_table,
+             caption = c("Table S##. Candidate models of predator density, with vegetation survey data included.")),
+      type="html",
+      file="predator_models.html",
+      caption.placement = "top",
+      NA.string = "NA")
+
+
+
+
 
 # build empty tibble to hold stats
 stats_df <- tibble(Taxon = rep(c("Anthocoridae",
@@ -549,15 +606,15 @@ nb_scaled$tab_nb_ich_sp_scaled %>%
   tibble %>%
   slice(1:15) %>% # can change how inclusive this is
   select(where(~!all(is.na(.x)))) %>% View
-  mutate(data = "RandomForest",
-         .before = everything()) %>% select(AICc)
+  # mutate(data = "RandomForest",
+  #        .before = everything()) %>% select(AICc)
 
 # surprised no perim variables are in here
 get.models(nb_scaled$tab_nb_anth_fa_scaled, 2)[[1]]
 
 
-importance_tab_fix <- sw(nb_scaled$tab_nb_geo_fa_scaled %>%
-                           filter(delta < 2)) %>% #tibble(names = names(.))
+## fix alfalfa ####
+importance_tab_fix <- sw(tab_nb_cocc_sp_fix_scaled) %>% #tibble(names = names(.))
   tibble(names = names(.), .name_repair = function(x) gsub('\\.', 'sw', x)) %>%
   arrange(names) %>%
   mutate(names = case_when(names == "cond(Treatment)" ~ "cond(Treatment)_NA",
@@ -800,7 +857,16 @@ ggsave("spring_randomforest_varimportance.pdf",
        width = 18,
        units = "cm")
 
+## check tables
+tab_nb_cocc_sp_fix_scaled %>%
+  tibble %>%
+  filter(delta < 5) %>%
+  select(where(~!all(is.na(.x)))) %>% View("fixed")
 
+nb_scaled$tab_nb_cocc_sp_scaled %>%
+  tibble %>%
+  filter(delta < 5) %>%
+  select(where(~!all(is.na(.x)))) %>% View("regular")
 
 
 # choose model to review
@@ -904,6 +970,11 @@ r2(best.coc.sp.vd) ## same model structures. original has more data and better
                    ## marginal r2
 # vedict - keep original
 
+# Geocoris
+r2(best_mod_list$best.geo.sp)
+r2(best.geo.sp.vd) ## Original has more data and higher marginal r2
+# vedict - keep original
+
 # Ichneumonoidea
 r2(best_mod_list$best.ich.sp)
 r2(best.ich.sp.vd) ## new model has one less factor. new has better marginal r2,
@@ -933,6 +1004,8 @@ r2(best_mod_list$best.coc.fa)
 r2(best.coc.fa.vd) ## new model has one less factor.
 ## verdict - keep original
 ## NOW: scale has changed from no to const
+
+# skip Geocoris. not enough data here.
 
 # Ichneumonoidea
 r2(best_mod_list$best.ich.fa)
@@ -1029,11 +1102,33 @@ stats_df_veg2 <- stats_df_veg %>%
                          effects2 != "NA" ~ coefsse2)
   )
 
+# model selection tabs for supplement
+ant.sp.vd.tab
+ara.sp.vd.tab
+coc.sp.vd.tab
+geo.sp.vd.tab
+ich.sp.vd.tab
+ant.sp.vd.tab
 # Bootstrap ####
 # Boostrap data and re-fit models to see whether the top models are robust to
 # outliers in the data
 ## SOURCE ####
 source("pred_bootstrap.R", echo = TRUE)
+
+## compare fix- vs reg- classification on best model ####
+best_mod_list$best.coc.sp
+reg_mod <- glmmTMB(Coccinellidae ~ dirt_sig1 + weedy_sig1 + Treatment +
+          (1 | Site / Field),
+        data = df_sp,
+        family = "nbinom2")
+reg_mod %>% r2
+best_mod_list$best.coc.sp %>% r2 # identical
+fix_mod <- glmmTMB(Coccinellidae ~ dirt_sig1 + weedy_sig1 + Treatment +
+          (1 | Site / Field),
+        data = df_sp_fixed,
+        family = "nbinom2")
+fix_mod %>% r2
+nb_scaled$tab_nb_cocc_sp_scaled
 
 # FIG predator effects ####
 # reshape stats table for plotting
@@ -1264,6 +1359,61 @@ ggsave("predator_effects.pdf", width = 18, height = 12, units = "cm", dpi = 600)
   #           # position = position_nudge(x = 0.1, y = -0.3),
   #           position = position_dodge(width = 0.8),
   #           size = 2)
+
+## PREDATOR VEG full modtables ####
+mod_tables_list <- list(
+  "Anthocoridae_Spring" = ant.sp.vd.tab,
+  "Arachnida_Spring" = ara.sp.vd.tab,
+  "Coccinellidae_Spring" = coc.sp.vd.tab,
+  "Geocoris_Spring" = geo.sp.vd.tab,
+  "Ichneumonoidea_Spring" = ich.sp.vd.tab,
+  "Anthocoridae_Fall" = ant.fa.vd.tab,
+  "Arachnida_Fall" = ara.fa.vd.tab,
+  "Coccinellidae_Fall" = coc.fa.vd.tab,
+  # "Geocoris_Fall" = geo.fa.vd.tab, ## lack of non-zero data. must choose non-vegetation data models.
+  "Ichneumodoidea_Fall" = ich.fa.vd.tab
+)
+
+master_table <- bind_rows(mod_tables_list, .id = "Taxon_Season") %>%
+  as_tibble() %>% # must drop "model.selection" class
+  separate(Taxon_Season, into = c("Taxon", "Season"), sep = "_") %>%
+  select(where(~!all(is.na(.x)))) %>%
+  rename_with(~str_replace(.x, coll("cond("), "")) %>%
+  rename_with(~str_replace(.x, coll(")"), "")) %>%
+  rename_with(~str_replace(.x, coll("sig1"), "Proximate")) %>%
+  rename_with(~str_replace(.x, coll("sig2"), "Near")) %>%
+  rename_with(~str_replace(.x, coll("sig3"), "Intermediate")) %>%
+  rename_with(~str_replace(.x, coll("sig4"), "Distant")) %>%
+  rename_with(~str_replace(.x, coll("sig5"), "MostDistant")) %>%
+  rename_with(~str_replace(.x, coll("const"), "Constant")) %>%
+  rename_with(~str_replace(.x, coll("no"), "None")) %>%
+  rename_with(~str_replace(.x, coll("ag"), "OtherAgriculture")) %>%
+  rename_with(~str_replace(.x, coll("alfalfa"), "Alfalfa")) %>%
+  rename_with(~str_replace(.x, coll("impermeable"), "Impermeable")) %>%
+  rename_with(~str_replace(.x, coll("dirt"), "BareSoil")) %>%
+  rename_with(~str_replace(.x, coll("naturalArid"), "DesertShrub")) %>%
+  rename_with(~str_replace(.x, coll("weedy"), "Weedy")) %>%
+  rename_with(~str_replace(.x, coll("wateringMethod"), "IrrigationMethod")) %>%
+  rename_with(~str_replace(.x, coll("water"), "SurfaceWater")) %>%
+  rename_with(~str_replace(.x, coll("divShan"), "ShannonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("div"), "SimpsonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("(Int)"), "Intercept")) %>%
+  rename_with(~str_replace(.x, coll("rich"), "SpeciesRichness_FM")) %>%
+  rename_with(~str_replace(.x, coll("shan"), "log(ShannonDiversity_FM)")) %>%
+  rename_with(~str_replace(.x, coll("totalCover"), "TotalPlantCover_FM")) %>%
+  select(-`disp(Intercept`, -Taxon, -Treatment)
+
+
+names(master_table)
+## export to .csv for tidying there
+write_csv(master_table, "predator_models_vegetation.csv")
+
+print(xtable(master_table,
+             caption = c("Table S##. Candidate models of predator density, with vegetation survey data included.")),
+      type="html",
+      file="predator_models_vegetation.html",
+      caption.placement = "top",
+      NA.string = "NA")
 
 
 
@@ -1501,8 +1651,10 @@ plot(simulateResiduals(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])) # ok
 summary(get.models(tab_nb_allaph_sp_scaled, 1)[[1]])
 tab_nb_allaph_sp_scaled %>%
   tibble %>%
-  filter(delta < 2) %>% # can change how inclusive this is
-  select(where(~!all(is.na(.x)))) %>%
+  # filter(is.na(`cond(wateringMethod)`)) %>%
+  filter(delta < 5) %>% # can change how inclusive this is
+  # select(where(~!all(is.na(.x)))) %>%
+  select(contains('water_')) %>%
   View("Spring AllAph No Veg")
 # basic effects plots
 plot(allEffects(get.models(tab_nb_allaph_sp_scaled, 1)[[1]], residuals = TRUE))
@@ -1613,7 +1765,55 @@ for (i in seq_along(aph_mods)){
 # plot table for now
 stats_df_aph %>%
   tab_df
+## APHID INITIAL full modtables ####
+mod_tables_list <- list(
+  "AllAph_Spring" = tab_nb_allaph_sp_scaled,
+  "AllAph_Fall" = tab_nb_allaph_fa_scaled
+)
 
+master_table <- bind_rows(mod_tables_list, .id = "Taxon_Season") %>%
+  as_tibble() %>% # must drop "model.selection" class
+  separate(Taxon_Season, into = c("Taxon", "Season"), sep = "_") %>%
+  select(where(~!all(is.na(.x)))) %>%
+  rename_with(~str_replace(.x, coll("cond("), "")) %>%
+  rename_with(~str_replace(.x, coll(")"), "")) %>%
+  rename_with(~str_replace(.x, coll("sig1"), "Proximate")) %>%
+  rename_with(~str_replace(.x, coll("sig2"), "Near")) %>%
+  rename_with(~str_replace(.x, coll("sig3"), "Intermediate")) %>%
+  rename_with(~str_replace(.x, coll("sig4"), "Distant")) %>%
+  rename_with(~str_replace(.x, coll("sig5"), "MostDistant")) %>%
+  rename_with(~str_replace(.x, coll("const"), "Constant")) %>%
+  rename_with(~str_replace(.x, coll("no"), "None")) %>%
+  rename_with(~str_replace(.x, coll("ag"), "OtherAgriculture")) %>%
+  rename_with(~str_replace(.x, coll("alfalfa"), "Alfalfa")) %>%
+  rename_with(~str_replace(.x, coll("impermeable"), "Impermeable")) %>%
+  rename_with(~str_replace(.x, coll("dirt"), "BareSoil")) %>%
+  rename_with(~str_replace(.x, coll("naturalArid"), "DesertShrub")) %>%
+  rename_with(~str_replace(.x, coll("weedy"), "Weedy")) %>%
+  rename_with(~str_replace(.x, coll("wateringMethod"), "IrrigationMethod")) %>%
+  rename_with(~str_replace(.x, coll("water"), "SurfaceWater")) %>%
+  rename_with(~str_replace(.x, coll("divShan"), "ShannonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("div"), "SimpsonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("(Int)"), "Intercept")) %>%
+  rename_with(~str_replace(.x, coll("log_Anthocoridae"), "log(Anthocoridae)")) %>%
+  rename_with(~str_replace(.x, coll("log_Arachnida"), "log(Arachnida)")) %>%
+  rename_with(~str_replace(.x, coll("log_Coccinellidae"), "log(Coccinellidae)")) %>%
+  rename_with(~str_replace(.x, coll("log_Geocoris"), "log(Geocoris)")) %>%
+  rename_with(~str_replace(.x, coll("log_Ichneumonoidea"), "log(Ichneumonoidea)")) %>%
+  rename_with(~str_replace(.x, coll("log_IchneumoNoneidea"), "log(Ichneumonoidea)")) %>% # weird spelling error, idk the source ####
+  select(-`disp(Intercept`, -Taxon, -Treatment)
+
+
+names(master_table)
+## export to .csv for tidying there
+write_csv(master_table, "aphid_models.csv")
+
+print(xtable(master_table,
+             caption = c("Table S##. Candidate models of aphid density.")),
+      type="html",
+      file="aphid_models.html",
+      caption.placement = "top",
+      NA.string = "NA")
 # Aphid models with vegdata ####
 # recall vegdata from predator modeling
 df_sp_vd
@@ -1705,6 +1905,59 @@ plot(df_fa_vd$AllAph, fitted(fa_best_veg))
 abline(0, 1)
 
 plot(allEffects(fa_best_veg, resid = TRUE))
+
+## APHID INITIAL full modtables ####
+mod_tables_list <- list(
+  "AllAph_Spring" = veg_dredge_sp,
+  "AllAph_Fall" = veg_dredge_fa
+)
+
+master_table <- bind_rows(mod_tables_list, .id = "Taxon_Season") %>%
+  as_tibble() %>% # must drop "model.selection" class
+  separate(Taxon_Season, into = c("Taxon", "Season"), sep = "_") %>%
+  select(where(~!all(is.na(.x)))) %>%
+  rename_with(~str_replace(.x, coll("cond("), "")) %>%
+  rename_with(~str_replace(.x, coll(")"), "")) %>%
+  rename_with(~str_replace(.x, coll("sig1"), "Proximate")) %>%
+  rename_with(~str_replace(.x, coll("sig2"), "Near")) %>%
+  rename_with(~str_replace(.x, coll("sig3"), "Intermediate")) %>%
+  rename_with(~str_replace(.x, coll("sig4"), "Distant")) %>%
+  rename_with(~str_replace(.x, coll("sig5"), "MostDistant")) %>%
+  rename_with(~str_replace(.x, coll("const"), "Constant")) %>%
+  rename_with(~str_replace(.x, coll("no"), "None")) %>%
+  rename_with(~str_replace(.x, coll("ag"), "OtherAgriculture")) %>%
+  rename_with(~str_replace(.x, coll("alfalfa"), "Alfalfa")) %>%
+  rename_with(~str_replace(.x, coll("impermeable"), "Impermeable")) %>%
+  rename_with(~str_replace(.x, coll("dirt"), "BareSoil")) %>%
+  rename_with(~str_replace(.x, coll("naturalArid"), "DesertShrub")) %>%
+  rename_with(~str_replace(.x, coll("weedy"), "Weedy")) %>%
+  rename_with(~str_replace(.x, coll("wateringMethod"), "IrrigationMethod")) %>%
+  rename_with(~str_replace(.x, coll("water"), "SurfaceWater")) %>%
+  rename_with(~str_replace(.x, coll("divShan"), "ShannonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("div"), "SimpsonDiversity")) %>%
+  rename_with(~str_replace(.x, coll("(Int)"), "Intercept")) %>%
+  rename_with(~str_replace(.x, coll("log_Anthocoridae"), "log(Anthocoridae)")) %>%
+  rename_with(~str_replace(.x, coll("log_Arachnida"), "log(Arachnida)")) %>%
+  rename_with(~str_replace(.x, coll("log_Coccinellidae"), "log(Coccinellidae)")) %>%
+  rename_with(~str_replace(.x, coll("log_Geocoris"), "log(Geocoris)")) %>%
+  rename_with(~str_replace(.x, coll("log_Ichneumonoidea"), "log(Ichneumonoidea)")) %>%
+  rename_with(~str_replace(.x, coll("log_IchneumoNoneidea"), "log(Ichneumonoidea)")) %>% # weird spelling error, idk the source ####
+  rename_with(~str_replace(.x, coll("rich"), "SpeciesRichness_FM")) %>%
+  rename_with(~str_replace(.x, coll("shan"), "log(ShannonDiversity_FM)")) %>%
+  rename_with(~str_replace(.x, coll("totalCover"), "TotalPlantCover_FM")) %>%
+select(-`disp(Intercept`, -Taxon, -Treatment)
+
+
+names(master_table)
+## export to .csv for tidying there
+write_csv(master_table, "aphid_models.csv")
+
+print(xtable(master_table,
+             caption = c("Table S##. Candidate models of aphid density, with vegetation data.")),
+      type="html",
+      file="aphid_models_vegetation.html",
+      caption.placement = "top",
+      NA.string = "NA")
 
 # FIG best aphid model effects ####
 # check spring effs plot
@@ -2147,7 +2400,7 @@ subplot_data_raw %>%
   filter(Season == "Spring",
          Treatment == "Sham",
          diffCoccinellidae > 0) %>%
-  summarize(mean(diffCoccinellidae)*4,
+  summarize(mean(diffCoccinellidae)*4, # to change to area in m2
             sd(diffCoccinellidae)*4,
             (sd(diffCoccinellidae)/sqrt(21))*4,
             mean(Coccinellidae))

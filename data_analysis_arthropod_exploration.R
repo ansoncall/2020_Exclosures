@@ -69,6 +69,7 @@ subplot_data %>%
 ggsave("season_histogram.pdf", width = 8.5, height = 20, units = "cm",
        dpi = 600)
 
+# final figure ####
 subplot_data %>%
   # lengthen (aphids only)
   pivot_longer(all_of(taxalist),
@@ -78,15 +79,16 @@ subplot_data %>%
                           Taxa != "NonAcy" ~ Taxa)) %>%
   mutate(Taxa = fct_relevel(Taxa, "Acyrthosiphon", "Non-Acyrthosiphon aphid")) %>%
   # log-transform
-  mutate(Mean_Density = log(Mean_Density + 1)) %>%
+  mutate(Mean_Density4 = Mean_Density * 4) %>% # area in m2
+  mutate(Mean_Density = log(Mean_Density4 + 1)) %>%
   # relevel factors
   mutate(Taxa = fct_relevel(Taxa, "Acyrthosiphon"),
          Season = fct_relevel(Season, "Spring")) %>%
   ggplot(aes(x = Mean_Density, y = rev(Taxa), fill = Season, color = Season)) +
   geom_density_ridges(alpha = 0.4,
                       scale = 1,
-                      panel_scaling = TRUE)+
-  labs(x = "log(Density + 1)",
+                      panel_scaling = TRUE) +
+  labs(x = expression(paste("log(Density / ", m^2, " + 1)")),
        y = "Count") +
   theme_grey(base_size = 10) +
   facet_wrap(~ Taxa, ncol = 1, scales = "free") +

@@ -45,6 +45,19 @@ coc.sp.vd.tab <- dredge(global.coc.sp.vd,
                         trace = 2)
 best.coc.sp.vd <- get.models(coc.sp.vd.tab, 1)[[1]]
 
+# Geocoris
+best_mod_list$best.geo.sp
+global.geo.sp.vd <- glmmTMB(Geocoris ~ Treatment + alfalfa_sig5 + impermeable_sig5 +
+                              (1|Site:Field) + shan + rich + totalCover,
+                            data = df_sp_vd,
+                            family = 'nbinom2',
+                            na.action = "na.fail")
+geo.sp.vd.tab <- dredge(global.geo.sp.vd,
+                        m.lim = c(0,2),
+                        fixed = 'cond(Treatment)',
+                        trace = 2)
+best.geo.sp.vd <- get.models(geo.sp.vd.tab, 1)[[1]]
+
 ## Ichneumonoidea
 best_mod_list$best.ich.sp
 global.ich.sp.vd <- glmmTMB(Ichneumonoidea ~ Treatment + impermeable_sig1 +
@@ -100,6 +113,25 @@ coc.fa.vd.tab <- dredge(global.coc.fa.vd,
                         fixed = 'cond(Treatment)',
                         trace = 2)
 best.coc.fa.vd <- get.models(coc.fa.vd.tab, 1)[[1]]
+
+# # Geocoris
+# best_mod_list$best.geo.fa
+# global.geo.fa.vd <- glmmTMB(Geocoris ~ Treatment,
+#                             data = df_fa_vd,
+#                             family = 'nbinom2',
+#                             na.action = "na.fail")
+# # trick dredge
+# global.geo.fa.vd$modelInfo$allForm$formula <- Geocoris ~ Treatment + impermeable_no + wateringMethod +
+#                               (1|Site:Field) + shan + rich + totalCover
+# global.geo.fa.vd$modelInfo$allForm$combForm <- Geocoris ~ Treatment + impermeable_no + wateringMethod +
+#                               (1|Site:Field) + shan + rich + totalCover
+# geo.fa.vd.tab <- dredge(global.geo.fa.vd,
+#                         m.lim = c(0,3),
+#                         fixed = 'cond(Treatment)',
+#                         trace = 2)
+# best.geo.fa.vd <- get.models(geo.fa.vd.tab, 1)[[1]]
+#
+# # not fitting? lack of non-zero data here
 
 # Ichneumonoidea
 best_mod_list$best.ich.fa

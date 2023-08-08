@@ -522,7 +522,7 @@ write_csv(master_table, "predator_models.csv")
 library("xtable")
 
 print(xtable(master_table,
-             caption = c("Table S##. Candidate models of predator density, with vegetation survey data included.")),
+             caption = c("Appendix S3: Table S1. Candidate models of predator density, with vegetation survey data included.")),
       type="html",
       file="predator_models.html",
       caption.placement = "top",
@@ -1286,7 +1286,7 @@ lc_palette_predators <- c(
 #             by = c("Taxon", "Season", "Effect"))
 
 # make ggplot
-ggplot(figDat, aes(y = Taxon,
+p_eff <- ggplot(figDat, aes(y = Taxon,
                    x = coefs,
                    fill = Effect,
                    # color = Effect,
@@ -1338,6 +1338,8 @@ ggplot(figDat, aes(y = Taxon,
             parse = T,
             size = 8 / .pt) +
   guides(fill = guide_legend(nrow = 2, byrow = TRUE))
+
+p_eff
 
 ggsave("predator_effects.pdf", width = 18, height = 12, units = "cm", dpi = 600)
 
@@ -1409,7 +1411,7 @@ names(master_table)
 write_csv(master_table, "predator_models_vegetation.csv")
 
 print(xtable(master_table,
-             caption = c("Table S##. Candidate models of predator density, with vegetation survey data included.")),
+             caption = c("Appendix S3: Table S2. Candidate models of predator density, with vegetation survey data included.")),
       type="html",
       file="predator_models_vegetation.html",
       caption.placement = "top",
@@ -1608,7 +1610,7 @@ nameplates <- figDat %>%
   mutate(col = fct_relevel(col, "Proximate", "Near", "Intermediate",
                             "Distant", "Most distant", "Constant", "None"))
 
-ggplot(dist_decay_df, aes(distance, value, color = `Decay function`)) +
+p_dist <- ggplot(dist_decay_df, aes(distance, value, color = `Decay function`)) +
   geom_line(size = 1) +
   theme_classic(base_size = 10) +
   scale_color_manual(values = dist_palette) +
@@ -1627,7 +1629,18 @@ ggplot(dist_decay_df, aes(distance, value, color = `Decay function`)) +
         legend.position = "right",
         axis.text = element_text(color = "black"))
 
+p_dist
+
 ggsave("predator_distance.pdf", width = 18, height = 6, units = "cm", dpi = 600)
+
+ggarrange(p_eff, p_dist,
+          ncol = 1,
+          labels = c("(a)", "(b)"),
+          hjust = 0,
+          vjust = c(1.3, 0))
+
+ggsave("predator_combined.pdf", width = 18, height = 18, units = "cm", dpi = 600)
+ggsave("predator_combined.png", width = 18, height = 18, units = "cm", dpi = 600)
 # Extra ladybug model ####
 # try a binomial cocc mod for fall (low coc density in fall)
 # source: build models for each distweight and dredge
@@ -1809,7 +1822,7 @@ names(master_table)
 write_csv(master_table, "aphid_models.csv")
 
 print(xtable(master_table,
-             caption = c("Table S##. Candidate models of aphid density.")),
+             caption = c("Appendix S3: Table S3. Candidate models of aphid density.")),
       type="html",
       file="aphid_models.html",
       caption.placement = "top",
@@ -1953,7 +1966,7 @@ names(master_table)
 write_csv(master_table, "aphid_models.csv")
 
 print(xtable(master_table,
-             caption = c("Table S##. Candidate models of aphid density, with vegetation data.")),
+             caption = c("Appendix S3: Table S4. Candidate models of aphid density, with vegetation data.")),
       type="html",
       file="aphid_models_vegetation.html",
       caption.placement = "top",
@@ -2106,7 +2119,7 @@ aphFigDat <- stats_df_aph_veg %>%
          expr = paste0(round(MarginalR2,2)),
          exprC = paste0(round(ConditionalR2,2)))
 
-ggplot(aphFigDat, aes(y = Effect,
+aphfig1 <- ggplot(aphFigDat, aes(y = Effect,
                    x = coefs,
                    # fill = Effect,
                    # color = Effect,
@@ -2141,8 +2154,8 @@ ggplot(aphFigDat, aes(y = Effect,
     panel.grid.minor.x = element_blank(),
     strip.background.x = element_rect(fill = "NA", color = "NA"),
     legend.text = element_text(size = 10),
-    axis.text = element_text(color = "black", size = 6),
-    axis.title.x = element_text(size = 6),
+    axis.text = element_text(color = "black", size = 7),
+    axis.title.x = element_text(size = 7),
     legend.position = "bottom",
     legend.title = element_blank(),
     legend.box.margin =  margin(r = 0.2, l = -40, t = 0)) +
@@ -2152,15 +2165,15 @@ ggplot(aphFigDat, aes(y = Effect,
                 label = cat),
             inherit.aes = F,
             parse = T,
-            size = 6/.pt) +
+            size = 7/.pt) +
   geom_text(aes(x = -1.5,
                 y = 0.8,
                 label = catC),
             inherit.aes = F,
             parse = T,
-            size = 6/.pt)
+            size = 7/.pt)
 
-ggsave("aphid_effects.pdf", width = 8.5, height = 6, units = "cm", dpi = 600)
+# ggsave("aphid_effects.pdf", width = 8.5, height = 6, units = "cm", dpi = 600)
 
 
 df_fa_vd %>%
@@ -2209,8 +2222,9 @@ p <-ggplot(df_sp, aes(wateringMethod, log_AllAph, fill = wateringMethod))+
         plot.background = element_rect(fill = "white"),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
-        axis.text = element_text(color = "black"),
-        axis.title.y = element_blank()) +
+        axis.text = element_text(color = "black")
+        # axis.title.y = element_blank()
+        ) +
   labs(y = "log(Aphid density)",
        x = "Watering method")
 
@@ -2230,7 +2244,7 @@ q <- ggplot(df_sp, aes(water_no, log_AllAph, color = wateringMethod))+
   #           color = ggred,
   #           size = 8/.pt) +
   theme_grey(base_size = 10) +
-  theme(legend.position = c(0.9, 0.15),
+  theme(legend.position = c(0.9, 0.25),
         legend.background = element_rect(linetype = 1, color = NA),
         panel.background = element_rect(fill = NA, color = "black"),
         plot.background = element_rect(fill = "white"),
@@ -2250,10 +2264,22 @@ q
 
 
 ggsave(file = "flood_effect.pdf",
-       plot = marrangeGrob(list(q, p), ncol = 2, nrow = 1, top = NULL),
-       width = 18, height = 8.5, units = "cm", dpi = 600)
+       plot = marrangeGrob(list(aphfig1, q, p), ncol = 1, nrow = 3, top = NULL),
+       width = 8.5, height = 24, units = "cm", dpi = 600)
+ggsave(file = "flood_effect.png",
+       plot = marrangeGrob(list(aphfig1, q, p), ncol = 1, nrow = 3, top = NULL),
+       width = 8.5, height = 24, units = "cm", dpi = 600)
+install.packages("ggpubr")
+library(ggpubr)
+ggarrange(aphfig1, q, p,
+          ncol = 1,
+          labels = c("(a)", "(b)", "(c)"),
+          vjust = c(1.3, 0, 0))
 
-
+ggsave(file = "aph_fig.pdf",
+       width = 8.5, height = 20, units = "cm", dpi = 600)
+ggsave(file = "aph_fig.png",
+       width = 8.5, height = 20, units = "cm", dpi = 600)
 
 # Sham attraction ####
 # source: identify predators that are attracted to sham treatments via
